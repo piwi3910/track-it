@@ -1,0 +1,214 @@
+import { useState } from 'react';
+import {
+  TextInput,
+  Button,
+  Group,
+  ActionIcon,
+  Paper,
+  Select,
+  Popover,
+  TagsInput,
+  Tooltip,
+} from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import {
+  IconPlus,
+  IconCalendarEvent,
+  IconCheck,
+  IconAlarm,
+  IconUser,
+  IconTag,
+  IconFlag,
+} from '@tabler/icons-react';
+import { useApp } from '@/context/AppContext';
+import type { Task, TaskPriority, TaskStatus } from '@/types/task';
+
+// Mock user data for assignments (will replace with real data later)
+const availableUsers = [
+  { value: 'user1', label: 'John Doe' },
+  { value: 'user2', label: 'Jane Smith' },
+  { value: 'user3', label: 'Bob Johnson' },
+  { value: 'user4', label: 'Alice Williams' },
+  { value: 'user5', label: 'Charlie Brown' },
+];
+
+interface QuickAddTaskProps {
+  defaultStatus?: TaskStatus;
+  defaultDueDate?: Date | null;
+  onTaskAdded?: () => void;
+  hideStatus?: boolean;
+}
+
+export default function QuickAddTask({
+  defaultStatus = 'todo',
+  defaultDueDate = null,
+  onTaskAdded,
+  hideStatus = false,
+}: QuickAddTaskProps) {
+  const { addTask } = useApp();
+  const [title, setTitle] = useState('');
+  const [status, setStatus] = useState<TaskStatus>(defaultStatus);
+  const [dueDate, setDueDate] = useState<Date | null>(defaultDueDate);
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [estimatedHours, setEstimatedHours] = useState<number | undefined>(undefined);
+
+  const handleSubmit = () => {
+    if (!title.trim()) return;
+
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: title.trim(),
+      status,
+      priority,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Add optional fields if they exist
+    if (dueDate) newTask.dueDate = dueDate.toISOString();
+    if (assigneeId) newTask.assigneeId = assigneeId;
+    if (tags.length > 0) newTask.tags = tags;
+    if (estimatedHours !== undefined) newTask.estimatedHours = estimatedHours;
+
+    addTask(newTask);
+    
+    // Reset form
+    setTitle('');
+    setDueDate(defaultDueDate);
+    setPriority('medium');
+    setAssigneeId(null);
+    setTags([]);
+    setEstimatedHours(undefined);
+    setDetailsOpen(false);
+    
+    // Callback
+    if (onTaskAdded) onTaskAdded();
+  };
+
+  const statusOptions = [
+    { value: 'backlog', label: 'Backlog' },
+    { value: 'todo', label: 'To Do' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'blocked', label: 'Blocked' },
+    { value: 'in_review', label: 'In Review' },
+    { value: 'done', label: 'Done' },
+  ];
+
+  const priorityOptions = [
+    { value: 'low', label: 'Low', color: 'blue' },
+    { value: 'medium', label: 'Medium', color: 'yellow' },
+    { value: 'high', label: 'High', color: 'orange' },
+    { value: 'urgent', label: 'Urgent', color: 'red' },
+  ];
+
+  return (
+    <Paper p="md" shadow="xs" withBorder>
+      <Group align="flex-start">
+        <TextInput
+          placeholder="Add a new task..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          style={{ flex: 1 }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+        />
+        
+        <Popover 
+          width={300} 
+          position="bottom-end" 
+          withArrow 
+          shadow="md"
+          opened={detailsOpen}
+          onChange={setDetailsOpen}
+        >
+          <Popover.Target>
+            <Tooltip label="More details" withArrow position="top">
+              <span style={{ display: 'inline-block' }}>
+                <ActionIcon
+                  color="gray"
+                  variant="subtle"
+                  onClick={() => setDetailsOpen((o) => !o)}
+                >
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </span>
+            </Tooltip>
+          </Popover.Target>
+          <Popover.Dropdown>
+            <Group mb="xs" grow>
+              {!hideStatus && (
+                <Select
+                  data={statusOptions}
+                  label="Status"
+                  value={status}
+                  onChange={(value) => setStatus(value as TaskStatus)}
+                  leftSection={<IconCheck size={16} />}
+                  allowDeselect={false}
+                />
+              )}
+              <Select
+                data={priorityOptions}
+                label="Priority"
+                value={priority}
+                onChange={(value) => setPriority(value as TaskPriority)}
+                leftSection={<IconFlag size={16} />}
+                allowDeselect={false}
+              />
+            </Group>
+            
+            <Group mb="xs" grow>
+              <DatePickerInput
+                label="Due Date"
+                placeholder="Select date"
+                value={dueDate}
+                onChange={setDueDate}
+                leftSection={<IconCalendarEvent size={16} />}
+                clearable
+              />
+              <TextInput
+                label="Estimated Hours"
+                placeholder="e.g. 2.5"
+                value={estimatedHours?.toString() || ''}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setEstimatedHours(isNaN(value) ? undefined : value);
+                }}
+                leftSection={<IconAlarm size={16} />}
+              />
+            </Group>
+            
+            <Group mb="xs" grow>
+              <Select
+                data={availableUsers}
+                label="Assign To"
+                placeholder="Select user"
+                value={assigneeId}
+                onChange={setAssigneeId}
+                leftSection={<IconUser size={16} />}
+                clearable
+              />
+            </Group>
+            
+            <TagsInput
+              label="Tags"
+              placeholder="Add tags..."
+              leftSection={<IconTag size={16} />}
+              value={tags}
+              onChange={setTags}
+              clearable
+            />
+          </Popover.Dropdown>
+        </Popover>
+        
+        <Button onClick={handleSubmit}>Add Task</Button>
+      </Group>
+    </Paper>
+  );
+}

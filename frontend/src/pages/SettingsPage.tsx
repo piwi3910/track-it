@@ -25,7 +25,7 @@ import {
   IconMailFilled,
 } from '@tabler/icons-react';
 import { GoogleIntegrationPanel } from './settings/GoogleIntegrationPanel';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
 
 export function SettingsPage() {

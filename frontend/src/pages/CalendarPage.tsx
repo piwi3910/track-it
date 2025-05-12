@@ -43,7 +43,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import TaskModal from '@/components/TaskModal';
 import type { Task } from '@/types/task';
 import { useTheme } from '@/context/ThemeContext';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { useGoogle } from '@/context/GoogleContext';
 
 // Generate additional mock data for current month

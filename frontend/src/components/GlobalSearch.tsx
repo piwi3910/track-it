@@ -22,7 +22,7 @@ import {
   IconHash,
   IconFlag
 } from '@tabler/icons-react';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
 import { Task, TaskPriority } from '@/types/task';
 

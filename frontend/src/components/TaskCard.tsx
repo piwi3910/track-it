@@ -37,7 +37,7 @@ import {
   IconPlus,
   IconCopy
 } from '@tabler/icons-react';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
 import type { Task, TaskPriority, TaskRecurrence } from '@/types/task';
 import { api, apiHandler } from '@/api/mockClient';

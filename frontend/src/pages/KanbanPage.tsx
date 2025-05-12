@@ -20,7 +20,7 @@ import TaskCard from '@/components/TaskCard';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task, TaskStatus } from '@/types/task';
 import { useTheme } from '@/context/ThemeContext';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 
 // Column definitions
 const columns: { id: TaskStatus; title: string }[] = [

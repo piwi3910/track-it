@@ -9,6 +9,10 @@ import { GoogleProvider } from './context/GoogleContext';
 import { NotificationProvider } from './context/NotificationContext';
 import App from './App';
 
+// Import for tRPC client configuration
+import { trpc, trpcClient, queryClient } from './utils/trpc';
+import { QueryClientProvider } from '@tanstack/react-query';
+
 // Import all required styles
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
@@ -24,20 +28,24 @@ const theme = createTheme({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ColorSchemeScript defaultColorScheme="light" />
-    <MantineProvider theme={theme} defaultColorScheme="light">
-      <ThemeProvider>
-        <AppProvider>
-          <GoogleProvider>
-            <NotificationProvider>
-              <Notifications position="top-right" />
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
-            </NotificationProvider>
-          </GoogleProvider>
-        </AppProvider>
-      </ThemeProvider>
-    </MantineProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <ColorSchemeScript defaultColorScheme="light" />
+        <MantineProvider theme={theme} defaultColorScheme="light">
+          <ThemeProvider>
+            <AppProvider>
+              <GoogleProvider>
+                <NotificationProvider>
+                  <Notifications position="top-right" />
+                  <BrowserRouter>
+                    <App />
+                  </BrowserRouter>
+                </NotificationProvider>
+              </GoogleProvider>
+            </AppProvider>
+          </ThemeProvider>
+        </MantineProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   </StrictMode>,
 );

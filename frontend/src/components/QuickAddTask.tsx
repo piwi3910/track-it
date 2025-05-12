@@ -20,7 +20,7 @@ import {
   IconTag,
   IconFlag,
 } from '@tabler/icons-react';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 import type { Task, TaskPriority, TaskStatus } from '@/types/task';
 
 // Mock user data for assignments (will replace with real data later)

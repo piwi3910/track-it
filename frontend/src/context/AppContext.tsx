@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Task, User, TaskFilter, TaskTemplate } from '@/types/task';
-import { api, apiHandler } from '@/api/mockClient';
+import { Task, User, TaskFilter, TaskTemplate } from '@track-it/shared';
+import { api } from '@/api';
 
 interface AppContextType {
   // User
@@ -51,7 +51,7 @@ interface AppContextType {
   getTemplateCategories: () => Promise<string[]>;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   // User state
@@ -76,7 +76,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const { data, error } = await apiHandler(api.users.getCurrentUser);
+        const { data, error } = await api.auth.getCurrentUser();
         if (data && !error) {
           setCurrentUser(data);
         }
@@ -86,7 +86,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUserLoading(false);
       }
     };
-    
+
     fetchCurrentUser();
   }, []);
   
@@ -94,7 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const fetchTasks = useCallback(async () => {
     setTasksLoading(true);
     try {
-      const { data, error } = await apiHandler(api.tasks.getAll);
+      const { data, error } = await api.tasks.getAll();
       if (data && !error) {
         setTasks(data);
       }
@@ -114,7 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const fetchTemplates = useCallback(async () => {
     setTemplatesLoading(true);
     try {
-      const { data, error } = await apiHandler(api.templates.getAll);
+      const { data, error } = await api.templates.getAll();
       if (data && !error) {
         setTemplates(data);
       }
@@ -133,7 +133,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Get task by ID
   const getTaskById = useCallback(async (id: string) => {
     try {
-      const { data, error } = await apiHandler(() => api.tasks.getById(id));
+      const { data, error } = await api.tasks.getById(id);
       if (error) return null;
       return data;
     } catch (error) {
@@ -145,9 +145,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Create a new task
   const createTask = useCallback(async (task: Omit<Task, 'id'>) => {
     try {
-      const { data, error } = await apiHandler(() => api.tasks.create(task));
+      const { data, error } = await api.tasks.create(task);
       if (error) throw new Error(error);
-      
+
       // Update local tasks state
       if (data) {
         setTasks(prev => [...prev, data]);
@@ -162,13 +162,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update an existing task
   const updateTask = useCallback(async (id: string, task: Partial<Task>) => {
     try {
-      const { data, error } = await apiHandler(() => api.tasks.update(id, task));
+      const { data, error } = await api.tasks.update(id, task);
       if (error) throw new Error(error);
-      
+
       // Update local tasks state
       if (data) {
         setTasks(prev => prev.map(t => t.id === id ? data : t));
-        
+
         // Update selectedTask if it's the one being edited
         if (selectedTask?.id === id) {
           setSelectedTask(data);
@@ -184,17 +184,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Delete a task
   const deleteTask = useCallback(async (id: string) => {
     try {
-      const { error } = await apiHandler(() => api.tasks.delete(id));
+      const { error } = await api.tasks.delete(id);
       if (error) throw new Error(error);
-      
+
       // Update local tasks state
       setTasks(prev => prev.filter(t => t.id !== id));
-      
+
       // Clear selectedTask if it's the one being deleted
       if (selectedTask?.id === id) {
         setSelectedTask(null);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Failed to delete task:', error);
@@ -235,7 +235,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Search tasks
   const searchTasks = useCallback(async (query: string) => {
     try {
-      const { data, error } = await apiHandler(() => api.tasks.search(query));
+      const { data, error } = await api.tasks.search(query);
       if (error) throw new Error(error);
       return data || [];
     } catch (error) {
@@ -247,7 +247,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Get template by ID
   const getTemplateById = useCallback(async (id: string) => {
     try {
-      const { data, error } = await apiHandler(() => api.templates.getById(id));
+      const { data, error } = await api.templates.getById(id);
       if (error) return null;
       return data;
     } catch (error) {
@@ -259,7 +259,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Create a new template
   const createTemplate = useCallback(async (template: Omit<TaskTemplate, 'id' | 'createdAt' | 'usageCount'>) => {
     try {
-      const { data, error } = await apiHandler(() => api.templates.create(template));
+      const { data, error } = await api.templates.create(template);
       if (error) throw new Error(error);
 
       // Update local templates state
@@ -276,7 +276,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update an existing template
   const updateTemplate = useCallback(async (id: string, template: Partial<TaskTemplate>) => {
     try {
-      const { data, error } = await apiHandler(() => api.templates.update(id, template));
+      const { data, error } = await api.templates.update(id, template);
       if (error) throw new Error(error);
 
       // Update local templates state
@@ -298,7 +298,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Delete a template
   const deleteTemplate = useCallback(async (id: string) => {
     try {
-      const { error } = await apiHandler(() => api.templates.delete(id));
+      const { error } = await api.templates.delete(id);
       if (error) throw new Error(error);
 
       // Update local templates state
@@ -324,7 +324,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Save a task as a template
   const saveTaskAsTemplate = useCallback(async (taskId: string, templateName: string, isPublic = true) => {
     try {
-      const { data, error } = await apiHandler(() => api.tasks.saveAsTemplate(taskId, templateName, isPublic));
+      const { data, error } = await api.tasks.saveAsTemplate(taskId, templateName, isPublic);
       if (error) throw new Error(error);
 
       // Update local templates state
@@ -341,7 +341,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Create a task from a template
   const createTaskFromTemplate = useCallback(async (templateId: string, taskData: Partial<Task>) => {
     try {
-      const { data, error } = await apiHandler(() => api.tasks.createFromTemplate(templateId, taskData));
+      const { data, error } = await api.tasks.createFromTemplate(templateId, taskData);
       if (error) throw new Error(error);
 
       // Update local tasks state
@@ -358,7 +358,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Search templates
   const searchTemplates = useCallback(async (query: string) => {
     try {
-      const { data, error } = await apiHandler(() => api.templates.search(query));
+      const { data, error } = await api.templates.search(query);
       if (error) throw new Error(error);
       return data || [];
     } catch (error) {
@@ -370,7 +370,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Get all template categories
   const getTemplateCategories = useCallback(async () => {
     try {
-      const { data, error } = await apiHandler(() => api.templates.getCategories());
+      const { data, error } = await api.templates.getCategories();
       if (error) throw new Error(error);
       return data || [];
     } catch (error) {
@@ -420,10 +420,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useApp() {
-  const context = useContext(AppContext);
-  if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
-}
+// Hook moved to /src/hooks/useApp.ts

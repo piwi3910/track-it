@@ -29,7 +29,7 @@ import {
 } from '@tabler/icons-react';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { NotificationMenu } from '@/components/NotificationMenu';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 // Optional: Import from your context if you've implemented it
 // import { useAppContext } from '@/context/useAppContext';
 

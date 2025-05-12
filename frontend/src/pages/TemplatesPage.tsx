@@ -36,7 +36,7 @@ import {
   IconCheck,
   IconClock
 } from '@tabler/icons-react';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
 import { TaskTemplate, TaskPriority } from '@/types/task';
 

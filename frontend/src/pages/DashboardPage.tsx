@@ -25,7 +25,7 @@ import {
 import TaskModal from '@/components/TaskModal';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task } from '@/types/task';
-import { useApp } from '@/context/AppContext';
+import { useApp } from '@/hooks/useApp';
 
 export function DashboardPage() {
   const { tasks, currentUser } = useApp();

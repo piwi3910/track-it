@@ -1,11 +1,19 @@
 /**
- * Main API entry point
- * This exports the tRPC-compatible mock API client
- * It can be replaced with a real tRPC client in the future without changing imports
+ * API entry point
+ * This file controls which API implementation is used (mock or real)
  */
 
-// Re-export the mock client
-export { api, apiHandler, useQuery, useMutation } from './trpc-mock/client';
+// Use this import for the real tRPC API
+import * as trpcApi from './trpc-client';
 
-// Export the router type for use in TypeScript
-export type { AppRouter } from './trpc-mock/types';
+// Use this import for the mock API (currently used)
+import * as mockApi from './trpc-mock/client';
+
+// SWITCH BETWEEN MOCK AND REAL API HERE
+const USE_REAL_API = true; // Set to true to use the real API with tRPC
+
+// Export the appropriate API based on the USE_REAL_API flag
+export const api = USE_REAL_API ? trpcApi : mockApi;
+
+// Always export types from the real API for type consistency
+export type { RouterInputs, RouterOutputs } from './trpc-server-types';

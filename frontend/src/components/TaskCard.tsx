@@ -20,7 +20,7 @@ import {
   Button,
   Indicator
 } from '@mantine/core';
-import './TaskCard.css';
+// Using centralized theme styles
 import {
   IconDotsVertical,
   IconPencil,
@@ -38,6 +38,7 @@ import {
   IconCopy
 } from '@tabler/icons-react';
 import { useApp } from '@/context/AppContext';
+import { useTheme } from '@/context/ThemeContext';
 import type { Task, TaskPriority, TaskRecurrence } from '@/types/task';
 import { api, apiHandler } from '@/api/mockClient';
 
@@ -89,14 +90,6 @@ interface TaskCardProps {
   onDelete?: () => void;
   onViewConversation?: () => void; // Handler for opening the conversation tab
 }
-
-// Map priority to color
-const priorityColorMap: Record<TaskPriority, string> = {
-  low: 'blue',
-  medium: 'yellow',
-  high: 'orange',
-  urgent: 'red',
-};
 
 // Inline editable title component
 function EditableTitle({ value, onChange, onSave }: { 
@@ -165,7 +158,9 @@ function EditableTitle({ value, onChange, onSave }: {
 }
 
 export default function TaskCard({ task, onEdit, onDelete, onViewConversation }: TaskCardProps) {
-  const theme = useMantineTheme();
+  const mantineTheme = useMantineTheme();
+  const { getPriorityColor, colors, shadows, spacing, typography } = useTheme();
+  
   const [localTask, setLocalTask] = useState<Task>(task);
   const [titleChanged, setTitleChanged] = useState(false);
   const [priorityPopoverOpened, setPriorityPopoverOpened] = useState(false);
@@ -374,7 +369,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
     <div style={{ position: 'relative' }}>
       {/* Menu in the top-right corner */}
       <div style={{ position: 'absolute', top: 2, right: 5, paddingBottom: 3, zIndex: 20 }}>
-        <Menu position="bottom-end" withinPortal>
+        <Menu withinPortal position="bottom-end">
           <Menu.Target>
             <ActionIcon variant="subtle" size="sm" onClick={(e) => e.stopPropagation()}>
               <IconDotsVertical size={16} />
@@ -464,7 +459,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
       </div>
 
       {/* Task ID in the top-left corner */}
-      <div style={{ position: 'absolute', top: 4, left: 5, zIndex: 20 }}>
+      <div style={{ position: 'absolute', top: -2, left: 2, zIndex: 20 }}>
         <Tooltip label="Click to copy ID" position="top">
           <span style={{ display: 'inline-block' }}>
             <Badge
@@ -524,7 +519,9 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         >
           <Popover.Target>
             <Badge
-              color={priorityColorMap[localTask.priority]}
+              color={localTask.priority === 'low' ? 'blue' : 
+                     localTask.priority === 'medium' ? 'yellow' : 
+                     localTask.priority === 'high' ? 'orange' : 'red'}
               variant="light"
               style={{ cursor: 'pointer' }}
               onClick={(e) => {
@@ -537,7 +534,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
           </Popover.Target>
           <Popover.Dropdown>
             <Stack gap="xs">
-              {Object.keys(priorityColorMap).map((priority) => (
+              {['low', 'medium', 'high', 'urgent'].map((priority) => (
                 <Group
                   key={priority}
                   gap="xs"
@@ -548,7 +545,9 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                   style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}
                   className="hover-highlight"
                 >
-                  <Badge color={priorityColorMap[priority as TaskPriority]} variant="light">
+                  <Badge color={priority === 'low' ? 'blue' : 
+                             priority === 'medium' ? 'yellow' : 
+                             priority === 'high' ? 'orange' : 'red'} variant="light">
                     {priority.charAt(0).toUpperCase() + priority.slice(1)}
                   </Badge>
                   {localTask.priority === priority && <IconCheck size={14} />}
@@ -756,10 +755,22 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               </Tooltip>
             ) : (
               <Button
+                compact
                 size="xs"
-                variant="light"
-                leftSection={<IconPlus size={14} />}
-                style={{ opacity: 0.7 }}
+                variant="subtle"
+                leftSection={<IconPlus size={12} />}
+                style={{ 
+                  opacity: 0.7,
+                  padding: '2px 6px',
+                  height: 'auto',
+                  minHeight: '20px'
+                }}
+                styles={{
+                  inner: { 
+                    fontSize: '0.65rem',
+                    fontWeight: 'normal'
+                  }
+                }}
               >
                 Assign
               </Button>
@@ -778,7 +789,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                     borderRadius: '4px',
                     cursor: 'pointer',
                     backgroundColor: localTask.assigneeId === userId ?
-                      theme.colorScheme === 'dark' ? theme.colors.blue[9] : theme.colors.blue[0] :
+                      mantineTheme.colorScheme === 'dark' ? mantineTheme.colors.blue[9] : mantineTheme.colors.blue[0] :
                       'transparent'
                   }}
                   className="hover-highlight"
@@ -851,14 +862,16 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
 
   // Set background color based on task status
   const getCardBackgroundColor = () => {
+    const isDark = mantineTheme.colorScheme === 'dark';
+    
     if (localTask.status === 'blocked') {
-      return theme.colorScheme === 'dark'
-        ? 'rgba(220, 53, 69, 0.2)' // Dark mode red background
-        : 'rgba(255, 235, 238, 1)'; // Light mode red background
+      return isDark
+        ? `${colors.statusBlocked}33` // Dark mode blocked background with opacity
+        : `${colors.statusBlocked}15`; // Light mode blocked background with opacity
     } else if (localTask.status === 'done') {
-      return theme.colorScheme === 'dark'
-        ? 'rgba(25, 135, 84, 0.2)' // Dark mode green background
-        : 'rgba(235, 250, 242, 1)'; // Light mode green background
+      return isDark
+        ? `${colors.statusDone}33` // Dark mode done background with opacity
+        : `${colors.statusDone}15`; // Light mode done background with opacity
     }
     return 'transparent'; // Default background
   };
@@ -912,9 +925,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 withBorder
                 {...cardDataAttributes}
                 style={{
-                  borderLeft: `4px solid ${
-                    theme.colors[priorityColorMap[localTask.priority] || 'gray'][6]
-                  }`,
+                  borderLeft: `4px solid ${getPriorityColor(localTask.priority)}`,
                   position: 'relative',
                   zIndex: 10,
                   backgroundColor: getCardBackgroundColor()
@@ -931,9 +942,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               withBorder
               {...cardDataAttributes}
               style={{
-                borderLeft: `4px solid ${
-                  theme.colors[priorityColorMap[localTask.priority] || 'gray'][6]
-                }`,
+                borderLeft: `4px solid ${getPriorityColor(localTask.priority)}`,
                 position: 'relative',
                 zIndex: 10,
                 backgroundColor: getCardBackgroundColor()
@@ -966,9 +975,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               withBorder
               {...cardDataAttributes}
               style={{
-                borderLeft: `4px solid ${
-                  theme.colors[priorityColorMap[localTask.priority] || 'gray'][6]
-                }`,
+                borderLeft: `4px solid ${getPriorityColor(localTask.priority)}`,
                 position: 'relative',
                 zIndex: 10,
                 backgroundColor: getCardBackgroundColor()
@@ -984,9 +991,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
             radius="md"
             withBorder
             style={{
-              borderLeft: `4px solid ${
-                theme.colors[priorityColorMap[localTask.priority] || 'gray'][6]
-              }`,
+              borderLeft: `4px solid ${getPriorityColor(localTask.priority)}`,
               position: 'relative',
               zIndex: 10
             }}

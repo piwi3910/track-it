@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './KanbanPage.css';
+// Using centralized theme system
 import {
   Container,
   Title,
@@ -113,9 +113,6 @@ export function KanbanPage() {
     <Container size="xl" fluid className="kanban-board">
       <Group justify="space-between" align="center" mb="md">
         <Title>Kanban Board</Title>
-        <Button leftSection={<IconPlus size={14} />} onClick={handleAddTask}>
-          Add Task
-        </Button>
       </Group>
 
       <Box mb="xl">

@@ -23,10 +23,12 @@ import {
   IconFlag
 } from '@tabler/icons-react';
 import { useApp } from '@/context/AppContext';
+import { useTheme } from '@/context/ThemeContext';
 import { Task, TaskPriority } from '@/types/task';
 
 export function GlobalSearch() {
   const { searchTasks, getTaskById, tasks } = useApp();
+  const { getPriorityColor } = useTheme();
   const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);
   const [query, setQuery] = useState('');
@@ -141,15 +143,11 @@ export function GlobalSearch() {
     setResults([]);
   };
   
-  // Priority color mapping
-  const getPriorityColor = (priority: TaskPriority) => {
-    const colors: Record<TaskPriority, string> = {
-      low: 'blue',
-      medium: 'yellow',
-      high: 'orange',
-      urgent: 'red'
-    };
-    return colors[priority];
+  // Function to map priority to Mantine color - uses centralized theming
+  const getManticColorFromPriority = (priority: TaskPriority) => {
+    return priority === 'low' ? 'blue' :
+           priority === 'medium' ? 'yellow' :
+           priority === 'high' ? 'orange' : 'red';
   };
   
   return (
@@ -223,7 +221,7 @@ export function GlobalSearch() {
                       </Group>
                     </Badge>
 
-                    <Badge size="xs" color={getPriorityColor(task.priority)}>
+                    <Badge size="xs" color={getManticColorFromPriority(task.priority)}>
                       <Group gap={4}>
                         <IconFlag size={10} />
                         <span>{task.priority}</span>

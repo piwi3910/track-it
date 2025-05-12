@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import './DashboardPage.css';
+// Using centralized theme system
 import {
   Container,
   Title,
@@ -66,9 +66,6 @@ export function DashboardPage() {
     <Container size="xl">
       <Group justify="space-between" align="center" mb="md">
         <Title>Dashboard</Title>
-        <Button leftSection={<IconPlus size={14} />} onClick={handleAddTask}>
-          Add Task
-        </Button>
       </Group>
 
       <Box mb="xl">

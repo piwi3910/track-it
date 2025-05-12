@@ -60,7 +60,7 @@ export function AppLayout() {
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{ width: 260, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      navbar={{ width: 200, breakpoint: 'sm', collapsed: { mobile: !opened } }}
       padding="md"
     >
       <AppShell.Header>
@@ -126,12 +126,12 @@ export function AppLayout() {
                   textDecoration: 'none',
                 }}
               >
-                <UnstyledButton style={{ width: '100%', padding: '8px 12px' }}>
+                <UnstyledButton className="nav-item-button">
                   <Group gap="xs">
-                    <ThemeIcon variant="light" size="sm">
+                    <ThemeIcon variant="light" size="sm" className="nav-icon">
                       {item.icon}
                     </ThemeIcon>
-                    <Text size="sm">{item.label}</Text>
+                    <Text className="nav-text">{item.label}</Text>
                   </Group>
                 </UnstyledButton>
               </NavLink>
@@ -148,12 +148,12 @@ export function AppLayout() {
               marginBottom: rem(8),
             }}
           >
-            <UnstyledButton style={{ width: '100%', padding: '8px 12px' }}>
+            <UnstyledButton className="nav-item-button">
               <Group gap="xs">
-                <ThemeIcon variant="light" size="sm">
+                <ThemeIcon variant="light" size="sm" className="nav-icon">
                   <IconSettings size={16} />
                 </ThemeIcon>
-                <Text size="sm">Settings</Text>
+                <Text className="nav-text">Settings</Text>
               </Group>
             </UnstyledButton>
           </NavLink>

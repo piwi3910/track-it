@@ -1,0 +1,22 @@
+/* 
+ * Main Theme Entry Point
+ * This file imports all theme-related styles
+ */
+
+/* 1. Core variables and settings */
+@import './variables.css';
+
+/* 2. Utility classes */
+@import './utils.css';
+
+/* 3. Global animations */
+@import './animations.css';
+
+/* 4. Component-specific styles */
+@import './components/TaskCard.css';
+@import './components/NavMenu.css';
+
+/* 5. Page-specific styles */
+@import './pages/DashboardPage.css';
+@import './pages/KanbanPage.css';
+@import './pages/TemplatesPage.css';

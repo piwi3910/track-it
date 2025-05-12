@@ -572,10 +572,13 @@ function DayCell({
             position: 'absolute',
             width: '320px',
             top: '-10px',
-            left: '100%',
+            // Check if day is close to the right edge (columns 5-6 in a 7-column grid)
+            ...(day.getDay() >= 5 ?
+              { right: '100%', marginRight: '10px' } : // Position to the left for days close to right edge
+              { left: '100%', marginLeft: '10px' }     // Position to the right for other days
+            ),
             zIndex: 999,
             backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
-            marginLeft: '10px',
             overflow: 'hidden'
           }}
           onClick={(e) => e.stopPropagation()}
@@ -1025,9 +1028,6 @@ export function CalendarPage() {
               <IconChevronRight size={18} />
             </ActionIcon>
           </Group>
-          <Button leftSection={<IconPlus size={14} />} onClick={handleAddTask}>
-            Add Task
-          </Button>
         </Group>
       </Group>
 

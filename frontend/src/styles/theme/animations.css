@@ -1,0 +1,49 @@
+/* 
+ * Global Animations
+ * These animations can be used throughout the application
+ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(30deg); }
+  100% { transform: translateX(100%) rotate(30deg); }
+}
+
+/* Animation utility classes */
+.fade-in {
+  animation: fadeIn var(--transition-speed-normal) ease forwards;
+}
+
+.slide-up {
+  animation: slideUp var(--transition-speed-normal) ease forwards;
+}
+
+/* Add delay variants */
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.2s;
+}
+
+.delay-3 {
+  animation-delay: 0.3s;
+}
+
+.delay-4 {
+  animation-delay: 0.4s;
+}
+
+.delay-5 {
+  animation-delay: 0.5s;
+}

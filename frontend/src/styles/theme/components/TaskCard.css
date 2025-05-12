@@ -1,0 +1,174 @@
+/* 
+ * TaskCard Component Styling
+ */
+
+.task-card-content {
+  position: relative;
+  z-index: 10;
+}
+
+.task-card-clickable-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  cursor: pointer;
+}
+
+/* Make sure all interactive elements are above the overlay */
+.mantine-Popover-dropdown {
+  z-index: 20 !important;
+}
+
+.mantine-Menu-dropdown {
+  z-index: 20 !important;
+}
+
+.mantine-ActionIcon-root {
+  z-index: 20 !important;
+}
+
+.mantine-Badge-root {
+  z-index: 15 !important;
+}
+
+/* Make task cards more compact in kanban view */
+.kanban-board .mantine-Card-root {
+  padding: var(--spacing-xs) var(--spacing-xs) !important;
+  margin: 0 !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.kanban-board .mantine-Text-root {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.kanban-board .mantine-Group-root {
+  margin-top: var(--spacing-xs) !important;
+  padding: 0 !important;
+}
+
+/* Make secondary text smaller in task cards */
+.kanban-board .task-card-secondary-text {
+  font-size: var(--font-size-xs) !important;
+  line-height: var(--line-height-tight) !important;
+}
+
+/* Keep title text the same size but make other text smaller */
+.mantine-Card-root .mantine-Text-root:not(.mantine-Group-label):not(.task-card-title) {
+  font-size: var(--font-size-xs) !important;
+}
+
+/* Badge sizing */
+.mantine-Card-root .mantine-Badge-root:not(.task-id-badge) {
+  font-size: var(--font-size-xs) !important;
+  height: 15px !important;
+  padding: 0 5px !important;
+}
+
+/* Task ID badge sizing - circular shape */
+.task-id-badge {
+  font-size: 0.45rem !important;
+  height: 16px !important;
+  width: auto !important;
+  min-width: 16px !important;
+  max-width: none !important;
+  border-radius: var(--radius-round) !important;
+  padding: 0 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  font-weight: var(--font-weight-bold) !important;
+  overflow: visible !important;
+  letter-spacing: -0.5px !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Make menus clickable even when the card is clickable */
+.kanban-board .mantine-Menu-target {
+  position: relative;
+  z-index: 25 !important;
+}
+
+/* Hover effect for task ID */
+.task-id-badge {
+  transition: all var(--transition-speed-fast) ease-in-out !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.task-id-badge:hover {
+  background-color: var(--color-badge-background) !important;
+  transform: scale(1.1) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Subtle shine effect on hover */
+.task-id-badge::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  opacity: 0;
+  transition: opacity var(--transition-speed-normal) ease;
+  pointer-events: none;
+}
+
+.task-id-badge:hover::after {
+  opacity: 1;
+  animation: shine 1s ease-in-out;
+}
+
+/* Special styling for blocked tasks */
+.kanban-board [data-blocked="true"] {
+  box-shadow: 0 1px 5px var(--color-status-blocked, rgba(220, 53, 69, 0.3)) !important;
+  position: relative !important;
+}
+
+.kanban-board [data-blocked="true"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--color-status-blocked);
+  z-index: 15;
+}
+
+.kanban-board [data-blocked="true"] .mantine-Text-root {
+  color: var(--color-status-blocked);
+}
+
+/* Special styling for completed tasks */
+.kanban-board [data-done="true"] {
+  position: relative !important;
+}
+
+.kanban-board [data-done="true"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--color-status-done);
+  z-index: 15;
+}
+
+.kanban-board [data-done="true"] .mantine-Text-root {
+  color: var(--color-status-done);
+}

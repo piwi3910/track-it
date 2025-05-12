@@ -1,17 +1,21 @@
+/* 
+ * DashboardPage Specific Styling 
+ */
+
 .hover-card {
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--transition-speed-fast) ease, box-shadow var(--transition-speed-fast) ease;
 }
 
 .hover-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-hover);
 }
 
-/* Styling for dashboard stat card numbers only - using specific class */
+/* Styling for dashboard stat card numbers */
 .dashboard-stat-card .stat-card-value {
-  line-height: 1 !important;
-  font-size: 6rem !important; /* MASSIVE text - made even bigger */
+  line-height: var(--line-height-tight) !important;
+  font-size: var(--font-size-statistic) !important; /* MASSIVE text using theme variable */
   display: block !important;
   margin: 0 !important;
   text-align: center !important;
@@ -20,12 +24,10 @@
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
   width: 100% !important;
-  font-weight: 900 !important;
+  font-weight: var(--font-weight-heavy) !important;
   overflow: visible !important;
   white-space: nowrap !important;
 }
-
-/* Card color variations - removed gradients */
 
 /* Ring progress customization */
 .dashboard-completion-card .mantine-RingProgress-root {
@@ -35,5 +37,5 @@
 
 .dashboard-completion-card .stat-card-value {
   z-index: 2;
-  font-size: 5rem !important; /* Slightly smaller for the percentage but still large */
+  font-size: calc(var(--font-size-statistic) * 0.83) !important; /* Slightly smaller for the percentage */
 }

@@ -13,6 +13,7 @@ import {
   Select,
   Stack,
   Paper,
+  Box,
 } from '@mantine/core';
 import {
   IconPlus,
@@ -26,6 +27,7 @@ import {
   IconArrowRight
 } from '@tabler/icons-react';
 import TaskModal from '@/components/TaskModal';
+import QuickAddTask from '@/components/QuickAddTask';
 import type { Task, TaskPriority } from '@/types/task';
 
 // Mock data for demonstration
@@ -167,13 +169,14 @@ export function BacklogPage() {
   
   return (
     <Container size="xl">
-      <Group justify="space-between" align="center" mb="xl">
+      <Group justify="space-between" align="center" mb="md">
         <Title>Backlog</Title>
-        <Button leftSection={<IconPlus size={14} />} onClick={handleAddTask}>
-          Add Task
-        </Button>
       </Group>
-      
+
+      <Box mb="xl">
+        <QuickAddTask defaultStatus="backlog" onTaskAdded={() => console.log('Task added from quick add')} />
+      </Box>
+
       <Paper withBorder p="md" mb="xl">
         <Group mb="md">
           <TextInput

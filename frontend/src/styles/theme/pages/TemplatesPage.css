@@ -1,0 +1,75 @@
+/* 
+ * TemplatesPage Specific Styling 
+ */
+
+/* Template card styling to exactly match task cards */
+.template-card-title {
+  font-size: var(--font-size-md) !important;
+  font-weight: var(--font-weight-medium) !important;
+  line-height: var(--line-height-tight) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  color: inherit !important;
+  flex: 1 !important;
+  position: absolute !important;
+  top: 3px !important;
+  left: 10px !important;
+  z-index: 10 !important;
+}
+
+/* Style the template card to match task cards */
+.template-card {
+  transition: transform var(--transition-speed-fast) ease,
+              box-shadow var(--transition-speed-fast) ease;
+  border-width: 1px !important;
+  border-left-width: 4px !important; /* Match TaskCard's 4px left border */
+  padding: var(--spacing-xs) var(--spacing-xs) !important; /* Match TaskCard's padding */
+  box-shadow: var(--shadow-sm) !important;
+  margin: 0 !important;
+}
+
+.template-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Make template cards have consistent spacing matching task cards */
+.template-card .mantine-Text-root {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.template-card .mantine-Group-root {
+  margin-top: var(--spacing-xs) !important;
+  padding: 0 !important;
+}
+
+/* Make secondary text smaller in template cards (matching task cards) */
+.template-card .mantine-Text-root:not(.template-card-title):not(.mantine-Group-label) {
+  font-size: var(--font-size-xs) !important;
+  line-height: var(--line-height-tight) !important;
+}
+
+/* Badge sizing to match task cards */
+.template-card .mantine-Badge-root {
+  font-size: var(--font-size-xs) !important;
+  height: 15px !important;
+  padding: 0 5px !important;
+}
+
+/* Make sure interactive elements have proper z-indices */
+.template-card .mantine-ActionIcon-root {
+  z-index: 20 !important;
+}
+
+.template-card .mantine-Menu-dropdown {
+  z-index: 20 !important;
+}
+
+/* Add task-card-secondary-text class for templates */
+.task-card-secondary-text {
+  font-size: var(--font-size-xs) !important;
+  line-height: var(--line-height-tight) !important;
+  opacity: 0.8 !important;
+}

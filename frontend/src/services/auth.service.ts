@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { api } from '@/api';
 
 /**
@@ -44,13 +43,23 @@ export const authService = {
    * @returns A promise with the login response
    */
   async login(email: string, password: string) {
-    const response = await api.auth.login(email, password);
-    
-    if (response.data?.token) {
-      this.setToken(response.data.token);
+    try {
+      // Use the tRPC API login mutation
+      const response = await api.auth.login.mutate({ email, password });
+      
+      if (response && response.token) {
+        this.setToken(response.token);
+        return { data: response, error: null };
+      }
+      
+      return { data: null, error: 'Login failed' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error.message : 'Authentication failed' 
+      };
     }
-    
-    return response;
   },
   
   /**
@@ -71,6 +80,17 @@ export const authService = {
       return { data: null, error: 'Not authenticated' };
     }
     
-    return api.auth.getCurrentUser();
+    try {
+      // Use the tRPC API getCurrentUser query
+      const response = await api.auth.getCurrentUser.query();
+      
+      return { data: response, error: null };
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error.message : 'Failed to get user data' 
+      };
+    }
   }
 };

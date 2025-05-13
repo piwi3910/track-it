@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { api, apiHandler } from '@/api/mockClient';
+import { api } from '@/api';
 import { GoogleCalendarEvent, GoogleDriveFile, Task } from '@/types/task';
 
 interface GoogleContextType {

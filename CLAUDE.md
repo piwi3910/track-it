@@ -236,8 +236,15 @@ The application follows a feature-based architecture:
    - Reference issue numbers in commits
    - Keep commits focused on single changes
    - Squash commits before merging
+   - All commits must be authored by Pascal Watteel (pascal@watteel.com)
+   - All commits should be GPG signed when possible
 
-3. **Pull Request Process**
+3. **Commit Authorship**
+   - Committer name must be "Pascal Watteel"
+   - Committer email must be "pascal@watteel.com"
+   - This ensures consistent attribution and traceability
+
+4. **Pull Request Process**
    - Create descriptive PR titles and descriptions
    - Add tests for new functionality
    - Address all review comments
@@ -262,6 +269,7 @@ The application follows a feature-based architecture:
 2. NEVER disable or revert tRPC implementation in favor of mock data without explicit user permission.
 3. Always maintain the established architecture and design patterns unless explicitly instructed otherwise.
 4. Do not attempt to modify React Query and tRPC versions independently - they must remain compatible.
+5. ALL git commits, pull requests, and merge requests MUST be authored by Pascal Watteel (pascal@watteel.com).
 
 ## Additional Resources
 

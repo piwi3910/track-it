@@ -41,7 +41,7 @@ import {
 import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
 import type { Task, TaskPriority, TaskRecurrence } from '@/types/task';
-import { api, apiHandler } from '@/api/mockClient';
+import { api } from '@/api';
 
 // Mock user data for assignments
 const availableUsers = {

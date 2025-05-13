@@ -29,6 +29,7 @@ import {
 } from '@tabler/icons-react';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { NotificationMenu } from '@/components/NotificationMenu';
+import { ApiStatus } from '@/components/ApiStatus';
 import { useApp } from '@/hooks/useApp';
 // Optional: Import from your context if you've implemented it
 // import { useAppContext } from '@/context/useAppContext';
@@ -75,6 +76,9 @@ export function AppLayout() {
 
           {/* Header actions */}
           <Group>
+            {/* API status indicator (only visible in dev or when there's an issue) */}
+            <ApiStatus />
+
             <ActionIcon
               variant="light"
               onClick={toggleColorScheme}

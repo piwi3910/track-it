@@ -7,10 +7,11 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AppProvider } from './context/AppContext';
 import { GoogleProvider } from './context/GoogleContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ApiProvider } from './context/ApiContext';
 import App from './App';
 
 // Import for query client configuration
-import { trpc, trpcClient, queryClient } from './utils/trpc';
+import { trpc, trpcClient, queryClient } from './utils/trpc-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 // Import all required styles
@@ -33,16 +34,18 @@ createRoot(document.getElementById('root')!).render(
         <ColorSchemeScript defaultColorScheme="light" />
         <MantineProvider theme={theme} defaultColorScheme="light">
           <ThemeProvider>
-            <AppProvider>
-              <GoogleProvider>
-                <NotificationProvider>
-                  <Notifications position="top-right" />
-                  <BrowserRouter>
-                    <App />
-                  </BrowserRouter>
-                </NotificationProvider>
-              </GoogleProvider>
-            </AppProvider>
+            <ApiProvider>
+              <AppProvider>
+                <GoogleProvider>
+                  <NotificationProvider>
+                    <Notifications position="top-right" />
+                    <BrowserRouter>
+                      <App />
+                    </BrowserRouter>
+                  </NotificationProvider>
+                </GoogleProvider>
+              </AppProvider>
+            </ApiProvider>
           </ThemeProvider>
         </MantineProvider>
       </trpc.Provider>

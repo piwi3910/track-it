@@ -62,8 +62,9 @@ export const trpcClient = trpc.createClient({
     // Use httpBatchLink for batching requests
     httpBatchLink({
       url: env.VITE_API_URL || 'http://localhost:3001/trpc',
-      // Disable batching since the server may not support batch requests correctly
-      maxURLLength: 0, // Disable batching
+      // Configuration to handle large inputs
+      maxURLLength: 2000, // Limit URL length for GET requests
+      batchMaxSize: 5, // Limit the number of operations in a batch
       // Add auth headers to all requests
       headers() {
         const token = getAuthToken();
@@ -94,8 +95,17 @@ export const apiHandler = async <T>(
     
     // Create a more robust error response
     if (error instanceof TRPCClientError) {
+      // Handle batch size or input too large errors
+      if (error.message.includes('Input is too big for a single dispatch') || 
+          error.message.includes('too big')) {
+        errorMessage = 'Request data is too large. Try with a smaller batch size.';
+        errorCode = 'INPUT_TOO_LARGE';
+        
+        // Retry with smaller batch size
+        console.info('Input too large error encountered, consider reducing batch size');
+      }
       // Handle transformation errors as connection issues
-      if (error.message.includes('transform') || 
+      else if (error.message.includes('transform') || 
           error.message.includes('Unable to transform response')) {
         errorMessage = 'Connection issue. The API response could not be processed.';
         errorCode = 'TRANSFORM_ERROR';

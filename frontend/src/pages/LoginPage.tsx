@@ -23,7 +23,10 @@ export default function LoginPage() {
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
+    console.log('LoginPage effect - currentUser:', currentUser, 'userLoading:', userLoading);
+    
     if (currentUser && !userLoading) {
+      console.log('Redirecting to dashboard after successful login');
       navigate('/dashboard');
     }
   }, [currentUser, userLoading, navigate]);

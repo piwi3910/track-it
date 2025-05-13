@@ -28,6 +28,11 @@ export const authService = {
    */
   setToken(token: string): void {
     localStorage.setItem('token', token);
+    
+    // Dispatch a custom event to notify listeners of authentication state change
+    window.dispatchEvent(new CustomEvent('auth_state_change', {
+      detail: { isAuthenticated: true }
+    }));
   },
   
   /**

@@ -86,11 +86,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        console.log('Fetching current user data...');
         const { data, error } = await authService.getCurrentUser();
         if (data && !error) {
+          console.log('User data fetched successfully:', data);
           setCurrentUser(data);
         } else {
           // If error, clear token and user
+          console.warn('Error fetching user data:', error);
           authService.clearToken();
           setCurrentUser(null);
         }
@@ -109,14 +112,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Listen for storage events (e.g. if token is updated in another tab)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'token') {
+        console.log('Token changed in storage, refreshing user data');
         fetchCurrentUser();
       }
     };
+    
+    // Listen for custom auth state change events
+    const handleAuthStateChange = () => {
+      console.log('Auth state change detected, refreshing user data');
+      fetchCurrentUser();
+    };
 
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('auth_state_change', handleAuthStateChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth_state_change', handleAuthStateChange);
     };
   }, []);
   

@@ -26,24 +26,30 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       // Check if it's a direct function or a tRPC procedure
       if (typeof api.notifications.getAll === 'function') {
         // Mock API style
-        const response = await api.notifications.getAll();
-        notifs = response.map(n => ({
-          id: n.id,
-          userId: 'user1', // Mock the current user
-          type: n.type || 'comment', // Use type if available or default
-          message: n.message,
-          createdAt: n.createdAt,
-          read: n.read,
-          relatedTaskId: n.relatedTaskId
-        }));
-      } else if (api.notifications.getAll && typeof api.notifications.getAll.query === 'function') {
-        // Real tRPC API style
-        const { data, error } = await api.notifications.getAll.query();
-        if (error) {
-          throw new Error(error.message);
+        const result = await api.notifications.getAll();
+        // Safely handle response - check if it's an array before using .map
+        if (result && Array.isArray(result)) {
+          notifs = result.map(n => ({
+            id: n.id,
+            userId: 'user1', // Mock the current user
+            type: n.type || 'comment', // Use type if available or default
+            message: n.message,
+            createdAt: n.createdAt,
+            read: n.read,
+            relatedTaskId: n.relatedTaskId
+          }));
+        } else {
+          console.warn('Notification response is not an array:', result);
         }
-        if (data) {
+      } else if (api.notifications.getAll) {
+        // Real tRPC API style using apiHandler pattern
+        const { data, error } = await api.notifications.getAll();
+        if (error) {
+          console.error('Notification API error:', error);
+        } else if (data && Array.isArray(data)) {
           notifs = data;
+        } else {
+          console.warn('Notification data is not an array:', data);
         }
       } else {
         console.error('Notifications API not available');
@@ -69,17 +75,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (typeof api.notifications.markAsRead === 'function') {
         // Mock API style
         await api.notifications.markAsRead(id);
-      } else if (api.notifications.markAsRead && typeof api.notifications.markAsRead.mutate === 'function') {
-        // Real tRPC API style
-        const { error } = await api.notifications.markAsRead.mutate(id);
+      } else if (api.notifications.markAsRead) {
+        // Real tRPC API style using apiHandler pattern
+        const { error } = await api.notifications.markAsRead(id);
         if (error) {
-          throw new Error(error.message);
+          console.error('Error marking notification as read:', error);
+          return; // Exit early on error
         }
       } else {
         console.error('markAsRead API not available');
+        return; // Exit early if API not available
       }
       
-      // Update local state
+      // Only update local state if API call was successful
       setNotifications(prev => 
         prev.map(notif => 
           notif.id === id ? { ...notif, read: true } : notif
@@ -101,17 +109,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           .map(n => api.notifications.markAsRead(n.id));
         
         await Promise.all(promises);
-      } else if (api.notifications.markAllAsRead && typeof api.notifications.markAllAsRead.mutate === 'function') {
+      } else if (api.notifications.markAllAsRead) {
         // Real tRPC API style - try to use bulk operation if available
-        const { error } = await api.notifications.markAllAsRead.mutate();
+        const { error } = await api.notifications.markAllAsRead();
         if (error) {
-          throw new Error(error.message);
+          console.error('Error marking all notifications as read:', error);
         }
-      } else if (api.notifications.markAsRead && typeof api.notifications.markAsRead.mutate === 'function') {
+      } else if (api.notifications.markAsRead) {
         // Real tRPC API style - fallback to individual operations
         const promises = notifications
           .filter(n => !n.read)
-          .map(n => api.notifications.markAsRead.mutate(n.id));
+          .map(n => api.notifications.markAsRead(n.id));
         
         await Promise.all(promises);
       } else {

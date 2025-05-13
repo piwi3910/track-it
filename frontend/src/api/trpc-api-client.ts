@@ -27,6 +27,27 @@ export const auth = {
     return result;
   },
   
+  // Login with Google Identity token
+  loginWithGoogle: async (idToken: string) => {
+    const result = await apiHandler(() => 
+      trpcClient.users.loginWithGoogle.mutate({ idToken })
+    );
+    
+    // If login successful, save token
+    if (result.data?.token) {
+      setAuthToken(result.data.token);
+    }
+    
+    return result;
+  },
+  
+  // Verify Google token
+  verifyGoogleToken: async (credential: string) => {
+    return apiHandler(() => 
+      trpcClient.users.verifyGoogleToken.mutate({ credential })
+    );
+  },
+  
   // Register a new user
   register: async (name: string, email: string, password: string) => {
     const result = await apiHandler(() => 

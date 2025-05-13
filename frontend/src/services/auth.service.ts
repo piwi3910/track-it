@@ -54,14 +54,14 @@ export const authService = {
    */
   async login(email: string, password: string) {
     try {
-      const response = await api.auth.login.mutate({ email, password });
+      const result = await api.auth.login(email, password);
       
-      if (response && response.token) {
-        this.setToken(response.token);
-        return { data: response, error: null };
+      if (result.data && result.data.token) {
+        this.setToken(result.data.token);
+        return { data: result.data, error: null };
       }
       
-      return { data: null, error: 'Login failed' };
+      return { data: null, error: result.error || 'Login failed' };
     } catch (error) {
       console.error('Login error:', error);
       return { 
@@ -78,14 +78,14 @@ export const authService = {
    */
   async loginWithGoogle(idToken: string) {
     try {
-      const response = await api.auth.loginWithGoogle.mutate({ idToken });
+      const result = await api.auth.loginWithGoogle(idToken);
       
-      if (response && response.token) {
-        this.setToken(response.token);
-        return { data: response, error: null };
+      if (result.data && result.data.token) {
+        this.setToken(result.data.token);
+        return { data: result.data, error: null };
       }
       
-      return { data: null, error: 'Google login failed' };
+      return { data: null, error: result.error || 'Google login failed' };
     } catch (error) {
       console.error('Google login error:', error);
       return { 
@@ -102,21 +102,21 @@ export const authService = {
    */
   async verifyGoogleToken(credential: string) {
     try {
-      const response = await api.auth.verifyGoogleToken.mutate({ credential });
+      const result = await api.auth.verifyGoogleToken(credential);
       
-      if (response && response.valid) {
+      if (result.data && result.data.valid) {
         return { 
           data: { 
             valid: true, 
-            email: response.email, 
-            name: response.name,
-            picture: response.picture
+            email: result.data.email, 
+            name: result.data.name,
+            picture: result.data.picture
           }, 
           error: null 
         };
       }
       
-      return { data: { valid: false }, error: 'Invalid Google token' };
+      return { data: { valid: false }, error: result.error || 'Invalid Google token' };
     } catch (error) {
       console.error('Google token verification error:', error);
       return { 
@@ -158,8 +158,8 @@ export const authService = {
     }
     
     try {
-      const response = await api.auth.getCurrentUser.query();
-      return { data: response, error: null };
+      const result = await api.auth.getCurrentUser();
+      return { data: result.data, error: result.error };
     } catch (error) {
       console.error('Error getting current user:', error);
       

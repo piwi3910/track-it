@@ -54,50 +54,11 @@ export const authService = {
    */
   async login(email: string, password: string) {
     try {
-      // For demo purposes, use hardcoded credentials check
-      if (email === 'demo@example.com' && password === 'password123') {
-        // Mock successful login
-        const demoUser = {
-          id: 'demo-user',
-          name: 'Demo User',
-          email: 'demo@example.com',
-          role: 'admin',
-          token: 'demo-token-' + Math.random().toString(36).substring(2)
-        };
-        
-        this.setToken(demoUser.token);
-        return { data: demoUser, error: null };
-      }
+      const response = await api.auth.login.mutate({ email, password });
       
-      // Try with API if we're not using demo credentials
-      try {
-        // First try the tRPC-style API
-        if (api.auth.login && typeof api.auth.login.mutate === 'function') {
-          const response = await api.auth.login.mutate({ email, password });
-          
-          if (response && response.token) {
-            this.setToken(response.token);
-            return { data: response, error: null };
-          }
-        } 
-        // Fall back to mock API style
-        else if (typeof api.auth.login === 'function') {
-          const response = await api.auth.login({ email, password });
-          
-          if (response && response.token) {
-            this.setToken(response.token);
-            return { data: response, error: null };
-          }
-        } else {
-          throw new Error('Login method not available');
-        }
-      } catch (apiError) {
-        console.warn('API login failed, but we have demo mode available:', apiError);
-        // If API login fails but credentials match demo, still allow login
-        if (email === 'demo@example.com' && password === 'password123') {
-          return this.login(email, password);
-        }
-        throw apiError;
+      if (response && response.token) {
+        this.setToken(response.token);
+        return { data: response, error: null };
       }
       
       return { data: null, error: 'Login failed' };
@@ -196,55 +157,8 @@ export const authService = {
       return { data: null, error: 'Not authenticated' };
     }
     
-    // Check if we have a demo token
-    const token = this.getToken();
-    if (token && token.startsWith('demo-token-')) {
-      // Return demo user data
-      return {
-        data: {
-          id: 'demo-user',
-          name: 'Demo User',
-          email: 'demo@example.com',
-          role: 'admin',
-          avatarUrl: 'https://ui-avatars.com/api/?name=Demo+User&background=random',
-          preferences: {
-            theme: 'light',
-            defaultView: 'dashboard'
-          }
-        },
-        error: null
-      };
-    }
-    
     try {
-      // Try both API styles
-      let response;
-      
-      try {
-        // First try tRPC style
-        if (api.auth.getCurrentUser && typeof api.auth.getCurrentUser.query === 'function') {
-          response = await api.auth.getCurrentUser.query();
-        } 
-        // Fall back to mock API style
-        else if (typeof api.auth.getCurrentUser === 'function') {
-          response = await api.auth.getCurrentUser();
-        } else {
-          throw new Error('getCurrentUser method not available');
-        }
-      } catch (apiError) {
-        console.warn('API getCurrentUser failed, falling back to demo mode if applicable:', apiError);
-        
-        // If this is a demo token that doesn't match the format we expect, let's still return the demo user
-        if (token && 
-            (token.includes('demo') || 
-             token === 'mock-token' || 
-             token.length < 20)) {
-          return this.getCurrentUser(); // Re-run to hit the demo user check
-        }
-        
-        throw apiError;
-      }
-      
+      const response = await api.auth.getCurrentUser.query();
       return { data: response, error: null };
     } catch (error) {
       console.error('Error getting current user:', error);

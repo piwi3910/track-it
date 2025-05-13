@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { api } from '@/api';
 
 /**
@@ -28,6 +27,11 @@ export const authService = {
    */
   setToken(token: string): void {
     localStorage.setItem('token', token);
+    
+    // Dispatch custom event for auth state change
+    window.dispatchEvent(new CustomEvent('auth_state_change', {
+      detail: { isAuthenticated: true }
+    }));
   },
   
   /**
@@ -35,6 +39,11 @@ export const authService = {
    */
   clearToken(): void {
     localStorage.removeItem('token');
+    
+    // Dispatch custom event for auth state change
+    window.dispatchEvent(new CustomEvent('auth_state_change', {
+      detail: { isAuthenticated: false }
+    }));
   },
   
   /**
@@ -45,19 +54,7 @@ export const authService = {
    */
   async login(email: string, password: string) {
     try {
-      // The mock API and real API handle this differently
-      // Handle both possibilities to make it robust
-      let response;
-      
-      if (typeof api.auth.login === 'function') {
-        // Mock API style
-        response = await api.auth.login({ email, password });
-      } else if (api.auth.login && typeof api.auth.login.mutate === 'function') {
-        // Real tRPC API style
-        response = await api.auth.login.mutate({ email, password });
-      } else {
-        throw new Error('Login method not available');
-      }
+      const response = await api.auth.login.mutate({ email, password });
       
       if (response && response.token) {
         this.setToken(response.token);
@@ -75,11 +72,79 @@ export const authService = {
   },
   
   /**
+   * Authenticate with Google Identity token
+   * @param idToken The Google Identity token
+   * @returns A promise with the login response
+   */
+  async loginWithGoogle(idToken: string) {
+    try {
+      const response = await api.auth.loginWithGoogle.mutate({ idToken });
+      
+      if (response && response.token) {
+        this.setToken(response.token);
+        return { data: response, error: null };
+      }
+      
+      return { data: null, error: 'Google login failed' };
+    } catch (error) {
+      console.error('Google login error:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error.message : 'Google authentication failed' 
+      };
+    }
+  },
+  
+  /**
+   * Verify Google token on the backend
+   * @param credential The Google credential
+   * @returns A promise with verification response
+   */
+  async verifyGoogleToken(credential: string) {
+    try {
+      const response = await api.auth.verifyGoogleToken.mutate({ credential });
+      
+      if (response && response.valid) {
+        return { 
+          data: { 
+            valid: true, 
+            email: response.email, 
+            name: response.name,
+            picture: response.picture
+          }, 
+          error: null 
+        };
+      }
+      
+      return { data: { valid: false }, error: 'Invalid Google token' };
+    } catch (error) {
+      console.error('Google token verification error:', error);
+      return { 
+        data: { valid: false }, 
+        error: error instanceof Error ? error.message : 'Token verification failed' 
+      };
+    }
+  },
+  
+  /**
    * Log the user out
    */
   logout(): void {
     this.clearToken();
-    // Additional cleanup if needed
+    
+    // If we have Google auth loaded, sign out from Google too
+    if (window.google?.accounts?.id) {
+      // This method only exists in newer versions of the Google Identity Services
+      try {
+        // @ts-ignore - This method might not exist in all versions
+        if (typeof window.google.accounts.id.revoke === 'function') {
+          window.google.accounts.id.revoke();
+        }
+        window.google.accounts.id.disableAutoSelect();
+      } catch (e) {
+        console.error('Error signing out from Google:', e);
+      }
+    }
   },
   
   /**
@@ -93,22 +158,20 @@ export const authService = {
     }
     
     try {
-      let response;
-      
-      // Handle both mock and real API patterns
-      if (typeof api.auth.getCurrentUser === 'function') {
-        // Mock API style
-        response = await api.auth.getCurrentUser();
-      } else if (api.auth.getCurrentUser && typeof api.auth.getCurrentUser.query === 'function') {
-        // Real tRPC API style 
-        response = await api.auth.getCurrentUser.query();
-      } else {
-        throw new Error('getCurrentUser method not available');
-      }
-      
+      const response = await api.auth.getCurrentUser.query();
       return { data: response, error: null };
     } catch (error) {
       console.error('Error getting current user:', error);
+      
+      // If the error is authentication related, clear the token
+      if (error instanceof Error && 
+          (error.message.includes('unauthorized') || 
+           error.message.includes('Unauthorized') || 
+           error.message.includes('token') || 
+           error.message.includes('session'))) {
+        this.clearToken();
+      }
+      
       return { 
         data: null, 
         error: error instanceof Error ? error.message : 'Failed to get user data' 

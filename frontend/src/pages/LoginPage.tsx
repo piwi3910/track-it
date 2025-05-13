@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -10,16 +10,18 @@ import {
   Divider,
   Stack,
   Image,
-  rem
+  rem,
+  Alert
 } from '@mantine/core';
-import { IconBrandGoogle } from '@tabler/icons-react';
+import { IconBrandGoogle, IconAlertCircle } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 export default function LoginPage() {
   const { currentUser, userLoading } = useApp();
-  const { login, loading, error } = useGoogleAuth();
+  const { login, renderButton, isGoogleLoaded, loading, error } = useGoogleAuth();
   const navigate = useNavigate();
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -28,9 +30,15 @@ export default function LoginPage() {
     }
   }, [currentUser, userLoading, navigate]);
 
+  // Initialize Google Sign-In button once Google Identity Services are loaded
+  useEffect(() => {
+    if (isGoogleLoaded && googleButtonRef.current) {
+      renderButton('google-signin-button');
+    }
+  }, [isGoogleLoaded, renderButton]);
+
   const handleGoogleLogin = async () => {
     await login();
-
     // The useEffect hook will handle redirection after successful login
     // when currentUser is updated
   };
@@ -53,12 +61,18 @@ export default function LoginPage() {
         </Text>
 
         {error && (
-          <Text c="red" ta="center" mb="md">
+          <Alert 
+            icon={<IconAlertCircle size="1rem" />} 
+            title="Authentication Error" 
+            color="red" 
+            mb="md"
+          >
             {error}
-          </Text>
+          </Alert>
         )}
 
-        <Stack mb="md">
+        <Stack mb="md" gap="md">
+          {/* Button that triggers Google One Tap dialog */}
           <Button
             leftSection={<IconBrandGoogle size="1rem" />}
             variant="default"
@@ -68,6 +82,23 @@ export default function LoginPage() {
           >
             Continue with Google Workspace
           </Button>
+          
+          {/* Container for Google Sign-In button */}
+          <div 
+            id="google-signin-button" 
+            ref={googleButtonRef}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              marginTop: '8px' 
+            }}
+          />
+
+          {!isGoogleLoaded && (
+            <Text size="sm" c="dimmed" ta="center">
+              Loading Google authentication...
+            </Text>
+          )}
         </Stack>
 
         <Divider label="Or" labelPosition="center" my="lg" />

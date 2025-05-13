@@ -41,11 +41,19 @@ export function useGoogleAuth(): UseGoogleAuthResult {
     try {
       // In a real app, you would use Google Identity Services to get the credential
       // For now, we'll simulate the login with our mock API
+      console.log('Attempting login with mock credentials');
       const { data, error } = await authService.login('john.doe@example.com', 'password123');
 
       if (error) {
         throw new Error(error);
       }
+      
+      // Check that we got a valid response with token
+      if (!data || !data.token) {
+        throw new Error('Invalid login response');
+      }
+      
+      console.log('Login successful');
     } catch (err) {
       console.error('Google login failed:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');

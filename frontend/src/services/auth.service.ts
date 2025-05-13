@@ -45,7 +45,19 @@ export const authService = {
    */
   async login(email: string, password: string) {
     try {
-      const response = await api.auth.login.mutate({ email, password });
+      // The mock API and real API handle this differently
+      // Handle both possibilities to make it robust
+      let response;
+      
+      if (typeof api.auth.login === 'function') {
+        // Mock API style
+        response = await api.auth.login({ email, password });
+      } else if (api.auth.login && typeof api.auth.login.mutate === 'function') {
+        // Real tRPC API style
+        response = await api.auth.login.mutate({ email, password });
+      } else {
+        throw new Error('Login method not available');
+      }
       
       if (response && response.token) {
         this.setToken(response.token);
@@ -81,7 +93,19 @@ export const authService = {
     }
     
     try {
-      const response = await api.auth.getCurrentUser.query();
+      let response;
+      
+      // Handle both mock and real API patterns
+      if (typeof api.auth.getCurrentUser === 'function') {
+        // Mock API style
+        response = await api.auth.getCurrentUser();
+      } else if (api.auth.getCurrentUser && typeof api.auth.getCurrentUser.query === 'function') {
+        // Real tRPC API style 
+        response = await api.auth.getCurrentUser.query();
+      } else {
+        throw new Error('getCurrentUser method not available');
+      }
+      
       return { data: response, error: null };
     } catch (error) {
       console.error('Error getting current user:', error);

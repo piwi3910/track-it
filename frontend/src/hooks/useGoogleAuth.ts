@@ -40,8 +40,8 @@ export function useGoogleAuth(): UseGoogleAuthResult {
 
     try {
       // In a real app, you would use Google Identity Services to get the credential
-      // For now, we'll simulate the login with our mock API
-      console.log('Attempting login with mock credentials');
+      // For now, we'll use a test account to simulate Google login
+      console.log('Attempting Google login with test credentials');
       const { data, error } = await authService.login('john.doe@example.com', 'password123');
 
       if (error) {

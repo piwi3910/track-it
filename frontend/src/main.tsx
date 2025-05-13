@@ -1,10 +1,10 @@
-// @ts-nocheck - Temporarily disable type checking in this file
+// Main entry point for the application
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider, createTheme, ColorSchemeScript } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { ThemeProvider, ApiProvider, AuthProvider, AppProvider } from './components/providers';
+import { ThemeProvider, ApiProvider, AuthProvider, AppProvider, NotificationProvider } from './components/providers';
 import App from './App';
 
 // Import for query client configuration
@@ -33,12 +33,14 @@ createRoot(document.getElementById('root')!).render(
           <ThemeProvider>
             <ApiProvider>
               <AuthProvider>
-                <AppProvider>
-                  <Notifications position="top-right" />
-                  <BrowserRouter>
-                    <App />
-                  </BrowserRouter>
-                </AppProvider>
+                <NotificationProvider>
+                  <AppProvider>
+                    <Notifications position="top-right" />
+                    <BrowserRouter>
+                      <App />
+                    </BrowserRouter>
+                  </AppProvider>
+                </NotificationProvider>
               </AuthProvider>
             </ApiProvider>
           </ThemeProvider>

@@ -1,10 +1,14 @@
 import { ReactNode, useEffect } from 'react';
 import { useMantineColorScheme } from '@mantine/core';
 import { useThemeStore, useSyncMantineTheme } from '@/stores/useThemeStore';
+import { ThemeProvider as ThemeContextProvider } from '@/context/ThemeContext';
 
 /**
  * Theme provider component that initializes Zustand theme store
  * and synchronizes with Mantine theme
+ * 
+ * Also includes the ThemeContext provider to ensure components using useTheme() have access
+ * to the ThemeContext
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Sync with Mantine theme (one-way sync to avoid loops)
@@ -30,5 +34,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
   }, [toggleColorScheme]);
   
-  return <>{children}</>;
+  return (
+    <ThemeContextProvider>
+      {children}
+    </ThemeContextProvider>
+  );
 }

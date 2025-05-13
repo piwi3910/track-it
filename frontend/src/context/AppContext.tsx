@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Task, User, TaskFilter, TaskTemplate } from '@track-it/shared';
 import { api } from '@/api';
+import { authService } from '@/services/auth.service';
 
 interface AppContextType {
   // User
@@ -51,7 +52,7 @@ interface AppContextType {
   getTemplateCategories: () => Promise<string[]>;
 }
 
-export const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType & { logout: () => void } | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   // User state
@@ -72,22 +73,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [filters, setFilters] = useState<TaskFilter>({});
   const [savedFilters, setSavedFilters] = useState<{ id: string; name: string; filter: TaskFilter }[]>([]);
   
-  // Fetch current user on mount
+  // Fetch current user on mount or when token changes
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const { data, error } = await api.auth.getCurrentUser();
+        // Use auth service to get current user
+        if (!authService.isAuthenticated()) {
+          setCurrentUser(null);
+          setUserLoading(false);
+          return;
+        }
+
+        const { data, error } = await authService.getCurrentUser();
         if (data && !error) {
           setCurrentUser(data);
+        } else {
+          // If error, clear token and user
+          authService.clearToken();
+          setCurrentUser(null);
         }
       } catch (error) {
         console.error('Failed to fetch current user:', error);
+        // Clear token on error
+        authService.clearToken();
+        setCurrentUser(null);
       } finally {
         setUserLoading(false);
       }
     };
 
     fetchCurrentUser();
+
+    // Listen for storage events (e.g. if token is updated in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token') {
+        fetchCurrentUser();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
   
   // Fetch all tasks
@@ -379,6 +407,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Logout function
+  const logout = useCallback(() => {
+    // Use auth service to logout
+    authService.logout();
+
+    // Clear user state
+    setCurrentUser(null);
+
+    // Clear other state if needed
+    setTasks([]);
+    setTemplates([]);
+    setSelectedTask(null);
+    setSelectedTemplate(null);
+
+    // Redirect to login (handled by protected route)
+  }, []);
+
   const value = {
     currentUser,
     userLoading,
@@ -410,7 +455,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     applySavedFilter,
     searchTasks,
     searchTemplates,
-    getTemplateCategories
+    getTemplateCategories,
+    logout
   };
   
   return (

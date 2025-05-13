@@ -13,10 +13,11 @@ export const trpcClient = trpc.createClient({
       url: import.meta.env.VITE_API_URL || 'http://localhost:3001/trpc',
       // Use httpLink instead of httpBatchLink to avoid batching which seems to be causing issues
       headers() {
+        const token = localStorage.getItem('token');
+
         return {
-          Authorization: localStorage.getItem('token')
-            ? `Bearer ${localStorage.getItem('token')}`
-            : '',
+          // Always include the token if available
+          Authorization: token ? `Bearer ${token}` : '',
           // Add custom header to help with CORS issues
           'X-From-Frontend': 'track-it-frontend',
         };

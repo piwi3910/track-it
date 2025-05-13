@@ -6,11 +6,32 @@ import { CalendarPage } from '@/pages/CalendarPage';
 import { BacklogPage } from '@/pages/BacklogPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
+import LoginPage from '@/pages/LoginPage';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useApp } from '@/hooks/useApp';
 
 function App() {
+  const { currentUser, userLoading } = useApp();
+
+  // While checking authentication status, show nothing
+  if (userLoading) {
+    return null;
+  }
+
   return (
     <Routes>
-      <Route path="/" element={<AppLayout />}>
+      {/* Public routes */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* Protected routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute isAuthenticated={!!currentUser}>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="kanban" element={<KanbanPage />} />
@@ -21,7 +42,6 @@ function App() {
         {/* Catch all for unknown routes */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
-      {/* You can add other top-level routes here if needed, e.g., for auth pages */}
     </Routes>
   );
 }

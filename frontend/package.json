@@ -8,7 +8,8 @@
     "build": "node --no-warnings --loader=ts-node/esm ./scripts/build.js",
     "build:check": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:login": "node ./scripts/test-login.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^16.5.0",

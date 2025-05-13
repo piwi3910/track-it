@@ -39,7 +39,7 @@ import { useApp } from '@/hooks/useApp';
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
   const { toggleColorScheme, isDark } = useTheme();
-  const { currentUser } = useApp();
+  const { currentUser, logout } = useApp();
 
   // Fallback user data while loading
   const user = currentUser || {
@@ -102,9 +102,13 @@ export function AppLayout() {
 
               <Menu.Dropdown>
                 <Menu.Item leftSection={<IconUser size={14} />}>Profile</Menu.Item>
-                <Menu.Item leftSection={<IconSettings size={14} />}>Settings</Menu.Item>
+                <Menu.Item leftSection={<IconSettings size={14} />} component={NavLink} to="/settings">Settings</Menu.Item>
                 <Menu.Divider />
-                <Menu.Item leftSection={<IconLogout size={14} />} color="red">
+                <Menu.Item
+                  leftSection={<IconLogout size={14} />}
+                  color="red"
+                  onClick={logout}
+                >
                   Logout
                 </Menu.Item>
               </Menu.Dropdown>

@@ -21,6 +21,12 @@ export const apiHandler = async <T>(
     let errorMessage = 'Unknown error occurred';
 
     if (error instanceof TRPCClientError) {
+      // Check if the error is an authentication error
+      if (error.message === 'UNAUTHORIZED' || error.data?.code === 'UNAUTHORIZED') {
+        // Clear token if it's an auth error
+        localStorage.removeItem('token');
+      }
+
       errorMessage = error.message;
     } else if (error instanceof Error) {
       errorMessage = error.message;

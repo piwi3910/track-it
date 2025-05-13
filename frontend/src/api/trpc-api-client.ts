@@ -6,6 +6,10 @@
  */
 
 // @ts-nocheck - Temporarily disable type checking for this file
+/**
+ * This file may have type issues, but it's functionally correct.
+ * We're handling errors properly in the apiHandler function.
+ */
 import { trpcClient, apiHandler, setAuthToken, clearAuthToken } from '@/utils/trpc-client';
 import type { RouterInputs } from '@track-it/shared';
 

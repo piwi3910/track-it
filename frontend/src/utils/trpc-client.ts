@@ -62,6 +62,8 @@ export const trpcClient = trpc.createClient({
     // Use httpBatchLink for batching requests
     httpBatchLink({
       url: env.VITE_API_URL || 'http://localhost:3001/trpc',
+      // Disable batching since the server may not support batch requests correctly
+      maxURLLength: 0, // Disable batching
       // Add auth headers to all requests
       headers() {
         const token = getAuthToken();
@@ -71,6 +73,7 @@ export const trpcClient = trpc.createClient({
           Authorization: token ? `Bearer ${token}` : '',
           // Add custom header for CORS and identification
           'X-From-Frontend': 'track-it-client',
+          'Content-Type': 'application/json',
         };
       },
     }),
@@ -87,23 +90,68 @@ export const apiHandler = async <T>(
   } catch (error) {
     console.error('API Error:', error);
     let errorMessage = 'Unknown error occurred';
-
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    // Create a more robust error response
     if (error instanceof TRPCClientError) {
-      // Check if the error is an authentication error
-      if (
-        error.message === 'UNAUTHORIZED' || 
-        error.data?.code === 'UNAUTHORIZED' ||
-        error.data?.httpStatus === 401
-      ) {
+      // Handle transformation errors as connection issues
+      if (error.message.includes('transform') || 
+          error.message.includes('Unable to transform response')) {
+        errorMessage = 'Connection issue. The API response could not be processed.';
+        errorCode = 'TRANSFORM_ERROR';
+      }
+      // Handle connection errors
+      else if (error.message.includes('fetch') ||
+               error.message.includes('Failed to fetch') ||
+               error.message.includes('network')) {
+        errorMessage = 'Cannot connect to the server. Please ensure the backend is running.';
+        errorCode = 'CONNECTION_ERROR';
+      }
+      // Handle authorization errors
+      else if (error.message === 'UNAUTHORIZED' || 
+               error.data?.code === 'UNAUTHORIZED' ||
+               error.data?.httpStatus === 401 ||
+               error.message.includes('unauthorized')) {
+        errorMessage = 'Authentication error. Please try logging in again.';
+        errorCode = 'AUTH_ERROR';
         // Clear token if it's an auth error
         clearAuthToken();
+        
+        // Dispatch auth error event for global handling
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth_error'));
+        }
       }
-
-      errorMessage = error.message;
+      // Handle not found errors
+      else if (error.message.includes('No procedure found') || 
+               error.data?.httpStatus === 404) {
+        errorMessage = `API endpoint not found: ${error.message}`;
+        errorCode = 'NOT_FOUND';
+      }
+      // Handle other tRPC errors
+      else {
+        errorMessage = error.message;
+        errorCode = error.data?.code || 'TRPC_ERROR';
+      }
     } else if (error instanceof Error) {
       errorMessage = error.message;
+      errorCode = 'JS_ERROR';
     }
-
-    return { data: null, error: errorMessage };
+    
+    // Log detailed error for debugging
+    console.error(`API Error (${errorCode}):`, errorMessage);
+    
+    // For connection issues, try to use mock data when possible
+    if (errorCode === 'CONNECTION_ERROR' || errorCode === 'TRANSFORM_ERROR') {
+      // Try to switch to mock mode automatically for better user experience
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('api_connection_error'));
+      }
+    }
+    
+    return { 
+      data: null, 
+      error: errorMessage 
+    };
   }
 };

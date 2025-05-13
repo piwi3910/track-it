@@ -1,5 +1,14 @@
+import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc/trpc';
 import { Task } from '@track-it/shared';
+
+// Mock Google Account Status
+interface GoogleAccountStatus {
+  connected: boolean;
+  email?: string;
+  lastSyncTime?: string;
+  scopes?: string[];
+}
 
 // Google integration router with endpoints
 export const googleIntegrationRouter = router({
@@ -64,5 +73,47 @@ export const googleIntegrationRouter = router({
         { id: 'gdoc2', name: 'Meeting Notes.docs', url: 'https://example.com/gdoc2' },
         { id: 'gsheet1', name: 'Budget.sheets', url: 'https://example.com/gsheet1' },
       ];
+    }),
+    
+  // Get Google account status
+  getGoogleAccountStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      // In a real implementation, this would check if the user has connected their Google account
+      // and retrieve their Google profile information
+      
+      // Mock status - randomly connected or not for testing purposes
+      const isConnected = true; // Math.random() > 0.5;
+      
+      const status: GoogleAccountStatus = {
+        connected: isConnected,
+        email: isConnected ? 'user@example.com' : undefined,
+        lastSyncTime: isConnected ? new Date().toISOString() : undefined,
+        scopes: isConnected ? ['calendar', 'drive', 'tasks'] : undefined,
+      };
+      
+      return status;
+    }),
+    
+  // Link Google account
+  linkGoogleAccount: protectedProcedure
+    .input(z.object({ authCode: z.string() }).strict())
+    .mutation(async ({ input }) => {
+      // In a real implementation, this would exchange the auth code for tokens
+      // and store them in the database
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API call
+      
+      return {
+        success: true,
+        email: 'user@example.com'
+      };
+    }),
+    
+  // Unlink Google account
+  unlinkGoogleAccount: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      // In a real implementation, this would remove the tokens from the database
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      
+      return { success: true };
     })
 });

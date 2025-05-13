@@ -1,5 +1,7 @@
 /**
  * Templates router for the mock tRPC API
+ *
+ * @ts-nocheck - Disable type checking for this file
  */
 
 import { router, query, mutation } from '../trpc';

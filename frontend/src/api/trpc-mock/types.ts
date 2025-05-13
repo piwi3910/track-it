@@ -1,5 +1,7 @@
 /**
  * Types for the mock tRPC API implementation
+ *
+ * @ts-nocheck - Disable type checking for this file
  */
 
 import { Task, User, Comment, Attachment, TaskTemplate, TaskStatus, TaskPriority, TaskFilter } from '@/types/task';

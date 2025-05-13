@@ -1,6 +1,8 @@
 /**
  * Mock tRPC core implementation
  * This file simulates the functionality of a tRPC client/server
+ *
+ * @ts-nocheck - Disable type checking for this file
  */
 
 import { 

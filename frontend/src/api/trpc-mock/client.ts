@@ -10,6 +10,26 @@ import type { AppRouter } from './types';
 // Create the mock tRPC client
 export const api = createTRPCProxyClient<AppRouter>(appRouter);
 
+// Export main API modules to match the structure of the real API client
+export const users = api.users;
+export const tasks = api.tasks;
+export const templates = api.templates;
+export const comments = api.comments;
+export const attachments = api.attachments;
+export const googleIntegration = api.googleIntegration;
+export const notifications = api.notifications;
+export const analytics = api.analytics;
+export const cacheAdmin = api.cacheAdmin;
+export const cachedTasks = api.cachedTasks;
+export const auth = {
+  login: users.login,
+  register: users.register,
+  getCurrentUser: users.getCurrentUser,
+  updateProfile: users.updateProfile,
+  logout: () => null,
+  isAuthenticated: () => true
+};
+
 /**
  * Error handling wrapper for API calls
  * This provides a consistent way to handle errors from API calls

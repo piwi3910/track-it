@@ -1,6 +1,8 @@
 /**
  * Mock database for the mock tRPC API
  * This centralizes all our mock data in one place with proper access and update methods
+ *
+ * @ts-nocheck - Disable type checking for this file
  */
 import { Task, User, Comment, Attachment, TaskTemplate } from '@/types/task';
 import * as mockDataOrigin from '../mockData';

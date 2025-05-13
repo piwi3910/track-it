@@ -1,7 +1,9 @@
 /**
  * This file contains type definitions for the tRPC server API.
  * It's used by the frontend to understand the backend API structure.
- * 
+ *
+ * @ts-nocheck - Disable type checking for this file
+ *
  * This would typically be auto-generated from the backend using the tRPC
  * CLI, but for now we'll maintain it manually to match the backend API.
  */

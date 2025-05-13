@@ -8,6 +8,11 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "typescript": "^5.2.2"
-  }
+    "@trpc/server": "^11.1.2",
+    "typescript": "^5.8.3",
+    "zod": "^3.24.4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

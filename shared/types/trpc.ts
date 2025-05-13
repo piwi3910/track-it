@@ -2,8 +2,32 @@
  * This file contains the types for the tRPC router.
  * It's shared between the frontend and backend to ensure type safety.
  */
-import { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
-import { z } from 'zod';
+
+// We'll use our own simplified version of inferRouterInputs and inferRouterOutputs
+// Define the simplified types
+type inferRouterInputs<TRouter extends Record<string, any>> = {
+  [TKey in keyof TRouter]: TRouter[TKey] extends Record<string, any>
+    ? {
+        [TProcedure in keyof TRouter[TKey]]:
+          TRouter[TKey][TProcedure] extends { _def: { input: [infer TInput] } }
+            ? TInput
+            : never
+      }
+    : never
+};
+
+type inferRouterOutputs<TRouter extends Record<string, any>> = {
+  [TKey in keyof TRouter]: TRouter[TKey] extends Record<string, any>
+    ? {
+        [TProcedure in keyof TRouter[TKey]]:
+          TRouter[TKey][TProcedure] extends { _def: { query: () => infer TOutput } }
+            ? TOutput
+            : TRouter[TKey][TProcedure] extends { _def: { mutation: () => infer TOutput } }
+              ? TOutput
+              : never
+      }
+    : never
+};
 
 /**
  * Define the base router structure that will be imported by the frontend.
@@ -1199,3 +1223,115 @@ export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 // Helper type to get input types
 export type RouterInputs = inferRouterInputs<AppRouter>;
+
+// Re-export types
+export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'in_review' | 'done';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type UserRole = 'admin' | 'member' | 'guest';
+
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  weight?: number;
+  tags?: string[];
+  dueDate?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  isMultiDay?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  assigneeId?: string | null;
+  reporterId?: string | null;
+  estimatedHours?: number;
+  actualHours?: number;
+  timeTrackingActive?: boolean;
+  trackingTimeSeconds?: number;
+  subtasks?: Subtask[];
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  role?: UserRole;
+}
+
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  priority: TaskPriority;
+  tags?: string[];
+  estimatedHours?: number;
+  subtasks?: Subtask[];
+  category?: string;
+  createdAt: string;
+  createdBy?: string;
+  isPublic?: boolean;
+  usageCount?: number;
+}
+
+export interface Comment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  text: string;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface Attachment {
+  id: string;
+  taskId: string;
+  name: string;
+  fileType: string;
+  size: number;
+  url: string;
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  token: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  passwordConfirm: string;
+}
+
+export interface RegisterResponse {
+  id: string;
+  name: string;
+  email: string;
+}

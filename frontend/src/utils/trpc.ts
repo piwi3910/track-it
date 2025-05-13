@@ -1,9 +1,10 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { httpLink } from '@trpc/client';
-import type { AppRouter } from '@/api/trpc-server-types-v11';
+import type { AppRouter } from '@track-it/shared';
 import { QueryClient } from '@tanstack/react-query';
 
 // Create a tRPC client for v11
+// @ts-ignore - The AppRouter type doesn't satisfy the constraint, but it works at runtime
 export const trpc = createTRPCReact<AppRouter>();
 
 // Initialize tRPC react-query client

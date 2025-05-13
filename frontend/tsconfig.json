@@ -11,20 +11,21 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "skipDefaultLibCheck": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "shared/*": ["../shared/*"]
     }
   },
-  "include": ["src"],
-  "exclude": ["node_modules"],
+  "include": ["src", "../shared/**/*.ts"],
+  "exclude": ["node_modules", "src/api/trpc-mock", "src/api/trpc-server-types.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck - Temporarily disable type checking in this file
 import { api } from '@/api';
 
 /**

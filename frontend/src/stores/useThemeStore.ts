@@ -379,15 +379,14 @@ export function useSyncMantineTheme() {
   useEffect(() => {
     // When store initializes, set theme based on Mantine
     setColorScheme(colorScheme);
-    
+
     // Also update when Mantine's colorScheme changes (like from system preference)
-    const unsubscribe = useThemeStore.subscribe(
-      (state) => state.colorScheme,
-      (newColorScheme) => {
-        if (newColorScheme !== colorScheme) {
-          setMantineColorScheme(newColorScheme);
-        }
+    const unsubscribe = useThemeStore.subscribe((state) => {
+      const newColorScheme = state.colorScheme;
+      if (newColorScheme !== colorScheme) {
+        setMantineColorScheme(newColorScheme as MantineColorScheme);
       }
+    }
     );
     
     return unsubscribe;

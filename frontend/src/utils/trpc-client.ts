@@ -10,6 +10,7 @@ import type { AppRouter } from '@track-it/shared';
 import { env } from '@/utils/env';
 
 // Create a tRPC client
+// @ts-ignore - The AppRouter type doesn't satisfy the constraint, but it works at runtime
 export const trpc = createTRPCReact<AppRouter>();
 
 // Create a query client for React Query

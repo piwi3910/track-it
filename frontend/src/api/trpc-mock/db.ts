@@ -117,7 +117,33 @@ export const db = {
   users: {
     findAll: () => db.userData,
     findById: (id: string) => db.userData.find(user => user.id === id) || null,
+    findByEmail: (email: string) => db.userData.find(user => user.email === email) || null,
     getCurrentUser: () => db.userData[0], // Assume first user is current user
+    create: (userData: Partial<User>) => {
+      const newUser = {
+        id: `user-${Date.now()}`,
+        email: userData.email || `user${Date.now()}@example.com`,
+        name: userData.name || 'New User',
+        role: userData.role || 'MEMBER',
+        createdAt: new Date().toISOString(),
+        avatarUrl: userData.avatarUrl || null
+      };
+      db.userData.push(newUser);
+      return newUser;
+    },
+    update: (id: string, data: Partial<User>) => {
+      const index = db.userData.findIndex(user => user.id === id);
+      if (index === -1) throw new Error(`User with id ${id} not found`);
+
+      const updatedUser = {
+        ...db.userData[index],
+        ...data,
+        updatedAt: new Date().toISOString()
+      };
+
+      db.userData[index] = updatedUser;
+      return updatedUser;
+    }
   },
   
   comments: {

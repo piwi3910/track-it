@@ -22,13 +22,13 @@ import {
   IconHash,
   IconFlag
 } from '@tabler/icons-react';
-import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/context/ThemeContext';
-import { Task, TaskPriority } from '@/types/task';
+import { useStore } from '@/hooks/useStore';
+import { Task, TaskStatus } from '@/types/task';
 
 export function GlobalSearch() {
-  const { searchTasks, getTaskById, tasks } = useApp();
-  const { getPriorityColor } = useTheme();
+  const { theme, tasks: tasksStore } = useStore();
+  const { getPriorityColor, getStatusColor } = theme;
+  const { all: tasks, getById: getTaskById } = tasksStore;
   const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);
   const [query, setQuery] = useState('');
@@ -47,7 +47,13 @@ export function GlobalSearch() {
   useEffect(() => {
     const savedSearches = localStorage.getItem('recentSearches');
     if (savedSearches) {
-      setRecentSearches(JSON.parse(savedSearches));
+      try {
+        const parsedSearches = JSON.parse(savedSearches);
+        setRecentSearches(Array.isArray(parsedSearches) ? parsedSearches : []);
+      } catch (error) {
+        console.error('Error parsing saved searches:', error);
+        setRecentSearches([]);
+      }
     }
   }, []);
   
@@ -81,7 +87,7 @@ export function GlobalSearch() {
           // Try to find by exact ID first
           const task = await getTaskById(searchQuery);
           if (task) {
-            setResults([task]);
+            setResults([task as Task]);
             setLoading(false);
             return;
           }
@@ -96,26 +102,27 @@ export function GlobalSearch() {
         );
 
         if (partialIdMatches.length > 0) {
-          setResults(partialIdMatches);
+          setResults(partialIdMatches as Task[]);
           setLoading(false);
           return;
         }
       }
 
-      // Fall back to regular search
-      const searchResults = await searchTasks(searchQuery);
-      if (Array.isArray(searchResults)) {
-        setResults(searchResults);
-      } else {
-        setResults([]);
-      }
+      // Fall back to regular search on fields
+      const searchResults = tasks.filter(task => 
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (task.tags && task.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+      );
+      
+      setResults(searchResults as Task[]);
     } catch (error) {
       console.error('Search failed:', error);
       setResults([]);
     } finally {
       setLoading(false);
     }
-  }, [searchTasks, getTaskById, tasks]);
+  }, [getTaskById, tasks]);
   
   // Debounce search
   useEffect(() => {
@@ -226,17 +233,28 @@ export function GlobalSearch() {
                       </Group>
                     </Badge>
 
-                    <Badge size="xs" color="blue">
+                    <Badge 
+                      size="xs" 
+                      color={getPriorityColor(task.priority)}
+                    >
                       <Group gap={4}>
                         <IconFlag size={10} />
-                        <span>{task.priority}</span>
+                        <span>{task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>
                       </Group>
                     </Badge>
 
-                    <Badge size="xs" variant="outline">
+                    <Badge 
+                      size="xs" 
+                      variant="outline"
+                      color={getStatusColor(task.status)}
+                    >
                       <Group gap={4}>
                         <IconHash size={10} />
-                        <span>{task.status.replace(/_/g, ' ')}</span>
+                        <span>{task.status.includes('_') 
+                          ? task.status.split('_').map(word => 
+                              word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+                          : task.status.charAt(0).toUpperCase() + task.status.slice(1)
+                        }</span>
                       </Group>
                     </Badge>
 

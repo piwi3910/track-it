@@ -3,11 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider, createTheme, ColorSchemeScript } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { ThemeProvider } from './context/ThemeContext';
-import { AppProvider } from './context/AppContext';
-import { GoogleProvider } from './context/GoogleContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { ApiProvider } from './context/ApiContext';
+import { ThemeProvider, ApiProvider, AuthProvider } from './components/providers';
 import App from './App';
 
 // Import for query client configuration
@@ -35,16 +31,12 @@ createRoot(document.getElementById('root')!).render(
         <MantineProvider theme={theme} defaultColorScheme="light">
           <ThemeProvider>
             <ApiProvider>
-              <AppProvider>
-                <GoogleProvider>
-                  <NotificationProvider>
-                    <Notifications position="top-right" />
-                    <BrowserRouter>
-                      <App />
-                    </BrowserRouter>
-                  </NotificationProvider>
-                </GoogleProvider>
-              </AppProvider>
+              <AuthProvider>
+                <Notifications position="top-right" />
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
+              </AuthProvider>
             </ApiProvider>
           </ThemeProvider>
         </MantineProvider>

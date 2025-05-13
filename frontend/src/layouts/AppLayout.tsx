@@ -13,7 +13,6 @@ import {
   ActionIcon,
   rem
 } from '@mantine/core';
-import { useTheme } from '@/context/ThemeContext';
 import { useDisclosure } from '@mantine/hooks';
 import {
   IconDashboard,
@@ -30,7 +29,7 @@ import {
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { NotificationMenu } from '@/components/NotificationMenu';
 import { ApiStatus } from '@/components/ApiStatus';
-import { useApp } from '@/hooks/useApp';
+import { useStore } from '@/hooks/useStore';
 // Optional: Import from your context if you've implemented it
 // import { useAppContext } from '@/context/useAppContext';
 
@@ -39,11 +38,10 @@ import { useApp } from '@/hooks/useApp';
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
-  const { toggleColorScheme, isDark } = useTheme();
-  const { currentUser, logout } = useApp();
+  const { theme, auth } = useStore();
 
   // Fallback user data while loading
-  const user = currentUser || {
+  const user = auth.user || {
     name: 'John Doe',
     email: 'john.doe@example.com',
     avatarUrl: 'https://i.pravatar.cc/150?u=john-doe'
@@ -81,10 +79,10 @@ export function AppLayout() {
 
             <ActionIcon
               variant="light"
-              onClick={toggleColorScheme}
-              title={isDark ? 'Light mode' : 'Dark mode'}
+              onClick={theme.toggleColorScheme}
+              title={theme.isDark ? 'Light mode' : 'Dark mode'}
             >
-              {isDark ? <IconSun size={18} /> : <IconMoon size={18} />}
+              {theme.isDark ? <IconSun size={18} /> : <IconMoon size={18} />}
             </ActionIcon>
 
             {/* Notification menu */}
@@ -111,7 +109,7 @@ export function AppLayout() {
                 <Menu.Item
                   leftSection={<IconLogout size={14} />}
                   color="red"
-                  onClick={logout}
+                  onClick={auth.logout}
                 >
                   Logout
                 </Menu.Item>

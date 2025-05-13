@@ -175,14 +175,21 @@ The application follows a feature-based architecture:
    - Address all warning and error messages
    - Use import sorting to maintain organization
 
-2. **Testing**
+2. **Import Path Standards**
+   - Use consistent relative paths from each file
+   - Prefer path aliases (e.g., '@/generated/*') for clarity
+   - Maintain clear documentation for import paths
+   - Verify import paths work across different module resolution modes
+   - Provide examples of correct import paths in code documentation
+
+3. **Testing**
    - Write unit tests for utilities and hooks
    - Implement component tests for UI logic
    - Use mock service worker for API testing
    - Maintain high test coverage for critical paths
    - Run tests before committing code
 
-3. **Documentation**
+4. **Documentation**
    - Document complex logic with clear comments
    - Use JSDoc for public APIs and functions
    - Keep README and other documentation up to date

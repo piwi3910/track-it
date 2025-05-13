@@ -1,0 +1,54 @@
+name: Verify Commit Signatures
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Verify commit signatures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Verify commit signatures
+        uses: mattdavis0351/verify-signed-commits@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          # Optionally check for specific email addresses
+          # expected-committer-email: pascal@watteel.com
+          
+      - name: Verify commit authorship
+        run: |
+          # Get all commits in this PR/push
+          COMMIT_RANGE="${{ github.event.before }}...${{ github.event.after }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            COMMIT_RANGE="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          fi
+          
+          # Check each commit's author
+          INVALID_COMMITS=0
+          for COMMIT in $(git log --pretty=format:"%H" $COMMIT_RANGE); do
+            AUTHOR_EMAIL=$(git show -s --format='%ae' $COMMIT)
+            AUTHOR_NAME=$(git show -s --format='%an' $COMMIT)
+            
+            # Verify author is Pascal Watteel with correct email
+            if [[ "$AUTHOR_EMAIL" != "pascal@watteel.com" || "$AUTHOR_NAME" != "Pascal Watteel" ]]; then
+              echo "❌ Commit $COMMIT has invalid authorship: $AUTHOR_NAME <$AUTHOR_EMAIL>"
+              INVALID_COMMITS=$((INVALID_COMMITS+1))
+            else
+              echo "✅ Commit $COMMIT has valid authorship: $AUTHOR_NAME <$AUTHOR_EMAIL>"
+            fi
+          done
+          
+          # Fail if any commits have invalid authorship
+          if [[ $INVALID_COMMITS -gt 0 ]]; then
+            echo "Error: Found $INVALID_COMMITS commits with invalid authorship"
+            echo "All commits must be authored by Pascal Watteel <pascal@watteel.com>"
+            exit 1
+          fi

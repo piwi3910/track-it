@@ -7,6 +7,7 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import { createContext } from './trpc/context';
 import { appRouter } from './trpc/router';
+import { RedisClient } from './cache/redis';
 
 // Export type definition of API
 export type AppRouter = typeof appRouter;
@@ -66,3 +67,25 @@ async function setupServer(): Promise<void> {
 }
 
 setupServer();
+
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+
+  try {
+    // Close fastify server
+    await server.close();
+    logger.info('Server closed');
+
+    // Disconnect from Redis
+    await RedisClient.disconnect();
+    logger.info('Redis disconnected');
+
+    // Add any other cleanup here
+
+    process.exit(0);
+  } catch (err) {
+    logger.error('Error during graceful shutdown:', err);
+    process.exit(1);
+  }
+});

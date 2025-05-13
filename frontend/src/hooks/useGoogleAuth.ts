@@ -54,6 +54,15 @@ export function useGoogleAuth(): UseGoogleAuthResult {
       }
       
       console.log('Login successful');
+      
+      // Force a refresh of the current user
+      // This will trigger the useEffect in AppContext to fetch the current user
+      // which will then update the currentUser state and trigger the redirect
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'token',
+        newValue: data.token
+      }));
+      
     } catch (err) {
       console.error('Google login failed:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');

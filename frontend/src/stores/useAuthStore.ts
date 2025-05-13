@@ -186,4 +186,18 @@ if (typeof window !== 'undefined') {
   setTimeout(() => {
     useAuthStore.getState().loadUser();
   }, 0);
+  
+  // Listen for auth state change events
+  window.addEventListener('auth_state_change', () => {
+    console.log('Auth store detected auth_state_change event');
+    useAuthStore.getState().loadUser();
+  });
+  
+  // Listen for token changes in localStorage
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'token') {
+      console.log('Auth store detected token change in storage');
+      useAuthStore.getState().loadUser();
+    }
+  });
 }

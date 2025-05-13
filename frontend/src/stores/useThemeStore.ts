@@ -137,6 +137,16 @@ export const useThemeStore = create<ThemeState>()(
         const currentMode = get().colorScheme;
         const newMode = currentMode === 'dark' ? 'light' : 'dark';
         get().setColorScheme(newMode);
+        
+        // Also manually update Mantine - this is one-way from our store to Mantine
+        const mantine = document.querySelector('html');
+        if (mantine) {
+          if (newMode === 'dark') {
+            mantine.setAttribute('data-mantine-color-scheme', 'dark');
+          } else {
+            mantine.setAttribute('data-mantine-color-scheme', 'light');
+          }
+        }
       },
       
       // Initial colors (light theme)
@@ -370,25 +380,27 @@ export const useThemeStore = create<ThemeState>()(
 
 /**
  * Hook to synchronize Mantine's color scheme with our theme store
+ * But prevent infinite loops by using refs and sync flags
  */
 export function useSyncMantineTheme() {
   const { setColorScheme } = useThemeStore();
   const { colorScheme, setColorScheme: setMantineColorScheme } = useMantineColorScheme();
   
-  // Set up two-way synchronization
+  // Use a single direction sync to prevent loops
   useEffect(() => {
-    // When store initializes, set theme based on Mantine
-    setColorScheme(colorScheme);
-
-    // Also update when Mantine's colorScheme changes (like from system preference)
-    const unsubscribe = useThemeStore.subscribe((state) => {
-      const newColorScheme = state.colorScheme;
-      if (newColorScheme !== colorScheme) {
-        setMantineColorScheme(newColorScheme as MantineColorScheme);
-      }
+    // Only sync from Mantine to our store on initial load
+    // This allows our store to be the source of truth after initialization
+    const storedTheme = localStorage.getItem('track-it-theme');
+    if (!storedTheme) {
+      // Only set if we don't have a stored preference already
+      setColorScheme(colorScheme);
     }
-    );
-    
-    return unsubscribe;
-  }, [colorScheme, setColorScheme, setMantineColorScheme]);
+  }, []); // Empty dependency array to run only once on mount
+  
+  // Expose a manual sync function if needed elsewhere
+  return {
+    syncThemeToMantine: (scheme: MantineColorScheme) => {
+      setMantineColorScheme(scheme);
+    }
+  };
 }

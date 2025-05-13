@@ -38,7 +38,7 @@ import {
   IconCopy
 } from '@tabler/icons-react';
 import { TaskChat } from './TaskChat';
-import { api } from '@/api/mockClient';
+import { api } from '@/api';
 import { useApp } from '@/hooks/useApp';
 import type { Task, TaskStatus, TaskPriority, Subtask, RecurrencePattern, TaskRecurrence } from '@/types/task';
 

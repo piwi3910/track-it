@@ -84,6 +84,17 @@ docker-compose up -d
 - PostgreSQL: 5436
 - Redis: 6381
 
+## Contributing
+
+All contributions to this project must adhere to our contribution guidelines, including the requirement for GPG signed commits. Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for details on the process and requirements.
+
+### Commit Signing Requirements
+
+This project enforces GPG commit signing for all contributions:
+- All commits must be GPG signed by Pascal Watteel (pascal@watteel.com)
+- Unsigned commits or commits signed by other parties will not be accepted
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions
+
 ## License
 
 [MIT](LICENSE)

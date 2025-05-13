@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
 import { TaskService } from '../db/services/task.service';
-import { TaskStatus, TaskPriority } from '../../generated/prisma';
+import { TaskStatus, TaskPriority } from '../generated/prisma';
 import { createCachedProcedures } from '../cache/cache-procedures';
 import { CacheService } from '../cache';
 
@@ -98,7 +98,6 @@ export const cachedTasksRouter = router({
   // Cached procedure that requires authentication
   getById: protectedProcedure
     .input(z.object({ id: z.string().uuid() }).strict())
-    .use(cachedItemProcedure.middleware)
     .query(async ({ input }) => {
       const task = await TaskService.findById(input.id);
       
@@ -115,7 +114,6 @@ export const cachedTasksRouter = router({
   // Cached procedure for getting tasks by status
   getByStatus: protectedProcedure
     .input(z.object({ status: z.nativeEnum(TaskStatus) }).strict())
-    .use(cachedListProcedure.middleware)
     .query(async ({ input }) => {
       return TaskService.findByStatus(input.status);
     }),
@@ -123,7 +121,6 @@ export const cachedTasksRouter = router({
   // Cached procedure for getting tasks assigned to a user
   getByAssignee: protectedProcedure
     .input(z.object({ assigneeId: z.string().uuid() }).strict())
-    .use(cachedListProcedure.middleware)
     .query(async ({ input }) => {
       return TaskService.findByAssignee(input.assigneeId);
     }),
@@ -131,7 +128,6 @@ export const cachedTasksRouter = router({
   // Cached procedure for search
   search: protectedProcedure
     .input(z.object({ query: z.string().min(1) }).strict())
-    .use(cachedSearchProcedure.middleware)
     .query(async ({ input }) => {
       return TaskService.search(input.query);
     }),
@@ -139,7 +135,6 @@ export const cachedTasksRouter = router({
   // Mutation procedure with cache invalidation (create)
   create: protectedProcedure
     .input(taskCreateSchema)
-    .use(cachedMutationProcedure.middleware)
     .mutation(async ({ input }) => {
       const task = await TaskService.create(input);
       // Manual cache invalidation for lists that include this task
@@ -150,7 +145,6 @@ export const cachedTasksRouter = router({
   // Mutation procedure with cache invalidation (update)
   update: protectedProcedure
     .input(taskUpdateSchema)
-    .use(cachedMutationProcedure.middleware)
     .mutation(async ({ input }) => {
       const task = await TaskService.update(input.id, input.data);
       
@@ -164,7 +158,6 @@ export const cachedTasksRouter = router({
   // Mutation procedure with cache invalidation (delete)
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }).strict())
-    .use(cachedMutationProcedure.middleware)
     .mutation(async ({ input }) => {
       const task = await TaskService.delete(input.id);
       
@@ -181,7 +174,6 @@ export const cachedTasksRouter = router({
       id: z.string().uuid(),
       status: z.nativeEnum(TaskStatus)
     }).strict())
-    .use(cachedMutationProcedure.middleware)
     .mutation(async ({ input }) => {
       const task = await TaskService.updateStatus(input.id, input.status);
       
@@ -198,7 +190,6 @@ export const cachedTasksRouter = router({
       id: z.string().uuid(),
       assigneeId: z.string().uuid().nullable()
     }).strict())
-    .use(cachedMutationProcedure.middleware)
     .mutation(async ({ input }) => {
       const task = await TaskService.updateAssignee(input.id, input.assigneeId);
       

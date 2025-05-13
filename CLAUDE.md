@@ -175,14 +175,21 @@ The application follows a feature-based architecture:
    - Address all warning and error messages
    - Use import sorting to maintain organization
 
-2. **Testing**
+2. **Import Path Standards**
+   - Use consistent relative paths from each file
+   - Prefer path aliases (e.g., '@/generated/*') for clarity
+   - Maintain clear documentation for import paths
+   - Verify import paths work across different module resolution modes
+   - Provide examples of correct import paths in code documentation
+
+3. **Testing**
    - Write unit tests for utilities and hooks
    - Implement component tests for UI logic
    - Use mock service worker for API testing
    - Maintain high test coverage for critical paths
    - Run tests before committing code
 
-3. **Documentation**
+4. **Documentation**
    - Document complex logic with clear comments
    - Use JSDoc for public APIs and functions
    - Keep README and other documentation up to date
@@ -237,12 +244,13 @@ The application follows a feature-based architecture:
    - Keep commits focused on single changes
    - Squash commits before merging
    - All commits must be authored by Pascal Watteel (pascal@watteel.com)
-   - All commits should be GPG signed when possible
+   - **ALL commits MUST be GPG signed** - unsigned commits will be rejected
 
-3. **Commit Authorship**
+3. **Commit Authorship and Signing**
    - Committer name must be "Pascal Watteel"
    - Committer email must be "pascal@watteel.com"
-   - This ensures consistent attribution and traceability
+   - All commits must be GPG signed with Pascal's verified key
+   - This ensures security, authenticity, and consistent attribution
 
 4. **Pull Request Process**
    - Create descriptive PR titles and descriptions
@@ -270,6 +278,8 @@ The application follows a feature-based architecture:
 3. Always maintain the established architecture and design patterns unless explicitly instructed otherwise.
 4. Do not attempt to modify React Query and tRPC versions independently - they must remain compatible.
 5. ALL git commits, pull requests, and merge requests MUST be authored by Pascal Watteel (pascal@watteel.com).
+6. ALL commits MUST be GPG signed - any unsigned commits will be rejected.
+7. When creating PRs, remind the user that all commits must be GPG signed.
 
 ## Additional Resources
 
@@ -278,3 +288,9 @@ The application follows a feature-based architecture:
 - [TanStack Query Documentation](https://tanstack.com/query/latest/docs/react/overview)
 - [Fastify Documentation](https://www.fastify.io/docs/latest/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+
+## Workflow Reminders
+- Always look in the GitHub issues to see what tasks are pending
+- Close GitHub issues when tasks are completed
+- Always create a merge request/pull request for changes
+- Ensure all changes are merged correctly before moving to the next task

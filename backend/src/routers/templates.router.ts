@@ -1,14 +1,8 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import {
-  TaskTemplate,
-  TemplateByIdInput,
-  TemplateByCategoryInput,
-  TemplateCreateInput,
-  TemplateUpdateInput,
-  TemplateDeleteInput,
-  TemplateSearchInput
+import type {
+  TaskTemplate
 } from '@track-it/shared';
 
 // Mock templates database
@@ -18,27 +12,27 @@ const mockTemplates: TaskTemplate[] = [];
 export const templatesRouter = router({
   // Get all templates (public endpoint - available without auth)
   getAll: publicProcedure
-    .query(() => {
+    .query((): TaskTemplate[] => {
       return mockTemplates;
     }),
     
   // Get template by ID
   getById: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .query(({ input }) => {
+    .query(({ input }): TaskTemplate | null => {
       return mockTemplates.find(template => template.id === input.id) || null;
     }),
     
   // Get templates by category
   getByCategory: protectedProcedure
     .input(z.object({ category: z.string() }).strict())
-    .query(({ input }) => {
+    .query(({ input }): TaskTemplate[] => {
       return mockTemplates.filter(template => template.category === input.category);
     }),
     
   // Get all template categories
   getCategories: protectedProcedure
-    .query(() => {
+    .query((): string[] => {
       return Array.from(new Set(mockTemplates.map(template => template.category || 'General')));
     }),
     
@@ -53,19 +47,30 @@ export const templatesRouter = router({
       subtasks: z.array(
         z.object({
           title: z.string(),
-          completed: z.boolean().default(false)
+          completed: z.boolean()
         })
       ).optional(),
       category: z.string().optional(),
       isPublic: z.boolean().default(true)
     }).strict())
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }): TaskTemplate => {
       const newTemplate: TaskTemplate = {
         id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date().toISOString(),
         createdBy: ctx.user?.id,
         usageCount: 0,
-        ...input
+        name: input.name,
+        description: input.description,
+        priority: input.priority,
+        tags: input.tags,
+        estimatedHours: input.estimatedHours,
+        category: input.category,
+        isPublic: input.isPublic,
+        subtasks: input.subtasks ? input.subtasks.map((subtask, index) => ({
+          id: `subtask-${Date.now()}-${index}`,
+          title: subtask.title,
+          completed: subtask.completed
+        })) : undefined
       };
       
       mockTemplates.push(newTemplate);
@@ -93,7 +98,7 @@ export const templatesRouter = router({
         isPublic: z.boolean().optional()
       })
     }).strict())
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }): TaskTemplate => {
       const templateIndex = mockTemplates.findIndex(template => template.id === input.id);
       
       if (templateIndex === -1) {
@@ -125,7 +130,7 @@ export const templatesRouter = router({
   // Delete a template
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }): { success: boolean } => {
       const templateIndex = mockTemplates.findIndex(template => template.id === input.id);
       
       if (templateIndex === -1) {
@@ -151,7 +156,7 @@ export const templatesRouter = router({
   // Search templates
   search: protectedProcedure
     .input(z.object({ query: z.string() }).strict())
-    .query(({ input }) => {
+    .query(({ input }): TaskTemplate[] => {
       const lowercaseQuery = input.query.toLowerCase();
       return mockTemplates.filter(
         template =>

@@ -1,21 +1,24 @@
-import { createTRPCReact, httpBatchLink } from '@trpc/react-query';
-import type { AppRouter } from '@/api/trpc-server-types';
+import { createTRPCReact } from '@trpc/react-query';
+import { httpLink } from '@trpc/client';
+import type { AppRouter } from '@/api/trpc-server-types-v11';
 import { QueryClient } from '@tanstack/react-query';
 
-// Create a tRPC client
+// Create a tRPC client for v11
 export const trpc = createTRPCReact<AppRouter>();
 
 // Initialize tRPC react-query client
 export const trpcClient = trpc.createClient({
   links: [
-    httpBatchLink({
+    httpLink({
       url: import.meta.env.VITE_API_URL || 'http://localhost:3001/trpc',
-      // Optional: configure request headers
+      // Use httpLink instead of httpBatchLink to avoid batching which seems to be causing issues
       headers() {
         return {
           Authorization: localStorage.getItem('token')
             ? `Bearer ${localStorage.getItem('token')}`
             : '',
+          // Add custom header to help with CORS issues
+          'X-From-Frontend': 'track-it-frontend',
         };
       },
     }),

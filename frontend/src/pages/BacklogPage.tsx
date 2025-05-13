@@ -204,39 +204,39 @@ export function BacklogPage() {
           <Menu position="bottom-end">
             <Menu.Target>
               <Button variant="outline" leftSection={
-                sortDirection === 'asc' 
-                  ? <IconSortAscending size={16} /> 
+                sortDirection === 'asc'
+                  ? <IconSortAscending size={16} />
                   : <IconSortDescending size={16} />
               }>
                 Sort By
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item 
+              <Menu.Item
                 onClick={() => { setSortBy('title'); toggleSortDirection(); }}
                 rightSection={sortBy === 'title' ? (
-                  sortDirection === 'asc' 
-                    ? <IconSortAscending size={14} /> 
+                  sortDirection === 'asc'
+                    ? <IconSortAscending size={14} />
                     : <IconSortDescending size={14} />
                 ) : null}
               >
                 Title
               </Menu.Item>
-              <Menu.Item 
+              <Menu.Item
                 onClick={() => { setSortBy('priority'); toggleSortDirection(); }}
                 rightSection={sortBy === 'priority' ? (
-                  sortDirection === 'asc' 
-                    ? <IconSortAscending size={14} /> 
+                  sortDirection === 'asc'
+                    ? <IconSortAscending size={14} />
                     : <IconSortDescending size={14} />
                 ) : null}
               >
                 Priority
               </Menu.Item>
-              <Menu.Item 
+              <Menu.Item
                 onClick={() => { setSortBy('dueDate'); toggleSortDirection(); }}
                 rightSection={sortBy === 'dueDate' ? (
-                  sortDirection === 'asc' 
-                    ? <IconSortAscending size={14} /> 
+                  sortDirection === 'asc'
+                    ? <IconSortAscending size={14} />
                     : <IconSortDescending size={14} />
                 ) : null}
               >

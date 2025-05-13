@@ -375,7 +375,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               <IconDotsVertical size={16} />
             </ActionIcon>
           </Menu.Target>
-            <Menu.Dropdown>
+          <Menu.Dropdown>
             {onEdit && (
               <Menu.Item
                 leftSection={<IconPencil size={14} />}

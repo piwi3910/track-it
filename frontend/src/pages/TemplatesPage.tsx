@@ -408,7 +408,7 @@ export function TemplatesPage() {
       </div>
       
       <Paper p="md" withBorder mb="xl">
-        <Group spacing="md">
+        <Group gap="md">
           <TextInput
             placeholder="Search templates..."
             value={searchQuery}
@@ -443,7 +443,7 @@ export function TemplatesPage() {
             onChange={setSelectedCategory}
             style={{ minWidth: 200 }}
             clearable
-            icon={<IconFilter size={16} />}
+            leftSection={<IconFilter size={16} />}
           />
         </Group>
       </Paper>
@@ -470,13 +470,9 @@ export function TemplatesPage() {
           </Tabs.List>
           
           <Tabs.Panel value="all">
-            <SimpleGrid 
-              cols={3} 
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'md', cols: 2, spacing: 'sm' },
-                { maxWidth: 'sm', cols: 1, spacing: 'sm' },
-              ]}
+            <SimpleGrid
+              cols={{ base: 1, sm: 2, md: 3 }}
+              gap="md"
             >
               {filteredTemplates.map((template) => (
                 <TemplateCard
@@ -491,13 +487,9 @@ export function TemplatesPage() {
           </Tabs.Panel>
           
           <Tabs.Panel value="my">
-            <SimpleGrid 
-              cols={3} 
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'md', cols: 2, spacing: 'sm' },
-                { maxWidth: 'sm', cols: 1, spacing: 'sm' },
-              ]}
+            <SimpleGrid
+              cols={{ base: 1, sm: 2, md: 3 }}
+              gap="md"
             >
               {filteredTemplates
                 .filter(template => template.createdBy === 'user1') // Filter for current user
@@ -514,13 +506,9 @@ export function TemplatesPage() {
           </Tabs.Panel>
           
           <Tabs.Panel value="popular">
-            <SimpleGrid 
-              cols={3} 
-              spacing="md"
-              breakpoints={[
-                { maxWidth: 'md', cols: 2, spacing: 'sm' },
-                { maxWidth: 'sm', cols: 1, spacing: 'sm' },
-              ]}
+            <SimpleGrid
+              cols={{ base: 1, sm: 2, md: 3 }}
+              gap="md"
             >
               {filteredTemplates
                 .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
@@ -593,7 +581,7 @@ export function TemplatesPage() {
             onChange={(value) => setFormData({ ...formData, tags: value })}
           />
           
-          <Group position="right" mt="md">
+          <Group justify="flex-end" mt="md">
             <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmitTemplateForm}>Save Template</Button>
           </Group>
@@ -615,7 +603,7 @@ export function TemplatesPage() {
             required
           />
           
-          <Group position="right" mt="md">
+          <Group justify="flex-end" mt="md">
             <Button variant="outline" onClick={() => setIsUseModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmitUseTemplateForm}>Create Task</Button>
           </Group>

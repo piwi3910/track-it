@@ -1,25 +1,13 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure } from '../trpc/trpc';
-import {
-  Task,
-  TaskPriority,
-  TaskStatus,
-  Subtask,
-  TaskByIdInput,
-  TasksByStatusInput,
-  TaskCreateInput,
-  TaskUpdateInput,
-  TaskDeleteInput,
-  TaskSearchInput
+import type {
+  Task
 } from '@track-it/shared';
 
 // Mock database for now - will be replaced with a real DB
 const mockTasks: Task[] = []; 
 
 // Input validation schemas
-const taskIdSchema = z.object({
-  id: z.string()
-});
 
 const taskCreateSchema = z.object({
   title: z.string().min(1).max(100),
@@ -33,10 +21,10 @@ const taskCreateSchema = z.object({
   subtasks: z.array(
     z.object({
       title: z.string(),
-      completed: z.boolean().default(false)
+      completed: z.boolean()
     })
   ).optional()
-}) satisfies z.ZodType<TaskCreateInput>;
+});
 
 const taskUpdateSchema = z.object({
   id: z.string(),
@@ -60,31 +48,31 @@ const taskUpdateSchema = z.object({
     timeTrackingActive: z.boolean().optional(),
     trackingTimeSeconds: z.number().optional()
   })
-}) satisfies z.ZodType<TaskUpdateInput>;
+});
 
 // Tasks router with endpoints
 export const tasksRouter = router({
   // Public procedure - no authentication required
-  getAll: publicProcedure.query(() => {
+  getAll: publicProcedure.query((): Task[] => {
     return mockTasks;
   }),
 
   // Protected procedure - requires authentication
   getById: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .query(({ input }) => {
+    .query(({ input }): Task | null => {
       return mockTasks.find(task => task.id === input.id) || null;
     }),
 
   getByStatus: protectedProcedure
     .input(z.object({ status: z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'in_review', 'done'] as const) }).strict())
-    .query(({ input }) => {
+    .query(({ input }): Task[] => {
       return mockTasks.filter(task => task.status === input.status);
     }),
 
   create: protectedProcedure
     .input(taskCreateSchema)
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }): Task => {
       const newTask: Task = {
         id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         ...input,
@@ -103,7 +91,7 @@ export const tasksRouter = router({
 
   update: protectedProcedure
     .input(taskUpdateSchema)
-    .mutation(({ input }) => {
+    .mutation(({ input }): Task => {
       const taskIndex = mockTasks.findIndex(task => task.id === input.id);
       if (taskIndex === -1) {
         throw new Error('Task not found');
@@ -121,7 +109,7 @@ export const tasksRouter = router({
 
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .mutation(({ input }) => {
+    .mutation(({ input }): { success: boolean } => {
       const taskIndex = mockTasks.findIndex(task => task.id === input.id);
       if (taskIndex !== -1) {
         mockTasks.splice(taskIndex, 1);
@@ -131,7 +119,7 @@ export const tasksRouter = router({
 
   search: protectedProcedure
     .input(z.object({ query: z.string() }).strict())
-    .query(({ input }) => {
+    .query(({ input }): Task[] => {
       const lowercaseQuery = input.query.toLowerCase();
       return mockTasks.filter(
         task =>
@@ -148,7 +136,20 @@ export const tasksRouter = router({
       templateName: z.string().min(1),
       isPublic: z.boolean().default(true)
     }).strict())
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }): {
+      id: string;
+      name: string;
+      description?: string;
+      priority: string;
+      tags?: string[];
+      estimatedHours?: number;
+      subtasks?: { id: string; title: string; completed: boolean }[];
+      category: string;
+      createdAt: string;
+      createdBy?: string;
+      isPublic: boolean;
+      usageCount: number;
+    } => {
       const task = mockTasks.find(t => t.id === input.taskId);
       if (!task) {
         throw new Error('Task not found');

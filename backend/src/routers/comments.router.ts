@@ -1,13 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import {
-  Comment,
-  CommentsByTaskIdInput,
-  CommentCountByTaskIdInput,
-  CommentCreateInput,
-  CommentUpdateInput,
-  CommentDeleteInput
+import type {
+  Comment
 } from '@track-it/shared';
 
 // Mock comments database

@@ -1,11 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import {
-  Attachment,
-  AttachmentsByTaskIdInput,
-  AttachmentUploadInput,
-  AttachmentDeleteInput
+import type {
+  Attachment
 } from '@track-it/shared';
 
 // Mock attachments database
@@ -16,7 +13,7 @@ export const attachmentsRouter = router({
   // Get attachments by task ID
   getByTaskId: protectedProcedure
     .input(z.object({ taskId: z.string() }).strict())
-    .query(({ input }) => {
+    .query(({ input }): Attachment[] => {
       return mockAttachments.filter(attachment => attachment.taskId === input.taskId);
     }),
     
@@ -30,7 +27,7 @@ export const attachmentsRouter = router({
         size: z.number().positive()
       })
     }).strict())
-    .mutation(({ input }) => {
+    .mutation(({ input }): Attachment => {
       // In a real implementation, the file would be uploaded to a storage service
       // and the URL would be returned
       const timestamp = new Date().toISOString();
@@ -55,7 +52,7 @@ export const attachmentsRouter = router({
   // Delete an attachment
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .mutation(({ input }) => {
+    .mutation(({ input }): { success: boolean } => {
       const attachmentIndex = mockAttachments.findIndex(attachment => attachment.id === input.id);
       
       if (attachmentIndex === -1) {

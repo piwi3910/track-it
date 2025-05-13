@@ -7,48 +7,48 @@ import * as mockDataOrigin from '../mockData';
 
 // Create a mutable copy of the mock data
 export const db = {
-  tasks: [...mockDataOrigin.mockTasks] as Task[],
-  users: [...mockDataOrigin.mockUsers] as User[],
-  comments: [...mockDataOrigin.mockComments] as Comment[],
-  attachments: [...mockDataOrigin.mockAttachments] as Attachment[],
-  templates: [...mockDataOrigin.mockTemplates] as TaskTemplate[],
+  taskData: [...mockDataOrigin.mockTasks] as Task[],
+  userData: [...mockDataOrigin.mockUsers] as User[],
+  commentData: [...mockDataOrigin.mockComments] as Comment[],
+  attachmentData: [...mockDataOrigin.mockAttachments] as Attachment[],
+  templateData: [...mockDataOrigin.mockTemplates] as TaskTemplate[],
 
   // Data access methods - similar to ORM methods
   tasks: {
-    findAll: () => db.tasks,
-    findById: (id: string) => db.tasks.find(task => task.id === id) || null,
-    findByStatus: (status: string) => db.tasks.filter(task => task.status === status),
+    findAll: () => db.taskData,
+    findById: (id: string) => db.taskData.find(task => task.id === id) || null,
+    findByStatus: (status: string) => db.taskData.filter(task => task.status === status),
     create: (task: Omit<Task, 'id'>) => {
       const newTask: Task = {
         id: `task-${Date.now()}`,
         createdAt: new Date().toISOString(),
         ...task
       };
-      db.tasks.push(newTask);
+      db.taskData.push(newTask);
       return newTask;
     },
     update: (id: string, data: Partial<Task>) => {
-      const index = db.tasks.findIndex(task => task.id === id);
+      const index = db.taskData.findIndex(task => task.id === id);
       if (index === -1) throw new Error(`Task with id ${id} not found`);
-      
+
       const updatedTask = {
-        ...db.tasks[index],
+        ...db.taskData[index],
         ...data,
         updatedAt: new Date().toISOString()
       };
-      
-      db.tasks[index] = updatedTask;
+
+      db.taskData[index] = updatedTask;
       return updatedTask;
     },
     delete: (id: string) => {
-      const index = db.tasks.findIndex(task => task.id === id);
+      const index = db.taskData.findIndex(task => task.id === id);
       if (index !== -1) {
-        db.tasks.splice(index, 1);
+        db.taskData.splice(index, 1);
       }
     },
     search: (query: string) => {
       const lowercaseQuery = query.toLowerCase();
-      return db.tasks.filter(
+      return db.taskData.filter(
         task =>
           task.title.toLowerCase().includes(lowercaseQuery) ||
           (task.description?.toLowerCase() || '').includes(lowercaseQuery) ||
@@ -58,10 +58,10 @@ export const db = {
   },
   
   templates: {
-    findAll: () => db.templates,
-    findById: (id: string) => db.templates.find(template => template.id === id) || null,
-    findByCategory: (category: string) => db.templates.filter(template => template.category === category),
-    getCategories: () => Array.from(new Set(db.templates.map(template => template.category || 'General'))),
+    findAll: () => db.templateData,
+    findById: (id: string) => db.templateData.find(template => template.id === id) || null,
+    findByCategory: (category: string) => db.templateData.filter(template => template.category === category),
+    getCategories: () => Array.from(new Set(db.templateData.map(template => template.category || 'General'))),
     create: (template: Omit<TaskTemplate, 'id' | 'createdAt' | 'usageCount'>) => {
       const newTemplate: TaskTemplate = {
         id: `template-${Date.now()}`,
@@ -69,31 +69,31 @@ export const db = {
         usageCount: 0,
         ...template
       };
-      db.templates.push(newTemplate);
+      db.templateData.push(newTemplate);
       return newTemplate;
     },
     update: (id: string, data: Partial<TaskTemplate>) => {
-      const index = db.templates.findIndex(template => template.id === id);
+      const index = db.templateData.findIndex(template => template.id === id);
       if (index === -1) throw new Error(`Template with id ${id} not found`);
-      
+
       const updatedTemplate = {
-        ...db.templates[index],
+        ...db.templateData[index],
         ...data,
         updatedAt: new Date().toISOString()
       };
-      
-      db.templates[index] = updatedTemplate;
+
+      db.templateData[index] = updatedTemplate;
       return updatedTemplate;
     },
     delete: (id: string) => {
-      const index = db.templates.findIndex(template => template.id === id);
+      const index = db.templateData.findIndex(template => template.id === id);
       if (index !== -1) {
-        db.templates.splice(index, 1);
+        db.templateData.splice(index, 1);
       }
     },
     search: (query: string) => {
       const lowercaseQuery = query.toLowerCase();
-      return db.templates.filter(
+      return db.templateData.filter(
         template =>
           template.name.toLowerCase().includes(lowercaseQuery) ||
           (template.description?.toLowerCase() || '').includes(lowercaseQuery) ||
@@ -102,25 +102,25 @@ export const db = {
       );
     },
     incrementUsage: (id: string) => {
-      const index = db.templates.findIndex(template => template.id === id);
+      const index = db.templateData.findIndex(template => template.id === id);
       if (index !== -1) {
-        db.templates[index] = {
-          ...db.templates[index],
-          usageCount: (db.templates[index].usageCount || 0) + 1
+        db.templateData[index] = {
+          ...db.templateData[index],
+          usageCount: (db.templateData[index].usageCount || 0) + 1
         };
       }
     }
   },
   
   users: {
-    findAll: () => db.users,
-    findById: (id: string) => db.users.find(user => user.id === id) || null,
-    getCurrentUser: () => db.users[0], // Assume first user is current user
+    findAll: () => db.userData,
+    findById: (id: string) => db.userData.find(user => user.id === id) || null,
+    getCurrentUser: () => db.userData[0], // Assume first user is current user
   },
   
   comments: {
-    findByTaskId: (taskId: string) => db.comments.filter(comment => comment.taskId === taskId),
-    countByTaskId: (taskId: string) => db.comments.filter(comment => comment.taskId === taskId).length,
+    findByTaskId: (taskId: string) => db.commentData.filter(comment => comment.taskId === taskId),
+    countByTaskId: (taskId: string) => db.commentData.filter(comment => comment.taskId === taskId).length,
     create: (comment: Omit<Comment, 'id'>) => {
       const now = new Date().toISOString();
       const newComment: Comment = {
@@ -128,32 +128,32 @@ export const db = {
         createdAt: now,
         ...comment
       };
-      db.comments.push(newComment);
+      db.commentData.push(newComment);
       return newComment;
     },
     update: (id: string, text: string) => {
-      const index = db.comments.findIndex(comment => comment.id === id);
+      const index = db.commentData.findIndex(comment => comment.id === id);
       if (index === -1) throw new Error(`Comment with id ${id} not found`);
-      
+
       const updatedComment = {
-        ...db.comments[index],
+        ...db.commentData[index],
         text,
         updatedAt: new Date().toISOString()
       };
-      
-      db.comments[index] = updatedComment;
+
+      db.commentData[index] = updatedComment;
       return updatedComment;
     },
     delete: (id: string) => {
-      const index = db.comments.findIndex(comment => comment.id === id);
+      const index = db.commentData.findIndex(comment => comment.id === id);
       if (index !== -1) {
-        db.comments.splice(index, 1);
+        db.commentData.splice(index, 1);
       }
     }
   },
   
   attachments: {
-    findByTaskId: (taskId: string) => db.attachments.filter(attachment => attachment.taskId === taskId),
+    findByTaskId: (taskId: string) => db.attachmentData.filter(attachment => attachment.taskId === taskId),
     create: (taskId: string, file: { name: string, type: string, size: number }) => {
       const timestamp = new Date().toISOString();
       const newAttachment: Attachment = {
@@ -165,13 +165,13 @@ export const db = {
         url: `https://mock-cdn.example.com/files/${taskId}/${file.name}`,
         createdAt: timestamp
       };
-      db.attachments.push(newAttachment);
+      db.attachmentData.push(newAttachment);
       return newAttachment;
     },
     delete: (id: string) => {
-      const index = db.attachments.findIndex(attachment => attachment.id === id);
+      const index = db.attachmentData.findIndex(attachment => attachment.id === id);
       if (index !== -1) {
-        db.attachments.splice(index, 1);
+        db.attachmentData.splice(index, 1);
       }
     }
   },
@@ -198,8 +198,8 @@ export const db = {
     getUserWorkload: () => {
       // Count tasks by user
       const userWorkload: Record<string, number> = {};
-      
-      db.tasks.forEach(task => {
+
+      db.taskData.forEach(task => {
         if (task.assigneeId) {
           userWorkload[task.assigneeId] = (userWorkload[task.assigneeId] || 0) + 1;
         }
@@ -219,7 +219,7 @@ export const db = {
         urgent: 0
       };
       
-      db.tasks.forEach(task => {
+      db.taskData.forEach(task => {
         priorities[task.priority]++;
       });
       
@@ -236,7 +236,7 @@ export const db = {
     
     importGoogleTasks: () => {
       // Return mock tasks that look like they came from Google
-      return db.tasks.slice(0, 3).map(task => ({
+      return db.taskData.slice(0, 3).map(task => ({
         ...task,
         id: `google-${task.id}`,
         source: 'google'

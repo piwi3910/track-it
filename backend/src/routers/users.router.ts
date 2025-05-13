@@ -1,15 +1,10 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, adminProcedure } from '../trpc/trpc';
 import { TRPCError } from '@trpc/server';
-import {
+import type {
   User,
-  UserRole,
-  LoginRequest,
   LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-  UserUpdateInput,
-  UserRoleUpdateInput
+  RegisterResponse
 } from '@track-it/shared';
 
 // Mock user database for now
@@ -51,7 +46,7 @@ export const usersRouter = router({
   // Public routes (no auth required)
   login: publicProcedure
     .input(userLoginSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx }): Promise<LoginResponse> => {
       // In a real app, you would verify the password against a hash
       const user = mockUsers.find(user => user.email === input.email);
       
@@ -72,14 +67,14 @@ export const usersRouter = router({
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role || 'member',
         token
       };
     }),
     
   register: publicProcedure
     .input(userRegisterSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input }): Promise<RegisterResponse> => {
       // Check if user already exists
       if (mockUsers.some(user => user.email === input.email)) {
         throw new TRPCError({
@@ -108,7 +103,7 @@ export const usersRouter = router({
     
   // Protected routes (auth required)
   getCurrentUser: protectedProcedure
-    .query(({ ctx }) => {
+    .query(({ ctx }): User => {
       const user = mockUsers.find(user => user.id === ctx.user?.id);
       
       if (!user) {
@@ -141,7 +136,7 @@ export const usersRouter = router({
         }).optional()
       }).optional()
     }))
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }): User => {
       const userIndex = mockUsers.findIndex(user => user.id === ctx.user?.id);
       
       if (userIndex === -1) {
@@ -172,7 +167,7 @@ export const usersRouter = router({
     
   // Admin routes
   getAllUsers: adminProcedure
-    .query(() => {
+    .query((): Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatarUrl'>[] => {
       return mockUsers.map(user => ({
         id: user.id,
         name: user.name,
@@ -187,7 +182,7 @@ export const usersRouter = router({
       userId: z.string(),
       role: z.enum(['admin', 'member', 'guest'])
     }))
-    .mutation(({ input }) => {
+    .mutation(({ input }): Pick<User, 'id' | 'name' | 'role'> => {
       const userIndex = mockUsers.findIndex(user => user.id === input.userId);
       
       if (userIndex === -1) {

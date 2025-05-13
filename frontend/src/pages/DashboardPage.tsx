@@ -72,7 +72,7 @@ export function DashboardPage() {
         <QuickAddTask onTaskAdded={() => console.log('Task added from quick add')} />
       </Box>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} gap="lg">
         <StatCard
           title="My Tasks"
           value={totalMyTasks.toString()}
@@ -95,7 +95,7 @@ export function DashboardPage() {
         />
 
         <Card p="xs" radius="md" withBorder h={180} pos="relative" className="dashboard-stat-card dashboard-completion-card">
-          <Group gap="xs" position="center" mb={5}>
+          <Group gap="xs" justify="center" mb={5}>
             <ThemeIcon size="sm" radius="sm" variant="light" color="green">
               <IconCheckbox style={{ width: rem(14), height: rem(14) }} />
             </ThemeIcon>
@@ -127,7 +127,7 @@ export function DashboardPage() {
             <Text ta="center" c="dimmed">You don't have any assigned tasks yet.</Text>
           </Card>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} gap="lg">
             {myTasks.map(task => (
               <Card
                 key={task.id}
@@ -165,7 +165,7 @@ export function DashboardPage() {
             <Text ta="center" c="dimmed">You don't have any tasks in progress.</Text>
           </Card>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} gap="lg">
             {myTasks
               .filter(task => task.status === 'in_progress')
               .map(task => (
@@ -197,7 +197,7 @@ export function DashboardPage() {
             <Text ta="center" c="dimmed">You don't have any tasks in your todo list.</Text>
           </Card>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} gap="lg">
             {myTasks
               .filter(task => task.status === 'todo')
               .map(task => (
@@ -235,7 +235,7 @@ export function DashboardPage() {
 function StatCard({ title, value, icon, color }: { title: string; value: string; icon: React.ReactNode; color: string }) {
   return (
     <Card p="xs" radius="md" withBorder h={180} pos="relative" className="dashboard-stat-card">
-      <Group gap="xs" position="center" mb={5}>
+      <Group gap="xs" justify="center" mb={5}>
         <ThemeIcon size="sm" radius="sm" variant="light" color={color}>
           {icon}
         </ThemeIcon>

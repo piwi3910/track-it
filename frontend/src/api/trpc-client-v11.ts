@@ -1,9 +1,9 @@
 /**
- * tRPC client for the frontend
+ * tRPC v11 client for the frontend
  * This file provides a typesafe API client to interact with the backend
  */
 
-import { trpcClient } from '@/utils/trpc';
+import { trpc } from '@/utils/trpc';
 import { TRPCClientError } from '@trpc/client';
 
 /**
@@ -36,13 +36,13 @@ export const apiHandler = async <T>(
 export const auth = {
   login: async (email: string, password: string) => {
     return apiHandler(() => 
-      trpcClient.users.login.mutate({ email, password })
+      trpc.users.login.mutate({ email, password })
     );
   },
   
   register: async (name: string, email: string, password: string) => {
     return apiHandler(() => 
-      trpcClient.users.register.mutate({
+      trpc.users.register.mutate({
         name,
         email,
         password,
@@ -53,7 +53,7 @@ export const auth = {
   
   getCurrentUser: async () => {
     return apiHandler(() =>
-      trpcClient.users.getCurrentUser.query()
+      trpc.users.getCurrentUser.query()
     );
   },
   
@@ -69,19 +69,19 @@ export const auth = {
 export const tasks = {
   getAll: async () => {
     return apiHandler(() => 
-      trpcClient.tasks.getAll.query()
+      trpc.tasks.getAll.query()
     );
   },
   
   getById: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.tasks.getById.query({ id })
+      trpc.tasks.getById.query({ id })
     );
   },
   
   getByStatus: async (status: string) => {
     return apiHandler(() =>
-      trpcClient.tasks.getByStatus.query({ status })
+      trpc.tasks.getByStatus.query({ status })
     );
   },
   
@@ -97,7 +97,7 @@ export const tasks = {
     subtasks?: { title: string; completed: boolean }[];
   }) => {
     return apiHandler(() =>
-      trpcClient.tasks.create.mutate(taskData)
+      trpc.tasks.create.mutate(taskData)
     );
   },
   
@@ -116,25 +116,25 @@ export const tasks = {
     trackingTimeSeconds: number;
   }>) => {
     return apiHandler(() =>
-      trpcClient.tasks.update.mutate({ id, data })
+      trpc.tasks.update.mutate({ id, data })
     );
   },
   
   delete: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.tasks.delete.mutate({ id })
+      trpc.tasks.delete.mutate({ id })
     );
   },
   
   search: async (query: string) => {
     return apiHandler(() => 
-      trpcClient.tasks.search.query({ query })
+      trpc.tasks.search.query({ query })
     );
   },
   
   saveAsTemplate: async (taskId: string, templateName: string, isPublic: boolean = true) => {
     return apiHandler(() =>
-      trpcClient.tasks.saveAsTemplate.mutate({ taskId, templateName, isPublic })
+      trpc.tasks.saveAsTemplate.mutate({ taskId, templateName, isPublic })
     );
   },
 
@@ -147,7 +147,7 @@ export const tasks = {
     assigneeId: string | null;
   }>) => {
     return apiHandler(() =>
-      trpcClient.tasks.createFromTemplate.mutate({ templateId, taskData })
+      trpc.tasks.createFromTemplate.mutate({ templateId, taskData })
     );
   }
 };
@@ -158,25 +158,25 @@ export const tasks = {
 export const templates = {
   getAll: async () => {
     return apiHandler(() => 
-      trpcClient.templates.getAll.query()
+      trpc.templates.getAll.query()
     );
   },
   
   getById: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.templates.getById.query({ id })
+      trpc.templates.getById.query({ id })
     );
   },
   
   getByCategory: async (category: string) => {
     return apiHandler(() => 
-      trpcClient.templates.getByCategory.query({ category })
+      trpc.templates.getByCategory.query({ category })
     );
   },
   
   getCategories: async () => {
     return apiHandler(() => 
-      trpcClient.templates.getCategories.query()
+      trpc.templates.getCategories.query()
     );
   },
   
@@ -191,7 +191,7 @@ export const templates = {
     isPublic?: boolean;
   }) => {
     return apiHandler(() =>
-      trpcClient.templates.create.mutate(templateData)
+      trpc.templates.create.mutate(templateData)
     );
   },
   
@@ -206,19 +206,19 @@ export const templates = {
     isPublic: boolean;
   }>) => {
     return apiHandler(() =>
-      trpcClient.templates.update.mutate({ id, data })
+      trpc.templates.update.mutate({ id, data })
     );
   },
   
   delete: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.templates.delete.mutate({ id })
+      trpc.templates.delete.mutate({ id })
     );
   },
   
   search: async (query: string) => {
     return apiHandler(() => 
-      trpcClient.templates.search.query({ query })
+      trpc.templates.search.query({ query })
     );
   }
 };
@@ -229,31 +229,31 @@ export const templates = {
 export const comments = {
   getByTaskId: async (taskId: string) => {
     return apiHandler(() => 
-      trpcClient.comments.getByTaskId.query({ taskId })
+      trpc.comments.getByTaskId.query({ taskId })
     );
   },
   
   getCommentCount: async (taskId: string) => {
     return apiHandler(() => 
-      trpcClient.comments.getCommentCount.query({ taskId })
+      trpc.comments.getCommentCount.query({ taskId })
     );
   },
   
   create: async (taskId: string, text: string) => {
     return apiHandler(() => 
-      trpcClient.comments.create.mutate({ taskId, text })
+      trpc.comments.create.mutate({ taskId, text })
     );
   },
   
   update: async (id: string, text: string) => {
     return apiHandler(() => 
-      trpcClient.comments.update.mutate({ id, text })
+      trpc.comments.update.mutate({ id, text })
     );
   },
   
   delete: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.comments.delete.mutate({ id })
+      trpc.comments.delete.mutate({ id })
     );
   }
 };
@@ -264,19 +264,19 @@ export const comments = {
 export const attachments = {
   getByTaskId: async (taskId: string) => {
     return apiHandler(() => 
-      trpcClient.attachments.getByTaskId.query({ taskId })
+      trpc.attachments.getByTaskId.query({ taskId })
     );
   },
   
   upload: async (taskId: string, file: { name: string, type: string, size: number }) => {
     return apiHandler(() => 
-      trpcClient.attachments.upload.mutate({ taskId, file })
+      trpc.attachments.upload.mutate({ taskId, file })
     );
   },
   
   delete: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.attachments.delete.mutate({ id })
+      trpc.attachments.delete.mutate({ id })
     );
   }
 };
@@ -287,19 +287,19 @@ export const attachments = {
 export const analytics = {
   getTasksCompletionStats: async (timeframe: 'week' | 'month' | 'year' = 'week') => {
     return apiHandler(() => 
-      trpcClient.analytics.getTasksCompletionStats.query({ timeframe })
+      trpc.analytics.getTasksCompletionStats.query({ timeframe })
     );
   },
   
   getUserWorkload: async () => {
     return apiHandler(() => 
-      trpcClient.analytics.getUserWorkload.query()
+      trpc.analytics.getUserWorkload.query()
     );
   },
   
   getTasksByPriority: async () => {
     return apiHandler(() => 
-      trpcClient.analytics.getTasksByPriority.query()
+      trpc.analytics.getTasksByPriority.query()
     );
   }
 };
@@ -310,19 +310,19 @@ export const analytics = {
 export const googleIntegration = {
   syncCalendar: async () => {
     return apiHandler(() => 
-      trpcClient.googleIntegration.syncCalendar.mutate()
+      trpc.googleIntegration.syncCalendar.mutate()
     );
   },
   
   importGoogleTasks: async () => {
     return apiHandler(() => 
-      trpcClient.googleIntegration.importGoogleTasks.query()
+      trpc.googleIntegration.importGoogleTasks.query()
     );
   },
   
   getGoogleDriveFiles: async () => {
     return apiHandler(() => 
-      trpcClient.googleIntegration.getGoogleDriveFiles.query()
+      trpc.googleIntegration.getGoogleDriveFiles.query()
     );
   }
 };
@@ -333,13 +333,13 @@ export const googleIntegration = {
 export const notifications = {
   getAll: async () => {
     return apiHandler(() => 
-      trpcClient.notifications.getAll.query()
+      trpc.notifications.getAll.query()
     );
   },
   
   markAsRead: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.notifications.markAsRead.mutate({ id })
+      trpc.notifications.markAsRead.mutate({ id })
     );
   }
 };

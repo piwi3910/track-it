@@ -9,7 +9,7 @@ import { GoogleProvider } from './context/GoogleContext';
 import { NotificationProvider } from './context/NotificationContext';
 import App from './App';
 
-// Import for tRPC client configuration
+// Import for query client configuration
 import { trpc, trpcClient, queryClient } from './utils/trpc';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -28,8 +28,8 @@ const theme = createTheme({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <trpc.Provider client={trpcClient}>
         <ColorSchemeScript defaultColorScheme="light" />
         <MantineProvider theme={theme} defaultColorScheme="light">
           <ThemeProvider>
@@ -45,7 +45,7 @@ createRoot(document.getElementById('root')!).render(
             </AppProvider>
           </ThemeProvider>
         </MantineProvider>
-      </QueryClientProvider>
-    </trpc.Provider>
+      </trpc.Provider>
+    </QueryClientProvider>
   </StrictMode>,
 );

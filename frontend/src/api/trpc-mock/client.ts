@@ -20,15 +20,15 @@ export const apiHandler = async <T>(
   try {
     const data = await apiCall();
     return { data, error: null };
-  } catch (err) {
-    console.error('API Error:', err);
-    const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+  } catch (error) {
+    console.error('API Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return { data: null, error: errorMessage };
   }
 };
 
 // Export hooks for querying data (to simulate React Query / TanStack Query)
-export function useQuery<TData, TError = Error>(
+export function useQuery<TData>(
   queryFn: () => Promise<TData>
 ) {
   return {
@@ -39,7 +39,7 @@ export function useQuery<TData, TError = Error>(
 }
 
 // Export hooks for mutations (to simulate useMutation from React Query)
-export function useMutation<TData, TVariables, TError = Error>(
+export function useMutation<TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<TData>
 ) {
   return {

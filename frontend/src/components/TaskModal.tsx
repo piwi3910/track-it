@@ -353,7 +353,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       }
       size="xl"
     >
-      <Group position="apart" mb="md">
+      <Group justify="space-between" mb="md">
         <Tabs value={activeTab} onChange={setActiveTab} style={{ flex: 1 }}>
           <Tabs.List>
             <Tabs.Tab value="details">Details</Tabs.Tab>
@@ -417,7 +417,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   onChange={(e) => setTemplateName(e.target.value)}
                   required
                 />
-                <Group position="right">
+                <Group justify="flex-end">
                   <Button
                     variant="subtle"
                     onClick={() => setSaveAsTemplateOpen(false)}

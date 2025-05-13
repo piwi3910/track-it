@@ -10,4 +10,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    port: 3000, // Use port 3000 to match backend CORS configuration
+    strictPort: true, // Fail if port 3000 is not available
+  }
 })

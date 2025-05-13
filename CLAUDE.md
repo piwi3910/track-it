@@ -256,6 +256,13 @@ The application follows a feature-based architecture:
    - Optimized bundle size
    - Served with proper caching headers
 
+## CRITICAL RULES FOR CLAUDE
+
+1. NEVER run `npm run dev` or any server/application startup command directly. Always ask the user to run these commands themselves.
+2. NEVER disable or revert tRPC implementation in favor of mock data without explicit user permission.
+3. Always maintain the established architecture and design patterns unless explicitly instructed otherwise.
+4. Do not attempt to modify React Query and tRPC versions independently - they must remain compatible.
+
 ## Additional Resources
 
 - [Mantine UI Documentation](https://mantine.dev/)

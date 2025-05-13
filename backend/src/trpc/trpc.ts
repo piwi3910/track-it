@@ -5,14 +5,14 @@ import { Context } from './context';
 // Initialize tRPC with context type
 const t = initTRPC.context<Context>().create({
   errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof z.ZodError ? error.cause.flatten() : null,
-      },
-    };
+    const formattedError = { ...shape };
+
+    if (error.cause instanceof z.ZodError) {
+      // We're only modifying the formattedError for logging purposes
+      console.error('Validation error:', error.cause.flatten());
+    }
+
+    return formattedError;
   },
 });
 

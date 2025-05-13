@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc/trpc';
-import { TaskCompletionStatsInput, TaskPriority } from '@track-it/shared';
+import type { TaskPriority } from '@track-it/shared';
 
 // Analytics router with endpoints
 export const analyticsRouter = router({
   // Get task completion statistics
   getTasksCompletionStats: protectedProcedure
     .input(z.object({ timeframe: z.enum(['week', 'month', 'year']).default('week') }).strict())
-    .query(({ input }) => {
+    .query(({ input }): { date: string; completed: number }[] => {
       // In a real implementation, this would query a database for actual stats
       // For now, we'll generate random data
       const days = input.timeframe === 'week' ? 7 : input.timeframe === 'month' ? 30 : 365;
@@ -28,7 +28,7 @@ export const analyticsRouter = router({
     
   // Get user workload statistics
   getUserWorkload: protectedProcedure
-    .query(() => {
+    .query((): { userId: string; taskCount: number }[] => {
       // In a real implementation, this would query a database for actual stats
       // For now, we'll return static data
       return [
@@ -42,7 +42,7 @@ export const analyticsRouter = router({
     
   // Get tasks grouped by priority
   getTasksByPriority: protectedProcedure
-    .query(() => {
+    .query((): { priority: TaskPriority; count: number }[] => {
       // In a real implementation, this would query a database for actual stats
       // For now, we'll return static data
       return [

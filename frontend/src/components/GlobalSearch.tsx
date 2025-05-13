@@ -151,10 +151,10 @@ export function GlobalSearch() {
   };
   
   return (
-    <Popover 
-      width={400} 
-      position="bottom" 
-      shadow="md" 
+    <Popover
+      width={400}
+      position="bottom"
+      shadow="md"
       opened={opened}
       onChange={open}
     >
@@ -194,10 +194,10 @@ export function GlobalSearch() {
             <Stack gap="xs">
               <Text size="xs" fw={700} c="dimmed">SEARCH RESULTS</Text>
               {results.map(task => (
-                <Paper 
-                  key={task.id} 
-                  p="xs" 
-                  withBorder 
+                <Paper
+                  key={task.id}
+                  p="xs"
+                  withBorder
                   onClick={() => handleResultClick(task)}
                   style={{ cursor: 'pointer' }}
                 >
@@ -212,7 +212,7 @@ export function GlobalSearch() {
                     </div>
                     <IconArrowRight size={16} opacity={0.5} />
                   </Group>
-                  
+
                   <Group gap="xs" mt="xs">
                     <Badge size="xs" variant="filled" color="gray">
                       <Group gap={4}>
@@ -234,7 +234,7 @@ export function GlobalSearch() {
                         <span>{task.status.replace('_', ' ')}</span>
                       </Group>
                     </Badge>
-                    
+
                     {task.tags && task.tags.length > 0 && (
                       <Badge size="xs" variant="dot">
                         {task.tags[0]}
@@ -250,10 +250,10 @@ export function GlobalSearch() {
           <Stack gap="xs">
             <Text size="xs" fw={700} c="dimmed">RECENT SEARCHES</Text>
             {recentSearches.map((search, index) => (
-              <Paper 
-                key={index} 
-                p="xs" 
-                withBorder 
+              <Paper
+                key={index}
+                p="xs"
+                withBorder
                 onClick={() => handleRecentSearchClick(search)}
                 style={{ cursor: 'pointer' }}
               >

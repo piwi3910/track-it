@@ -2,6 +2,7 @@ import { inferAsyncReturnType } from '@trpc/server';
 import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { logger } from '../utils/logger';
+import { getRedisClient } from '../cache/redis';
 
 // Context for all requests
 export async function createContext({
@@ -15,6 +16,7 @@ export async function createContext({
     role: string;
   } | null;
   logger: typeof logger;
+  redis: ReturnType<typeof getRedisClient>;
 }> {
   let user: { id: string; role: string } | null = null;
 
@@ -35,11 +37,15 @@ export async function createContext({
     logger.warn(err, 'Failed to authenticate user');
   }
 
+  // Get Redis client instance
+  const redis = getRedisClient();
+
   return {
     req,
     res,
     user: user || undefined,
-    logger
+    logger,
+    redis
   };
 }
 

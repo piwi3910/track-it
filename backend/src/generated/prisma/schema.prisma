@@ -1,0 +1,217 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and user management
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  name         String
+  passwordHash String?
+  role         UserRole  @default(MEMBER)
+  avatarUrl    String?
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  preferences  Json? // For storing user preferences as JSON
+
+  // Relations
+  createdTasks  Task[]         @relation("TaskCreator")
+  assignedTasks Task[]         @relation("TaskAssignee")
+  comments      Comment[]
+  notifications Notification[]
+
+  // Google integration
+  googleId           String? @unique
+  googleToken        String?
+  googleRefreshToken String?
+  googleProfile      Json? // For storing Google profile information
+
+  @@map("users")
+}
+
+// Task model for task management
+model Task {
+  id             String       @id @default(uuid())
+  title          String
+  description    String?
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  dueDate        DateTime?
+  estimatedHours Float?
+  actualHours    Float?
+  tags           String[]
+
+  // Relations
+  creatorId   String
+  creator     User         @relation("TaskCreator", fields: [creatorId], references: [id])
+  assigneeId  String?
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  parentId    String?
+  parent      Task?        @relation("TaskSubtasks", fields: [parentId], references: [id])
+  subtasks    Task[]       @relation("TaskSubtasks")
+  comments    Comment[]
+  attachments Attachment[]
+
+  // Time tracking
+  timeTrackingActive  Boolean   @default(false)
+  trackingStartTime   DateTime?
+  trackingTimeSeconds Int       @default(0)
+
+  // Template
+  savedAsTemplate Boolean @default(false)
+
+  // Archived status for completed tasks
+  archived Boolean @default(false)
+
+  @@map("tasks")
+}
+
+// TaskTemplate model for task templates
+model TaskTemplate {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  priority       TaskPriority @default(MEDIUM)
+  estimatedHours Float?
+  tags           String[]
+  isPublic       Boolean      @default(true)
+  category       String?
+  templateData   Json // Stores template structure (subtasks, etc.)
+  usageCount     Int          @default(0)
+
+  // Creator relation can be added if needed
+  // creatorId       String
+  // creator         User             @relation(fields: [creatorId], references: [id])
+
+  @@map("task_templates")
+}
+
+// Comment model for task comments
+model Comment {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  taskId   String
+  task     Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  // Parent-child relationship for comment replies
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+// Attachment model for task attachments
+model Attachment {
+  id         String   @id @default(uuid())
+  fileName   String
+  fileSize   Int
+  fileType   String
+  filePath   String
+  uploadedAt DateTime @default(now())
+
+  // Relations
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Google Drive integration
+  googleDriveId  String?
+  googleDriveUrl String?
+
+  @@map("attachments")
+}
+
+// Notification model for user notifications
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Related resource
+  resourceType String? // Type of related resource (task, comment, etc.)
+  resourceId   String? // ID of related resource
+
+  @@map("notifications")
+}
+
+// Google Calendar Event integration
+model GoogleCalendarEvent {
+  id            String   @id @default(uuid())
+  googleEventId String   @unique
+  title         String
+  description   String?
+  startTime     DateTime
+  endTime       DateTime
+  location      String?
+  meetingLink   String?
+
+  // User who created/synced the event
+  userId String
+
+  // Linked task if applicable
+  taskId String?
+
+  // Sync metadata
+  lastSynced DateTime @default(now())
+
+  @@map("google_calendar_events")
+}
+
+// Enum definitions
+enum UserRole {
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+  ARCHIVED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_UPDATED
+  COMMENT_ADDED
+  DUE_DATE_REMINDER
+  MENTION
+  SYSTEM
+}

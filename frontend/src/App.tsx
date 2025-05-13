@@ -8,13 +8,13 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useApp } from '@/hooks/useApp';
+import { useStore } from '@/hooks/useStore';
 
 function App() {
-  const { currentUser, userLoading } = useApp();
+  const { auth } = useStore();
 
   // While checking authentication status, show nothing
-  if (userLoading) {
+  if (auth.isLoading) {
     return null;
   }
 
@@ -27,7 +27,7 @@ function App() {
       <Route
         path="/"
         element={
-          <ProtectedRoute isAuthenticated={!!currentUser}>
+          <ProtectedRoute isAuthenticated={auth.isAuthenticated}>
             <AppLayout />
           </ProtectedRoute>
         }

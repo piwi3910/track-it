@@ -21,23 +21,29 @@ import {
   IconClock,
   IconStatusChange
 } from '@tabler/icons-react';
-import { useNotifications } from '@/context/NotificationContext';
+import { useStore } from '@/hooks/useStore';
 import { Notification } from '@/types/task';
 
 export function NotificationMenu() {
+  const { notifications: notificationsStore } = useStore();
+  
+  // Extract properties from the notification store
   const { 
-    notifications, 
+    all: notificationList, 
     unreadCount, 
-    loading, 
+    isLoading: loading, 
     markAsRead, 
     markAllAsRead 
-  } = useNotifications();
+  } = notificationsStore;
+  
+  // Type-safe approach for notifications
+  const notifications = (notificationList || []) as Notification[];
   
   const navigate = useNavigate();
   const [menuOpened, setMenuOpened] = useState(false);
   
   // Get icon for notification type
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'assignment':
         return <IconUserPlus size={16} />;

@@ -22,13 +22,27 @@ import {
   IconHash,
   IconFlag
 } from '@tabler/icons-react';
-import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/context/ThemeContext';
-import { Task, TaskPriority } from '@/types/task';
+import { useStore } from '@/hooks/useStore';
+import { Task } from '@/types/task';
 
 export function GlobalSearch() {
-  const { searchTasks, getTaskById, tasks } = useApp();
-  const { getPriorityColor } = useTheme();
+  const { theme, tasks: tasksStore } = useStore();
+  const { getPriorityColor } = theme;
+  // Extract needed properties from Zustand store
+  const { 
+    all: tasks, 
+    getById: getTaskById
+  } = tasksStore;
+  
+  // Manual search implementation that uses the store's filtering capabilities
+  const searchTasks = useCallback(async (query: string) => {
+    // Simple in-memory search implementation
+    return tasks.filter(task => 
+      task.title.toLowerCase().includes(query.toLowerCase()) || 
+      (task.description && task.description.toLowerCase().includes(query.toLowerCase())) ||
+      (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
+    ) as Task[];
+  }, [tasks]);
   const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);
   const [query, setQuery] = useState('');
@@ -127,7 +141,7 @@ export function GlobalSearch() {
   }, [query, handleSearch]);
   
   // Handle clicking on a result
-  const handleResultClick = (task: Task) => {
+  const handleResultClick = (task: any) => {
     saveSearch(query);
     
     // Navigate to the appropriate page based on task status

@@ -1,6 +1,7 @@
-// @ts-nocheck - Temporarily disable type checking in this file
+// Properly typed Context for the Track-It application
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { Task, User, TaskFilter, TaskTemplate } from '@track-it/shared';
+import { Task, User, TaskTemplate } from '@track-it/shared';
+import { TaskFilter } from '@track-it/shared/types';
 import { api } from '@/api';
 import { authService } from '@/services/auth.service';
 
@@ -123,9 +124,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const fetchTasks = useCallback(async () => {
     setTasksLoading(true);
     try {
-      const { data, error } = await api.tasks.getAll();
-      if (data && !error) {
-        setTasks(data);
+      // Handle both mock API and real tRPC API patterns
+      if (typeof api.tasks.getAll === 'function') {
+        // Mock API style
+        const result = await api.tasks.getAll();
+        if (Array.isArray(result)) {
+          setTasks(result);
+        }
+      } else if (api.tasks.getAll && typeof api.tasks.getAll.query === 'function') {
+        // Real tRPC API style
+        const { data, error } = await api.tasks.getAll.query();
+        if (data && !error) {
+          setTasks(data);
+        }
+      } else {
+        console.error('Tasks API not available');
       }
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
@@ -143,9 +156,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const fetchTemplates = useCallback(async () => {
     setTemplatesLoading(true);
     try {
-      const { data, error } = await api.templates.getAll();
-      if (data && !error) {
-        setTemplates(data);
+      // Handle both mock API and real tRPC API patterns
+      if (typeof api.templates.getAll === 'function') {
+        // Mock API style
+        const result = await api.templates.getAll();
+        if (Array.isArray(result)) {
+          setTemplates(result);
+        }
+      } else if (api.templates.getAll && typeof api.templates.getAll.query === 'function') {
+        // Real tRPC API style
+        const { data, error } = await api.templates.getAll.query();
+        if (data && !error) {
+          setTemplates(data);
+        }
+      } else {
+        console.error('Templates API not available');
       }
     } catch (error) {
       console.error('Failed to fetch templates:', error);
@@ -162,26 +187,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Get task by ID
   const getTaskById = useCallback(async (id: string) => {
     try {
-      const { data, error } = await api.tasks.getById(id);
-      if (error) return null;
-      return data;
+      // Check if the task is already in our local state
+      const localTask = tasks.find(task => task.id === id);
+      if (localTask) return localTask;
+      
+      // Otherwise fetch from API
+      // Handle both mock API and real tRPC API patterns
+      if (typeof api.tasks.getById === 'function') {
+        // Mock API style
+        return await api.tasks.getById(id);
+      } else if (api.tasks.getById && typeof api.tasks.getById.query === 'function') {
+        // Real tRPC API style
+        const { data, error } = await api.tasks.getById.query(id);
+        if (error) return null;
+        return data;
+      } else {
+        console.warn('getById API not available');
+        return null;
+      }
     } catch (error) {
       console.error('Failed to get task:', error);
       return null;
     }
-  }, []);
+  }, [tasks]);
   
   // Create a new task
   const createTask = useCallback(async (task: Omit<Task, 'id'>) => {
     try {
-      const { data, error } = await api.tasks.create(task);
-      if (error) throw new Error(error);
+      // Handle both mock API and real tRPC API patterns
+      let newTask = null;
+      
+      if (typeof api.tasks.create === 'function') {
+        // Mock API style
+        newTask = await api.tasks.create(task);
+      } else if (api.tasks.create && typeof api.tasks.create.mutate === 'function') {
+        // Real tRPC API style
+        const { data, error } = await api.tasks.create.mutate(task);
+        if (error) throw new Error(typeof error === 'string' ? error : error.message);
+        newTask = data;
+      } else {
+        console.error('Create task API not available');
+        return null;
+      }
 
       // Update local tasks state
-      if (data) {
-        setTasks(prev => [...prev, data]);
+      if (newTask) {
+        setTasks(prev => [...prev, newTask]);
       }
-      return data;
+      return newTask;
     } catch (error) {
       console.error('Failed to create task:', error);
       return null;
@@ -191,19 +244,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update an existing task
   const updateTask = useCallback(async (id: string, task: Partial<Task>) => {
     try {
-      const { data, error } = await api.tasks.update(id, task);
-      if (error) throw new Error(error);
+      // Handle both mock API and real tRPC API patterns
+      let updatedTask = null;
+      
+      if (typeof api.tasks.update === 'function') {
+        // Mock API style
+        updatedTask = await api.tasks.update(id, task);
+      } else if (api.tasks.update && typeof api.tasks.update.mutate === 'function') {
+        // Real tRPC API style
+        const { data, error } = await api.tasks.update.mutate({ id, ...task });
+        if (error) throw new Error(typeof error === 'string' ? error : error.message);
+        updatedTask = data;
+      } else {
+        console.error('Update task API not available');
+        return null;
+      }
 
       // Update local tasks state
-      if (data) {
-        setTasks(prev => prev.map(t => t.id === id ? data : t));
+      if (updatedTask) {
+        setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
 
         // Update selectedTask if it's the one being edited
         if (selectedTask?.id === id) {
-          setSelectedTask(data);
+          setSelectedTask(updatedTask);
         }
       }
-      return data;
+      return updatedTask;
     } catch (error) {
       console.error('Failed to update task:', error);
       return null;
@@ -213,18 +279,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Delete a task
   const deleteTask = useCallback(async (id: string) => {
     try {
-      const { error } = await api.tasks.delete(id);
-      if (error) throw new Error(error);
-
-      // Update local tasks state
-      setTasks(prev => prev.filter(t => t.id !== id));
-
-      // Clear selectedTask if it's the one being deleted
-      if (selectedTask?.id === id) {
-        setSelectedTask(null);
+      // Handle both mock API and real tRPC API patterns
+      let success = false;
+      
+      if (typeof api.tasks.delete === 'function') {
+        // Mock API style
+        success = await api.tasks.delete(id);
+      } else if (api.tasks.delete && typeof api.tasks.delete.mutate === 'function') {
+        // Real tRPC API style
+        const { error } = await api.tasks.delete.mutate(id);
+        if (error) throw new Error(typeof error === 'string' ? error : error.message);
+        success = true;
+      } else {
+        console.error('Delete task API not available');
+        return false;
       }
 
-      return true;
+      if (success) {
+        // Update local tasks state
+        setTasks(prev => prev.filter(t => t.id !== id));
+
+        // Clear selectedTask if it's the one being deleted
+        if (selectedTask?.id === id) {
+          setSelectedTask(null);
+        }
+      }
+
+      return success;
     } catch (error) {
       console.error('Failed to delete task:', error);
       return false;
@@ -264,14 +345,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Search tasks
   const searchTasks = useCallback(async (query: string) => {
     try {
-      const { data, error } = await api.tasks.search(query);
-      if (error) throw new Error(error);
-      return data || [];
+      // Handle both mock API and real tRPC API patterns
+      if (typeof api.tasks.search === 'function') {
+        // Mock API style
+        const result = await api.tasks.search(query);
+        return Array.isArray(result) ? result : [];
+      } else if (api.tasks.search && typeof api.tasks.search.query === 'function') {
+        // Real tRPC API style
+        const { data, error } = await api.tasks.search.query(query);
+        if (error) throw new Error(typeof error === 'string' ? error : error.message);
+        return data || [];
+      } else {
+        // Fallback to filtering existing tasks in memory (useful if API not available)
+        console.warn('Search API not available, filtering in-memory tasks');
+        return tasks.filter(task => 
+          task.title.toLowerCase().includes(query.toLowerCase()) || 
+          (task.description && task.description.toLowerCase().includes(query.toLowerCase())) ||
+          (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
+        );
+      }
     } catch (error) {
       console.error('Failed to search tasks:', error);
       return [];
     }
-  }, []);
+  }, [tasks]);
   
   // Get template by ID
   const getTemplateById = useCallback(async (id: string) => {
@@ -387,14 +484,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Search templates
   const searchTemplates = useCallback(async (query: string) => {
     try {
-      const { data, error } = await api.templates.search(query);
-      if (error) throw new Error(error);
-      return data || [];
+      // Handle both mock API and real tRPC API patterns
+      if (typeof api.templates.search === 'function') {
+        // Mock API style
+        const result = await api.templates.search(query);
+        return Array.isArray(result) ? result : [];
+      } else if (api.templates.search && typeof api.templates.search.query === 'function') {
+        // Real tRPC API style
+        const { data, error } = await api.templates.search.query(query);
+        if (error) throw new Error(typeof error === 'string' ? error : error.message);
+        return data || [];
+      } else {
+        // Fallback to filtering existing templates in memory
+        console.warn('Search API not available, filtering in-memory templates');
+        return templates.filter(template => 
+          template.name.toLowerCase().includes(query.toLowerCase()) || 
+          (template.description && template.description.toLowerCase().includes(query.toLowerCase())) ||
+          (template.category && template.category.toLowerCase().includes(query.toLowerCase()))
+        );
+      }
     } catch (error) {
       console.error('Failed to search templates:', error);
       return [];
     }
-  }, []);
+  }, [templates]);
 
   // Get all template categories
   const getTemplateCategories = useCallback(async () => {

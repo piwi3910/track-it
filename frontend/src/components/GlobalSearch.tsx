@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TextInput,
@@ -22,13 +22,27 @@ import {
   IconHash,
   IconFlag
 } from '@tabler/icons-react';
-import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/context/ThemeContext';
-import { Task, TaskPriority } from '@/types/task';
+import { useStore } from '@/hooks/useStore';
+import { Task } from '@/types/task';
 
 export function GlobalSearch() {
-  const { searchTasks, getTaskById, tasks } = useApp();
-  const { getPriorityColor } = useTheme();
+  const { theme, tasks: tasksStore } = useStore();
+  const { getPriorityColor } = theme;
+  // Extract needed properties from Zustand store
+  const { 
+    all: tasks, 
+    getById: getTaskById
+  } = tasksStore;
+  
+  // Manual search implementation that uses the store's filtering capabilities
+  const searchTasks = useCallback(async (query: string) => {
+    // Simple in-memory search implementation
+    return tasks.filter(task => 
+      task.title.toLowerCase().includes(query.toLowerCase()) || 
+      (task.description && task.description.toLowerCase().includes(query.toLowerCase())) ||
+      (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
+    ) as Task[];
+  }, [tasks]);
   const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);
   const [query, setQuery] = useState('');
@@ -64,8 +78,8 @@ export function GlobalSearch() {
     localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
   };
   
-  // Handle search
-  const handleSearch = async (searchQuery: string) => {
+  // Handle search - memoized to avoid unnecessary re-renders
+  const handleSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
       return;
@@ -77,12 +91,17 @@ export function GlobalSearch() {
       const isIdSearch = searchQuery.startsWith('task-') || /^[a-z0-9]{8}$/i.test(searchQuery);
 
       if (isIdSearch) {
-        // Try to find by exact ID first
-        const exactTask = await getTaskById(searchQuery);
-        if (exactTask) {
-          setResults([exactTask]);
-          setLoading(false);
-          return;
+        try {
+          // Try to find by exact ID first
+          const task = await getTaskById(searchQuery);
+          if (task) {
+            setResults([task]);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching task by ID:', error);
+          // Continue with search if task not found by ID
         }
 
         // If no exact match, look for partial ID matches
@@ -99,13 +118,18 @@ export function GlobalSearch() {
 
       // Fall back to regular search
       const searchResults = await searchTasks(searchQuery);
-      setResults(searchResults);
+      if (Array.isArray(searchResults)) {
+        setResults(searchResults);
+      } else {
+        setResults([]);
+      }
     } catch (error) {
       console.error('Search failed:', error);
+      setResults([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTasks, getTaskById, tasks]);
   
   // Debounce search
   useEffect(() => {
@@ -114,10 +138,10 @@ export function GlobalSearch() {
     }, 300);
     
     return () => clearTimeout(timeout);
-  }, [query]);
+  }, [query, handleSearch]);
   
   // Handle clicking on a result
-  const handleResultClick = (task: Task) => {
+  const handleResultClick = (task: any) => {
     saveSearch(query);
     
     // Navigate to the appropriate page based on task status
@@ -143,12 +167,7 @@ export function GlobalSearch() {
     setResults([]);
   };
   
-  // Function to map priority to Mantine color - uses centralized theming
-  const getManticColorFromPriority = (priority: TaskPriority) => {
-    return priority === 'low' ? 'blue' :
-           priority === 'medium' ? 'yellow' :
-           priority === 'high' ? 'orange' : 'red';
-  };
+  // We don't need a custom priority color mapping function as it's provided by ThemeContext
   
   return (
     <Popover
@@ -221,7 +240,7 @@ export function GlobalSearch() {
                       </Group>
                     </Badge>
 
-                    <Badge size="xs" color={getManticColorFromPriority(task.priority)}>
+                    <Badge size="xs" color="blue">
                       <Group gap={4}>
                         <IconFlag size={10} />
                         <span>{task.priority}</span>
@@ -231,7 +250,7 @@ export function GlobalSearch() {
                     <Badge size="xs" variant="outline">
                       <Group gap={4}>
                         <IconHash size={10} />
-                        <span>{task.status.replace('_', ' ')}</span>
+                        <span>{task.status.replace(/_/g, ' ')}</span>
                       </Group>
                     </Badge>
 

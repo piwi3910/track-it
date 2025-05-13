@@ -7,7 +7,6 @@ interface ApiState {
   apiAvailable: boolean;
   isApiLoading: boolean;
   apiError: string | null;
-  isMockApi: boolean;
   
   // Actions
   setApiAvailable: (available: boolean) => void;
@@ -21,7 +20,6 @@ export const useApiStore = create<ApiState>((set, get) => ({
   apiAvailable: false,
   isApiLoading: true,
   apiError: null,
-  isMockApi: import.meta.env.VITE_USE_MOCK_API === 'true',
   
   // Actions to update state
   setApiAvailable: (available) => set({ apiAvailable: available }),
@@ -31,23 +29,13 @@ export const useApiStore = create<ApiState>((set, get) => ({
   // Function to check API availability
   checkApiAvailability: async (): Promise<boolean> => {
     try {
-      // Skip the check if we're using mock API
-      if (get().isMockApi) {
-        set({ 
-          apiAvailable: true,
-          isApiLoading: false,
-          apiError: null
-        });
-        return true;
-      }
-      
       set({ isApiLoading: true });
       const available = await isApiAvailable();
       set({ apiAvailable: available });
       
       if (!available) {
-        set({ apiError: 'API is not available. Using fallback data.' });
-        console.warn('API is not available. Using fallback data.');
+        set({ apiError: 'API is not available.' });
+        console.warn('API is not available.');
       } else {
         set({ apiError: null });
       }

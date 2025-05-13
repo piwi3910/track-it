@@ -1,72 +1,87 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { shallow } from 'zustand/shallow';
 import { useApiStore } from '@/stores/useApiStore';
 
 /**
  * API provider component that initializes and checks API availability
+ * This implementation uses direct store access to avoid dependency cycles and infinite loops
  */
 export function ApiProvider({ children }: { children: ReactNode }) {
-  // Use shallow equality to prevent unnecessary re-renders
-  const store = useApiStore(
-    state => ({
-      isMockApi: state.isMockApi,
-      apiAvailable: state.apiAvailable,
-      apiError: state.apiError,
-      connectionAttempts: state.connectionAttempts
-    }),
-    shallow // Use shallow equality to ensure stable object references
-  );
+  // Use refs instead of state to avoid rendering loops
+  const isMockApiRef = useRef(useApiStore.getState().isMockApi);
+  const intervalRef = useRef<number | null>(null);
+  const initializedRef = useRef(false);
   
-  // Get a reference to the store for direct access in intervals to avoid dependency cycles
-  const getStore = useApiStore.getState;
-  
-  // Track intervals to avoid duplicate interval creation
-  const checkIntervalRef = useRef<number | null>(null);
-  
-  // Function to check API availability through getState to avoid rendering loop
+  // Direct store access function to avoid hook dependency issues
   const checkApiAvailability = () => {
     useApiStore.getState().checkApiAvailability();
   };
   
-  // Setup API check on mount and cleanup on unmount
+  // Setup store subscription and API check only once on mount
   useEffect(() => {
-    // Only run if we're not using mock API
-    if (!store.isMockApi) {
-      // Initial check on mount
-      checkApiAvailability();
-      
-      // Make sure we don't create multiple intervals
-      if (checkIntervalRef.current === null) {
-        // Set up periodic checks
-        checkIntervalRef.current = window.setInterval(() => {
-          const currentState = getStore();
-          if (!currentState.apiAvailable && currentState.connectionAttempts < 5) {
-            checkApiAvailability();
-          }
-        }, 10000); // Check every 10 seconds if not connected
-      }
-      
-      // Cleanup interval on unmount
-      return () => {
-        if (checkIntervalRef.current !== null) {
-          window.clearInterval(checkIntervalRef.current);
-          checkIntervalRef.current = null;
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+    
+    // Create an unsubscribe function for the store
+    const unsubscribe = useApiStore.subscribe(
+      (state) => ({
+        isMockApi: state.isMockApi,
+        apiAvailable: state.apiAvailable,
+        apiError: state.apiError,
+        connectionAttempts: state.connectionAttempts
+      }),
+      (newState, prevState) => {
+        // Update ref
+        isMockApiRef.current = newState.isMockApi;
+        
+        // Log status changes
+        if (newState.apiAvailable && !prevState.apiAvailable) {
+          console.log('API connection established successfully');
+        } else if (newState.apiError && newState.apiError !== prevState.apiError) {
+          console.warn(`API connection error: ${newState.apiError}`);
         }
-      };
+        
+        // Handle interval when mock API status changes
+        if (newState.isMockApi !== prevState.isMockApi) {
+          if (newState.isMockApi && intervalRef.current !== null) {
+            // Clear interval if we switch to mock API
+            window.clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          } else if (!newState.isMockApi && intervalRef.current === null) {
+            // Start interval if we switch away from mock API
+            checkApiAvailability();
+            setupInterval();
+          }
+        }
+      }
+    );
+    
+    // Function to set up the interval with the current state
+    function setupInterval() {
+      if (intervalRef.current !== null) return;
+      
+      intervalRef.current = window.setInterval(() => {
+        const state = useApiStore.getState();
+        if (!state.apiAvailable && state.connectionAttempts < 5) {
+          checkApiAvailability();
+        }
+      }, 10000);
     }
     
-    // This effect should only run once on mount and when isMockApi changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store.isMockApi]);
-  
-  // Log API status changes
-  useEffect(() => {
-    if (store.apiAvailable) {
-      console.log('API connection established successfully');
-    } else if (store.apiError) {
-      console.warn(`API connection error: ${store.apiError}`);
+    // Initial API check if not using mock API
+    if (!isMockApiRef.current) {
+      checkApiAvailability();
+      setupInterval();
     }
-  }, [store.apiAvailable, store.apiError]);
+    
+    // Cleanup
+    return () => {
+      unsubscribe();
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []); // Empty deps array - this effect runs ONCE only
   
   return <>{children}</>;
 }

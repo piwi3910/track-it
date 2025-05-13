@@ -56,16 +56,17 @@ export async function isApiAvailable(): Promise<boolean> {
     
     console.log(`Checking API availability at ${healthUrl}`);
     
-    // Try the health endpoint with proper headers and credentials
+    // Try the health endpoint with proper headers but NO credentials
+    // This avoids CORS issues with wildcard origin and credentials
     const response = await fetch(healthUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'X-From-Frontend': 'track-it-frontend'
       },
+      // Use 'same-origin' mode for credentials to avoid CORS issues with '*'
+      credentials: 'same-origin',
       mode: 'cors',
-      // Use include for credentials to work with both same-origin and cross-origin
-      credentials: 'include',
     });
     
     if (response.ok) {

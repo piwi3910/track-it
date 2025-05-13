@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TextInput,
@@ -64,8 +64,8 @@ export function GlobalSearch() {
     localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
   };
   
-  // Handle search
-  const handleSearch = async (searchQuery: string) => {
+  // Handle search - memoized to avoid unnecessary re-renders
+  const handleSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
       return;
@@ -77,12 +77,17 @@ export function GlobalSearch() {
       const isIdSearch = searchQuery.startsWith('task-') || /^[a-z0-9]{8}$/i.test(searchQuery);
 
       if (isIdSearch) {
-        // Try to find by exact ID first
-        const exactTask = await getTaskById(searchQuery);
-        if (exactTask) {
-          setResults([exactTask]);
-          setLoading(false);
-          return;
+        try {
+          // Try to find by exact ID first
+          const task = await getTaskById(searchQuery);
+          if (task) {
+            setResults([task]);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching task by ID:', error);
+          // Continue with search if task not found by ID
         }
 
         // If no exact match, look for partial ID matches
@@ -99,13 +104,18 @@ export function GlobalSearch() {
 
       // Fall back to regular search
       const searchResults = await searchTasks(searchQuery);
-      setResults(searchResults);
+      if (Array.isArray(searchResults)) {
+        setResults(searchResults);
+      } else {
+        setResults([]);
+      }
     } catch (error) {
       console.error('Search failed:', error);
+      setResults([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTasks, getTaskById, tasks]);
   
   // Debounce search
   useEffect(() => {
@@ -114,7 +124,7 @@ export function GlobalSearch() {
     }, 300);
     
     return () => clearTimeout(timeout);
-  }, [query]);
+  }, [query, handleSearch]);
   
   // Handle clicking on a result
   const handleResultClick = (task: Task) => {
@@ -143,12 +153,7 @@ export function GlobalSearch() {
     setResults([]);
   };
   
-  // Function to map priority to Mantine color - uses centralized theming
-  const getManticColorFromPriority = (priority: TaskPriority) => {
-    return priority === 'low' ? 'blue' :
-           priority === 'medium' ? 'yellow' :
-           priority === 'high' ? 'orange' : 'red';
-  };
+  // We don't need a custom priority color mapping function as it's provided by ThemeContext
   
   return (
     <Popover
@@ -221,7 +226,7 @@ export function GlobalSearch() {
                       </Group>
                     </Badge>
 
-                    <Badge size="xs" color={getManticColorFromPriority(task.priority)}>
+                    <Badge size="xs" color="blue">
                       <Group gap={4}>
                         <IconFlag size={10} />
                         <span>{task.priority}</span>
@@ -231,7 +236,7 @@ export function GlobalSearch() {
                     <Badge size="xs" variant="outline">
                       <Group gap={4}>
                         <IconHash size={10} />
-                        <span>{task.status.replace('_', ' ')}</span>
+                        <span>{task.status.replace(/_/g, ' ')}</span>
                       </Group>
                     </Badge>
 

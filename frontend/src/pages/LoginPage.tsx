@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -11,17 +11,28 @@ import {
   Stack,
   Image,
   rem,
-  Alert
+  Alert,
+  TextInput,
+  PasswordInput,
+  Tabs
 } from '@mantine/core';
-import { IconBrandGoogle, IconAlertCircle } from '@tabler/icons-react';
+import { IconBrandGoogle, IconAlertCircle, IconLogin, IconAt, IconLock } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { authService } from '@/services/auth.service';
 
 export default function LoginPage() {
   const { currentUser, userLoading } = useApp();
-  const { login, renderButton, isGoogleLoaded, loading, error } = useGoogleAuth();
+  const { login: googleLogin, renderButton, isGoogleLoaded, loading: googleLoading, error: googleError } = useGoogleAuth();
   const navigate = useNavigate();
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<string | null>('password');
+  
+  // Form state
+  const [email, setEmail] = useState('demo@example.com');
+  const [password, setPassword] = useState('password123');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -32,15 +43,44 @@ export default function LoginPage() {
 
   // Initialize Google Sign-In button once Google Identity Services are loaded
   useEffect(() => {
-    if (isGoogleLoaded && googleButtonRef.current) {
+    if (activeTab === 'google' && isGoogleLoaded && googleButtonRef.current) {
       renderButton('google-signin-button');
     }
-  }, [isGoogleLoaded, renderButton]);
+  }, [isGoogleLoaded, renderButton, activeTab]);
 
   const handleGoogleLogin = async () => {
-    await login();
+    setError(null);
+    await googleLogin();
     // The useEffect hook will handle redirection after successful login
     // when currentUser is updated
+  };
+  
+  const handlePasswordLogin = async () => {
+    setError(null);
+    setLoading(true);
+    
+    try {
+      const { data, error } = await authService.login(email, password);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      if (!data || !data.token) {
+        throw new Error('Invalid login response');
+      }
+      
+      // Force a refresh of the current user
+      window.dispatchEvent(new CustomEvent('auth_state_change', {
+        detail: { isAuthenticated: true }
+      }));
+      
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,48 +100,96 @@ export default function LoginPage() {
           Sign in to your account
         </Text>
 
-        {error && (
+        {(error || googleError) && (
           <Alert 
             icon={<IconAlertCircle size="1rem" />} 
             title="Authentication Error" 
             color="red" 
             mb="md"
+            withCloseButton
+            onClose={() => setError(null)}
           >
-            {error}
+            {error || googleError}
           </Alert>
         )}
+        
+        <Tabs value={activeTab} onChange={setActiveTab} mb="md">
+          <Tabs.List grow>
+            <Tabs.Tab value="password" leftSection={<IconLogin size="0.8rem" />}>
+              Password
+            </Tabs.Tab>
+            <Tabs.Tab value="google" leftSection={<IconBrandGoogle size="0.8rem" />}>
+              Google
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
 
-        <Stack mb="md" gap="md">
-          {/* Button that triggers Google One Tap dialog */}
-          <Button
-            leftSection={<IconBrandGoogle size="1rem" />}
-            variant="default"
-            loading={loading}
-            onClick={handleGoogleLogin}
-            fullWidth
-          >
-            Continue with Google Workspace
-          </Button>
-          
-          {/* Container for Google Sign-In button */}
-          <div 
-            id="google-signin-button" 
-            ref={googleButtonRef}
-            style={{ 
-              display: 'flex', 
-              justifyContent: 'center',
-              marginTop: '8px' 
-            }}
-          />
-
-          {!isGoogleLoaded && (
-            <Text size="sm" c="dimmed" ta="center">
-              Loading Google authentication...
+        {activeTab === 'password' ? (
+          <Stack gap="md">
+            <TextInput
+              label="Email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(event) => setEmail(event.currentTarget.value)}
+              leftSection={<IconAt size="1rem" />}
+              required
+            />
+            
+            <PasswordInput
+              label="Password"
+              placeholder="Your password"
+              value={password}
+              onChange={(event) => setPassword(event.currentTarget.value)}
+              leftSection={<IconLock size="1rem" />}
+              required
+            />
+            
+            <Button
+              fullWidth
+              mt="md"
+              loading={loading}
+              onClick={handlePasswordLogin}
+            >
+              Sign in
+            </Button>
+            
+            <Text size="xs" c="dimmed" ta="center">
+              Default credentials: demo@example.com / password123
             </Text>
-          )}
-        </Stack>
+          </Stack>
+        ) : (
+          <Stack gap="md">
+            {/* Button that triggers Google One Tap dialog */}
+            <Button
+              leftSection={<IconBrandGoogle size="1rem" />}
+              variant="default"
+              loading={googleLoading}
+              onClick={handleGoogleLogin}
+              fullWidth
+            >
+              Continue with Google Workspace
+            </Button>
+            
+            {/* Container for Google Sign-In button */}
+            <div 
+              id="google-signin-button" 
+              ref={googleButtonRef}
+              style={{ 
+                display: 'flex', 
+                justifyContent: 'center',
+                marginTop: '8px' 
+              }}
+            />
 
-        <Divider label="Or" labelPosition="center" my="lg" />
+            {!isGoogleLoaded && (
+              <Text size="sm" c="dimmed" ta="center">
+                Loading Google authentication...
+              </Text>
+            )}
+          </Stack>
+        )}
+
+        <Divider my="lg" />
 
         <Group justify="center" mt="md">
           <Text size="sm" c="dimmed">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Menu,
@@ -29,15 +29,17 @@ export function NotificationMenu() {
     notifications, 
     unreadCount, 
     loading, 
+    error,
     markAsRead, 
-    markAllAsRead 
+    markAllAsRead,
+    clearError
   } = useNotifications();
   
   const navigate = useNavigate();
   const [menuOpened, setMenuOpened] = useState(false);
   
-  // Get icon for notification type
-  const getNotificationIcon = (type: Notification['type']) => {
+  // Get icon for notification type - memoize to prevent recreation on every render
+  const getNotificationIcon = useCallback((type: Notification['type']) => {
     switch (type) {
       case 'assignment':
         return <IconUserPlus size={16} />;
@@ -51,22 +53,31 @@ export function NotificationMenu() {
       default:
         return <IconBell size={16} />;
     }
-  };
+  }, []);
   
   // Handle notification click
-  const handleNotificationClick = (notification: Notification) => {
-    // Mark as read
-    markAsRead(notification.id);
-    
-    // Navigate to related task if available
-    if (notification.relatedTaskId) {
-      setMenuOpened(false);
-      navigate(`/kanban?task=${notification.relatedTaskId}`);
+  const handleNotificationClick = useCallback(async (notification: Notification) => {
+    // Mark as read and await the result
+    try {
+      await markAsRead(notification.id);
+      
+      // Navigate to related task if available (only after successful mark as read)
+      if (notification.relatedTaskId) {
+        setMenuOpened(false);
+        navigate(`/kanban?task=${notification.relatedTaskId}`);
+      }
+    } catch (err) {
+      console.error('Failed to mark notification as read before navigation:', err);
+      // Still navigate even if marking as read fails
+      if (notification.relatedTaskId) {
+        setMenuOpened(false);
+        navigate(`/kanban?task=${notification.relatedTaskId}`);
+      }
     }
-  };
+  }, [markAsRead, navigate]);
   
   // Format relative time
-  const formatRelativeTime = (dateString: string) => {
+  const formatRelativeTime = useCallback((dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -81,7 +92,7 @@ export function NotificationMenu() {
     if (diffDay < 7) return `${diffDay}d ago`;
     
     return date.toLocaleDateString();
-  };
+  }, []);
   
   return (
     <Menu
@@ -129,6 +140,11 @@ export function NotificationMenu() {
           <Stack align="center" py="md">
             <Loader size="sm" />
             <Text size="sm" c="dimmed">Loading notifications...</Text>
+          </Stack>
+        ) : error ? (
+          <Stack align="center" py="md">
+            <Text size="sm" c="red">{error.message}</Text>
+            <Button size="xs" onClick={clearError}>Dismiss</Button>
           </Stack>
         ) : notifications.length === 0 ? (
           <Stack align="center" py="md">

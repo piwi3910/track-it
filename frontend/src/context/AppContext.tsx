@@ -209,7 +209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to get task:', error);
       return null;
     }
-  }, [tasks]);
+  }, [tasks]); // Depends on tasks for local lookup
   
   // Create a new task
   const createTask = useCallback(async (task: Omit<Task, 'id'>) => {
@@ -274,7 +274,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to update task:', error);
       return null;
     }
-  }, [selectedTask]);
+  }, [selectedTask]); // Depends on selectedTask for conditional update
   
   // Delete a task
   const deleteTask = useCallback(async (id: string) => {
@@ -310,7 +310,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to delete task:', error);
       return false;
     }
-  }, [selectedTask]);
+  }, [selectedTask]); // Depends on selectedTask for conditional nulling
   
   // Select a task
   const selectTask = useCallback((task: Task | null) => {
@@ -340,7 +340,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (savedFilter) {
       setFilters(savedFilter.filter);
     }
-  }, [savedFilters]);
+  }, [savedFilters]); // Depends on savedFilters for lookup
   
   // Search tasks
   const searchTasks = useCallback(async (query: string) => {
@@ -368,7 +368,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to search tasks:', error);
       return [];
     }
-  }, [tasks]);
+  }, [tasks]); // Depends on tasks for fallback local filtering
   
   // Get template by ID
   const getTemplateById = useCallback(async (id: string) => {
@@ -419,7 +419,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to update template:', error);
       return null;
     }
-  }, [selectedTemplate]);
+  }, [selectedTemplate]); // Depends on selectedTemplate for conditional updates
 
   // Delete a template
   const deleteTemplate = useCallback(async (id: string) => {
@@ -440,7 +440,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to delete template:', error);
       return false;
     }
-  }, [selectedTemplate]);
+  }, [selectedTemplate]); // Depends on selectedTemplate for conditional nulling
 
   // Select a template
   const selectTemplate = useCallback((template: TaskTemplate | null) => {
@@ -507,7 +507,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to search templates:', error);
       return [];
     }
-  }, [templates]);
+  }, [templates]); // Depends on templates for fallback filtering
 
   // Get all template categories
   const getTemplateCategories = useCallback(async () => {

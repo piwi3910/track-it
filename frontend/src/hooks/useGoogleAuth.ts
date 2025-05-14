@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useApp } from './useApp';
 import { authService } from '@/services/auth.service';
+import { useStore } from './useStore';
 
 // Google Identity Services types
 interface GoogleCredentialResponse {
@@ -39,16 +40,31 @@ interface UseGoogleAuthResult {
   isGoogleLoaded: boolean;
   loading: boolean;
   error: string | null;
+  connected: boolean;
+  connectedEmail: string | null;
 }
 
-// Google client ID - in a real app, this would be stored in environment variables
-const GOOGLE_CLIENT_ID = '123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com';
+// Google client ID from environment variables or use a default for development
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 
+  '123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com';
 
 export function useGoogleAuth(): UseGoogleAuthResult {
+  const { googleStore } = useStore();
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const [connected, setConnected] = useState(googleStore?.connected || false);
+  const [connectedEmail, setConnectedEmail] = useState<string | null>(googleStore?.connectedEmail || null);
   const googleInitialized = useRef(false);
+
+  // Sync with Zustand store
+  useEffect(() => {
+    if (googleStore) {
+      setConnected(googleStore.connected);
+      setConnectedEmail(googleStore.connectedEmail);
+    }
+  }, [googleStore?.connected, googleStore?.connectedEmail]);
 
   // Initialize Google Identity Services
   useEffect(() => {
@@ -127,6 +143,18 @@ export function useGoogleAuth(): UseGoogleAuthResult {
       
       console.log('Login successful with Google authentication');
       
+      // Link Google account if the user has Zustand store
+      if (googleStore?.linkAccount) {
+        try {
+          // In a real implementation, we would extract an auth code from the response
+          // Here we'll simulate it with the token
+          await googleStore.linkAccount(data.token);
+        } catch (linkError) {
+          console.warn('Linking Google account failed but login succeeded:', linkError);
+          // We still continue since auth worked
+        }
+      }
+      
       // Dispatch custom event for auth state change
       window.dispatchEvent(new CustomEvent('auth_state_change', {
         detail: { isAuthenticated: true }
@@ -137,7 +165,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [googleStore]);
 
   // Trigger Google login (shows the Google One Tap dialog)
   const login = useCallback(async () => {
@@ -194,5 +222,13 @@ export function useGoogleAuth(): UseGoogleAuthResult {
     }
   }, [isGoogleLoaded]);
 
-  return { login, renderButton, isGoogleLoaded, loading, error };
+  return { 
+    login, 
+    renderButton, 
+    isGoogleLoaded, 
+    loading, 
+    error,
+    connected,
+    connectedEmail
+  };
 }

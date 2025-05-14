@@ -59,6 +59,13 @@ export function GoogleIntegrationPanel() {
   const { createTask } = useApp();
   const { renderButton, isGoogleLoaded } = useGoogleAuth();
   
+  // Get Google account status
+  const [accountStatus, setAccountStatus] = useState<{
+    name?: string;
+    email?: string;
+    picture?: string;
+  } | null>(null);
+  
   const [activeTab, setActiveTab] = useState('calendar');
   const [selectedCalendarEvents, setSelectedCalendarEvents] = useState<string[]>([]);
   const [importingEvents, setImportingEvents] = useState(false);
@@ -71,6 +78,28 @@ export function GoogleIntegrationPanel() {
   const [tasksSync, setTasksSync] = useState(true);
   const [driveSync, setDriveSync] = useState(false);
 
+  // Fetch Google account status when authenticated
+  useEffect(() => {
+    const fetchAccountStatus = async () => {
+      if (isAuthenticated && googleStore?.getAccountStatus) {
+        try {
+          const status = await googleStore.getAccountStatus();
+          if (status) {
+            setAccountStatus({
+              name: status.name,
+              email: status.email,
+              picture: status.picture
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch Google account status:', error);
+        }
+      }
+    };
+    
+    fetchAccountStatus();
+  }, [isAuthenticated, googleStore]);
+  
   // Render Google Sign-in button if not authenticated
   useEffect(() => {
     if (!isAuthenticated && isGoogleLoaded && googleButtonRef.current) {
@@ -222,16 +251,15 @@ export function GoogleIntegrationPanel() {
     <Stack>
       <Group align="start">
         <Avatar 
-          src={googleStore?.connectedEmail ? 
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(googleStore.connectedEmail)}&background=random` : 
-            undefined
+          src={accountStatus?.picture || 
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(googleStore?.connectedEmail || 'User')}&background=random`
           } 
           color="red" 
           radius="xl"
         />
         <Stack gap={0} style={{ flex: 1 }}>
-          <Text fw={500}>Connected to Google</Text>
-          <Text size="sm" c="dimmed">{googleStore?.connectedEmail || 'Google account connected'}</Text>
+          <Text fw={500}>{accountStatus?.name || 'Connected to Google'}</Text>
+          <Text size="sm" c="dimmed">{accountStatus?.email || googleStore?.connectedEmail || 'Google account connected'}</Text>
         </Stack>
         <Button 
           variant="outline" 

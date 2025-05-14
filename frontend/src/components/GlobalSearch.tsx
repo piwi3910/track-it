@@ -13,7 +13,7 @@ import {
   Loader,
   rem
 } from '@mantine/core';
-import { useHotkeys, useDisclosure } from '@mantine/hooks';
+import { useHotkeys, useDisclosure, useDebouncedValue } from '@mantine/hooks';
 import {
   IconSearch,
   IconX,
@@ -24,7 +24,7 @@ import {
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
-import { Task, TaskPriority } from '@/types/task';
+import { Task } from '@/types/task';
 
 export function GlobalSearch() {
   const { searchTasks, getTaskById, tasks } = useApp();
@@ -45,14 +45,19 @@ export function GlobalSearch() {
   
   // Load recent searches from localStorage
   useEffect(() => {
-    const savedSearches = localStorage.getItem('recentSearches');
-    if (savedSearches) {
-      setRecentSearches(JSON.parse(savedSearches));
+    try {
+      const savedSearches = localStorage.getItem('recentSearches');
+      if (savedSearches) {
+        setRecentSearches(JSON.parse(savedSearches));
+      }
+    } catch (error) {
+      console.error('Failed to load recent searches:', error);
+      // If localStorage fails, continue with empty recent searches
     }
   }, []);
   
   // Save recent searches to localStorage
-  const saveSearch = (searchQuery: string) => {
+  const saveSearch = useCallback((searchQuery: string) => {
     if (!searchQuery.trim()) return;
     
     const updatedSearches = [
@@ -61,8 +66,14 @@ export function GlobalSearch() {
     ].slice(0, 5); // Keep only the 5 most recent searches
     
     setRecentSearches(updatedSearches);
-    localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
-  };
+    
+    try {
+      localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
+    } catch (error) {
+      console.error('Failed to save recent searches:', error);
+      // Continue even if localStorage fails
+    }
+  }, [recentSearches]);
   
   // Handle search - memoized to avoid unnecessary re-renders
   const handleSearch = useCallback(async (searchQuery: string) => {
@@ -77,38 +88,33 @@ export function GlobalSearch() {
       const isIdSearch = searchQuery.startsWith('task-') || /^[a-z0-9]{8}$/i.test(searchQuery);
 
       if (isIdSearch) {
+        // Try to find by exact ID first in local cache
+        const localMatch = tasks.find(task => 
+          task.id.toLowerCase() === searchQuery.toLowerCase() ||
+          task.id.toLowerCase().startsWith(searchQuery.toLowerCase())
+        );
+        
+        if (localMatch) {
+          setResults([localMatch]);
+          return;
+        }
+        
         try {
-          // Try to find by exact ID first
+          // Not in local cache, try API call
           const task = await getTaskById(searchQuery);
           if (task) {
             setResults([task]);
-            setLoading(false);
             return;
           }
         } catch (error) {
           console.error('Error fetching task by ID:', error);
           // Continue with search if task not found by ID
         }
-
-        // If no exact match, look for partial ID matches
-        const partialIdMatches = tasks.filter(task =>
-          task.id.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        if (partialIdMatches.length > 0) {
-          setResults(partialIdMatches);
-          setLoading(false);
-          return;
-        }
       }
 
-      // Fall back to regular search
+      // Fall back to API search
       const searchResults = await searchTasks(searchQuery);
-      if (Array.isArray(searchResults)) {
-        setResults(searchResults);
-      } else {
-        setResults([]);
-      }
+      setResults(Array.isArray(searchResults) ? searchResults : []);
     } catch (error) {
       console.error('Search failed:', error);
       setResults([]);
@@ -117,14 +123,15 @@ export function GlobalSearch() {
     }
   }, [searchTasks, getTaskById, tasks]);
   
-  // Debounce search
+  // Use Mantine's built-in debounce hook
+  const [debouncedQuery] = useDebouncedValue(query, 300);
+  
+  // Run search when debounced query changes
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      handleSearch(query);
-    }, 300);
-    
-    return () => clearTimeout(timeout);
-  }, [query, handleSearch]);
+    if (debouncedQuery !== undefined) {
+      handleSearch(debouncedQuery);
+    }
+  }, [debouncedQuery, handleSearch]);
   
   // Handle clicking on a result
   const handleResultClick = (task: Task) => {
@@ -142,16 +149,16 @@ export function GlobalSearch() {
   };
   
   // Handle clicking on a recent search
-  const handleRecentSearchClick = (searchQuery: string) => {
+  const handleRecentSearchClick = useCallback((searchQuery: string) => {
     setQuery(searchQuery);
-    handleSearch(searchQuery);
-  };
+    // No need to call handleSearch directly as it will be triggered by the debounced query effect
+  }, []);
   
   // Clear search
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setQuery('');
     setResults([]);
-  };
+  }, []);
   
   // We don't need a custom priority color mapping function as it's provided by ThemeContext
   
@@ -170,6 +177,9 @@ export function GlobalSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={open}
+          aria-label="Search tasks"
+          aria-controls="search-results"
+          aria-expanded={opened}
           rightSection={
             query ? (
               <ActionIcon variant="subtle" onClick={clearSearch}>
@@ -198,14 +208,17 @@ export function GlobalSearch() {
           <ScrollArea h={400}>
             <Stack gap="xs">
               <Text size="xs" fw={700} c="dimmed">SEARCH RESULTS</Text>
-              {results.map(task => (
-                <Paper
-                  key={task.id}
-                  p="xs"
-                  withBorder
-                  onClick={() => handleResultClick(task)}
-                  style={{ cursor: 'pointer' }}
-                >
+              <div id="search-results" role="listbox" aria-label="Search results">
+                {results.map((task, index) => (
+                  <Paper
+                    key={task.id}
+                    p="xs"
+                    withBorder
+                    onClick={() => handleResultClick(task)}
+                    style={{ cursor: 'pointer' }}
+                    role="option"
+                    aria-selected={index === 0}
+                  >
                   <Group justify="space-between" wrap="nowrap">
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                       <Text truncate fw={500}>{task.title}</Text>
@@ -226,7 +239,7 @@ export function GlobalSearch() {
                       </Group>
                     </Badge>
 
-                    <Badge size="xs" color="blue">
+                    <Badge size="xs" color={getPriorityColor(task.priority)}>
                       <Group gap={4}>
                         <IconFlag size={10} />
                         <span>{task.priority}</span>
@@ -247,8 +260,9 @@ export function GlobalSearch() {
                       </Badge>
                     )}
                   </Group>
-                </Paper>
-              ))}
+                  </Paper>
+                ))}
+              </div>
             </Stack>
           </ScrollArea>
         ) : query.length === 0 && recentSearches.length > 0 ? (

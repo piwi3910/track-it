@@ -25,6 +25,16 @@ const mockUsers: User[] = [
   }
 ];
 
+// Store for Google connected accounts
+// In a real app, this would be stored in the database
+const googleConnections: Record<string, {
+  googleId: string;
+  email: string;
+  name: string;
+  picture: string;
+  userId: string;
+}> = {};
+
 // Input validation schemas
 const userLoginSchema = z.object({
   email: z.string().email(),
@@ -40,6 +50,34 @@ const userRegisterSchema = z.object({
   message: "Passwords don't match",
   path: ["passwordConfirm"]
 });
+
+const googleLoginSchema = z.object({
+  idToken: z.string()
+});
+
+const googleTokenVerificationSchema = z.object({
+  credential: z.string()
+});
+
+// Mock function to decode and verify a Google ID token
+// In a real app, you would use the Google OAuth2 API to verify the token
+async function verifyGoogleIdToken(idToken: string) {
+  // For development purposes, we're mocking this by assuming the token is valid
+  // In production, you would verify this token with Google
+  console.log('Verifying Google ID token:', idToken.substring(0, 10) + '...');
+  
+  // Mock decoded token payload (in production this would come from Google)
+  return {
+    sub: 'google-123456789',
+    email: 'user@example.com',
+    email_verified: true,
+    name: 'Test User',
+    picture: 'https://i.pravatar.cc/150?u=google-user',
+    given_name: 'Test',
+    family_name: 'User',
+    locale: 'en'
+  };
+}
 
 // Users router with endpoints
 export const usersRouter = router({
@@ -70,6 +108,99 @@ export const usersRouter = router({
         role: user.role || 'member',
         token
       };
+    }),
+  
+  // Google authentication
+  loginWithGoogle: publicProcedure
+    .input(googleLoginSchema)
+    .mutation(async ({ input, ctx }): Promise<LoginResponse> => {
+      try {
+        // Verify the Google ID token
+        const payload = await verifyGoogleIdToken(input.idToken);
+        
+        if (!payload.email_verified) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Email not verified with Google'
+          });
+        }
+        
+        // Check if user exists
+        let user = mockUsers.find(user => user.email === payload.email);
+        
+        // If user doesn't exist, create a new user
+        if (!user) {
+          user = {
+            id: `user-google-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: payload.name,
+            email: payload.email,
+            avatarUrl: payload.picture,
+            role: 'member',
+            googleId: payload.sub,
+          };
+          
+          mockUsers.push(user);
+        }
+        
+        // Store Google connection
+        googleConnections[payload.sub] = {
+          googleId: payload.sub,
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture,
+          userId: user.id
+        };
+        
+        // Generate JWT token
+        const token = ctx.req.server.jwt.sign({ 
+          id: user.id,
+          role: user.role || 'member'
+        });
+        
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role || 'member',
+          token,
+          googleConnected: true
+        };
+      } catch (error) {
+        console.error('Google login error:', error);
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: error instanceof Error ? error.message : 'Google authentication failed'
+        });
+      }
+    }),
+  
+  // Verify Google token
+  verifyGoogleToken: publicProcedure
+    .input(googleTokenVerificationSchema)
+    .mutation(async ({ input }): Promise<{
+      valid: boolean;
+      email?: string;
+      name?: string;
+      picture?: string;
+    }> => {
+      try {
+        // Verify the Google ID token
+        const payload = await verifyGoogleIdToken(input.credential);
+        
+        if (!payload.email_verified) {
+          return { valid: false };
+        }
+        
+        return {
+          valid: true,
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture
+        };
+      } catch (error) {
+        console.error('Google token verification error:', error);
+        return { valid: false };
+      }
     }),
     
   register: publicProcedure
@@ -113,13 +244,20 @@ export const usersRouter = router({
         });
       }
       
+      // Check if user has Google connection
+      const googleConnection = Object.values(googleConnections).find(
+        conn => conn.userId === user.id
+      );
+      
       return {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         avatarUrl: user.avatarUrl,
-        preferences: user.preferences
+        preferences: user.preferences,
+        googleConnected: !!googleConnection,
+        googleEmail: googleConnection?.email
       };
     }),
     
@@ -155,14 +293,46 @@ export const usersRouter = router({
         }
       };
       
+      // Check for Google connection
+      const googleConnection = Object.values(googleConnections).find(
+        conn => conn.userId === mockUsers[userIndex].id
+      );
+      
       return {
         id: mockUsers[userIndex].id,
         name: mockUsers[userIndex].name,
         email: mockUsers[userIndex].email,
         role: mockUsers[userIndex].role,
         avatarUrl: mockUsers[userIndex].avatarUrl,
-        preferences: mockUsers[userIndex].preferences
+        preferences: mockUsers[userIndex].preferences,
+        googleConnected: !!googleConnection,
+        googleEmail: googleConnection?.email
       };
+    }),
+  
+  // Google account connection
+  disconnectGoogleAccount: protectedProcedure
+    .mutation(({ ctx }): { success: boolean } => {
+      const user = mockUsers.find(user => user.id === ctx.user?.id);
+      
+      if (!user) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found'
+        });
+      }
+      
+      // Find Google connection
+      const googleId = Object.entries(googleConnections).find(
+        ([_, conn]) => conn.userId === user.id
+      )?.[0];
+      
+      if (googleId) {
+        delete googleConnections[googleId];
+        return { success: true };
+      }
+      
+      return { success: false };
     }),
     
   // Admin routes

@@ -1,5 +1,4 @@
-// @ts-nocheck - Temporarily disable type checking in this file
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Title,
   Text,
@@ -14,7 +13,11 @@ import {
   ActionIcon,
   ScrollArea,
   Image,
-  List
+  List,
+  Alert,
+  Switch,
+  Box,
+  Divider
 } from '@mantine/core';
 import {
   IconCalendar,
@@ -25,14 +28,20 @@ import {
   IconDownload,
   IconPlus,
   IconRefresh,
-  IconCheck
+  IconCheck,
+  IconAlertCircle,
+  IconSettings
 } from '@tabler/icons-react';
 import { useGoogle } from '@/context/GoogleContext';
 import { useApp } from '@/hooks/useApp';
+import { useStore } from '@/hooks/useStore';
+import { authService } from '@/services/auth.service';
 import { notifications } from '@mantine/notifications';
 import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 export function GoogleIntegrationPanel() {
+  const { googleStore } = useStore();
   const {
     isAuthenticated,
     authenticating,
@@ -44,52 +53,114 @@ export function GoogleIntegrationPanel() {
     tasksSyncing,
     driveFiles,
     driveSyncing,
-    fetchDriveFiles
+    fetchDriveFiles,
+    logout: googleLogout
   } = useGoogle();
-
   const { createTask } = useApp();
+  const { renderButton, isGoogleLoaded } = useGoogleAuth();
+  
   const [activeTab, setActiveTab] = useState('calendar');
   const [selectedCalendarEvents, setSelectedCalendarEvents] = useState<string[]>([]);
   const [importingEvents, setImportingEvents] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  
+  // Sync settings
+  const [autoSync, setAutoSync] = useState(true);
+  const [calendarSync, setCalendarSync] = useState(true);
+  const [tasksSync, setTasksSync] = useState(true);
+  const [driveSync, setDriveSync] = useState(false);
+
+  // Render Google Sign-in button if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && isGoogleLoaded && googleButtonRef.current) {
+      renderButton('google-signin-button');
+    }
+  }, [isAuthenticated, isGoogleLoaded, renderButton]);
 
   // Handle authentication
   const handleAuth = async () => {
-    await authenticate();
-    notifications.show({
-      title: 'Successfully connected',
-      message: 'Your Google account has been connected successfully',
-      color: 'green'
-    });
+    setError(null);
+    try {
+      await authenticate();
+      notifications.show({
+        title: 'Successfully connected',
+        message: 'Your Google account has been connected successfully',
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Authentication failed:', err);
+      setError(err instanceof Error ? err.message : 'Authentication failed');
+    }
+  };
+
+  // Handle disconnecting account
+  const handleDisconnect = async () => {
+    setError(null);
+    try {
+      // Disconnect Google account both in store and context
+      if (googleStore?.unlinkAccount) {
+        await googleStore.unlinkAccount();
+      }
+      googleLogout();
+      
+      notifications.show({
+        title: 'Account disconnected',
+        message: 'Your Google account has been disconnected',
+        color: 'blue'
+      });
+    } catch (err) {
+      console.error('Failed to disconnect Google account:', err);
+      setError(err instanceof Error ? err.message : 'Failed to disconnect account');
+    }
   };
 
   // Handle calendar sync
   const handleSyncCalendar = async () => {
-    await syncCalendar();
-    notifications.show({
-      title: 'Calendar synced',
-      message: 'Your Google Calendar has been synced successfully',
-      color: 'green'
-    });
+    setError(null);
+    try {
+      await syncCalendar();
+      notifications.show({
+        title: 'Calendar synced',
+        message: 'Your Google Calendar has been synced successfully',
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Calendar sync failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to sync calendar');
+    }
   };
 
   // Handle import tasks
   const handleImportTasks = async () => {
-    const importedTasks = await importGoogleTasks();
-    notifications.show({
-      title: 'Tasks imported',
-      message: `${importedTasks.length} tasks imported from Google Tasks`,
-      color: 'green'
-    });
+    setError(null);
+    try {
+      const importedTasks = await importGoogleTasks();
+      notifications.show({
+        title: 'Tasks imported',
+        message: `${importedTasks.length} tasks imported from Google Tasks`,
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Failed to import tasks:', err);
+      setError(err instanceof Error ? err.message : 'Failed to import tasks');
+    }
   };
 
   // Handle fetch Drive files
   const handleFetchDriveFiles = async () => {
-    await fetchDriveFiles();
-    notifications.show({
-      title: 'Drive files fetched',
-      message: 'Your Google Drive files have been fetched successfully',
-      color: 'green'
-    });
+    setError(null);
+    try {
+      await fetchDriveFiles();
+      notifications.show({
+        title: 'Drive files fetched',
+        message: 'Your Google Drive files have been fetched successfully',
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Failed to fetch Drive files:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch Drive files');
+    }
   };
 
   // Toggle calendar event selection
@@ -106,6 +177,7 @@ export function GoogleIntegrationPanel() {
     if (selectedCalendarEvents.length === 0) return;
     
     setImportingEvents(true);
+    setError(null);
     try {
       // Create tasks from selected events
       const eventsToImport = calendarEvents.filter(event => 
@@ -132,8 +204,9 @@ export function GoogleIntegrationPanel() {
       
       // Clear selection
       setSelectedCalendarEvents([]);
-    } catch (error) {
-      console.error('Failed to import events:', error);
+    } catch (err) {
+      console.error('Failed to import events:', err);
+      setError(err instanceof Error ? err.message : 'Failed to import events');
       notifications.show({
         title: 'Import failed',
         message: 'Failed to import calendar events',
@@ -144,8 +217,107 @@ export function GoogleIntegrationPanel() {
     }
   };
 
+  // Settings section if authenticated
+  const renderSettings = () => (
+    <Stack>
+      <Group align="start">
+        <Avatar 
+          src={googleStore?.connectedEmail ? 
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(googleStore.connectedEmail)}&background=random` : 
+            undefined
+          } 
+          color="red" 
+          radius="xl"
+        />
+        <Stack gap={0} style={{ flex: 1 }}>
+          <Text fw={500}>Connected to Google</Text>
+          <Text size="sm" c="dimmed">{googleStore?.connectedEmail || 'Google account connected'}</Text>
+        </Stack>
+        <Button 
+          variant="outline" 
+          color="red" 
+          onClick={handleDisconnect}
+        >
+          Disconnect
+        </Button>
+      </Group>
+      
+      <Divider my="md" label="Sync Settings" labelPosition="center" />
+      
+      <Stack>
+        <Group justify="space-between">
+          <div>
+            <Text fw={500}>Auto-sync</Text>
+            <Text size="xs" c="dimmed">Automatically sync data when changes occur</Text>
+          </div>
+          <Switch 
+            checked={autoSync} 
+            onChange={(e) => setAutoSync(e.currentTarget.checked)} 
+          />
+        </Group>
+        
+        <Group justify="space-between">
+          <div>
+            <Text fw={500}>Calendar</Text>
+            <Text size="xs" c="dimmed">Sync Google Calendar events</Text>
+          </div>
+          <Group gap="xs">
+            <Switch 
+              checked={calendarSync} 
+              onChange={(e) => setCalendarSync(e.currentTarget.checked)} 
+            />
+          </Group>
+        </Group>
+        
+        <Group justify="space-between">
+          <div>
+            <Text fw={500}>Tasks</Text>
+            <Text size="xs" c="dimmed">Sync Google Tasks</Text>
+          </div>
+          <Switch 
+            checked={tasksSync} 
+            onChange={(e) => setTasksSync(e.currentTarget.checked)} 
+          />
+        </Group>
+        
+        <Group justify="space-between">
+          <div>
+            <Text fw={500}>Drive</Text>
+            <Text size="xs" c="dimmed">Access Google Drive files</Text>
+          </div>
+          <Switch 
+            checked={driveSync} 
+            onChange={(e) => setDriveSync(e.currentTarget.checked)} 
+          />
+        </Group>
+      </Stack>
+      
+      <Box mt="md">
+        <Text size="xs" c="dimmed" ta="center">
+          Last synced: {googleStore?.lastSyncTime ? 
+            new Date(googleStore.lastSyncTime).toLocaleString() : 
+            'Never'
+          }
+        </Text>
+      </Box>
+    </Stack>
+  );
+
   return (
     <Paper p="xl" withBorder>
+      {error && (
+        <Alert 
+          icon={<IconAlertCircle size={16} />}
+          title="Error" 
+          color="red" 
+          mb="md"
+          withCloseButton
+          onClose={() => setError(null)}
+        >
+          {error}
+        </Alert>
+      )}
+    
       {!isAuthenticated ? (
         <Stack align="center" gap="lg">
           <Avatar size={80} color="red" radius={80}>
@@ -156,6 +328,8 @@ export function GoogleIntegrationPanel() {
             Connect your Google account to sync your calendar, tasks, and documents.
             This allows you to view and import data from Google services directly into Track-It.
           </Text>
+          
+          {/* Legacy button */}
           <Button 
             leftSection={<IconBrandGoogle size={16} />} 
             color="red" 
@@ -164,6 +338,17 @@ export function GoogleIntegrationPanel() {
           >
             Connect with Google
           </Button>
+          
+          {/* Google Identity Services button */}
+          <div 
+            id="google-signin-button" 
+            ref={googleButtonRef}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              marginTop: '8px' 
+            }}
+          />
         </Stack>
       ) : (
         <>
@@ -178,8 +363,13 @@ export function GoogleIntegrationPanel() {
               <Tabs.Tab value="drive" leftSection={<IconFileDescription size={16} />}>
                 Drive
               </Tabs.Tab>
+              <Tabs.Tab value="settings" leftSection={<IconSettings size={16} />}>
+                Settings
+              </Tabs.Tab>
             </Tabs.List>
           </Tabs>
+          
+          {activeTab === 'settings' && renderSettings()}
           
           {activeTab === 'calendar' && (
             <Stack>
@@ -213,6 +403,13 @@ export function GoogleIntegrationPanel() {
               ) : calendarEvents.length === 0 ? (
                 <Stack align="center" my="xl">
                   <Text c="dimmed">No calendar events found. Sync your calendar to see events.</Text>
+                  <Button 
+                    leftSection={<IconRefresh size={16} />}
+                    variant="light"
+                    onClick={handleSyncCalendar}
+                  >
+                    Sync Now
+                  </Button>
                 </Stack>
               ) : (
                 <ScrollArea h={400}>
@@ -289,6 +486,13 @@ export function GoogleIntegrationPanel() {
               ) : driveFiles.length === 0 ? (
                 <Stack align="center" my="xl">
                   <Text c="dimmed">No files found. Fetch your files to see them here.</Text>
+                  <Button 
+                    leftSection={<IconRefresh size={16} />}
+                    variant="light"
+                    onClick={handleFetchDriveFiles}
+                  >
+                    Fetch Now
+                  </Button>
                 </Stack>
               ) : (
                 <ScrollArea h={400}>

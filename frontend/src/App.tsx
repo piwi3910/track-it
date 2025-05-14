@@ -8,6 +8,7 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { useStore } from '@/hooks/useStore';
 
 function App() {
@@ -19,30 +20,35 @@ function App() {
   }
 
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/login" element={<LoginPage />} />
+    <>
+      {/* Global auth error handler - works across all routes */}
+      <AuthErrorHandler />
+      
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
 
-      {/* Protected routes */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute isAuthenticated={auth.isAuthenticated}>
-            <AppLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="kanban" element={<KanbanPage />} />
-        <Route path="calendar" element={<CalendarPage />} />
-        <Route path="backlog" element={<BacklogPage />} />
-        <Route path="templates" element={<TemplatesPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        {/* Catch all for unknown routes */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Route>
-    </Routes>
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute isAuthenticated={auth.isAuthenticated}>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="kanban" element={<KanbanPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
+          <Route path="backlog" element={<BacklogPage />} />
+          <Route path="templates" element={<TemplatesPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          {/* Catch all for unknown routes */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 

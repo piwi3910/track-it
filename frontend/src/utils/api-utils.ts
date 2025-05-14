@@ -43,11 +43,40 @@ export function combineResponses<T extends Record<string, any>>(
  */
 export async function isApiAvailable(): Promise<boolean> {
   try {
-    // Try to call a simple API endpoint that doesn't require authentication
-    const response = await fetch(
-      import.meta.env.VITE_API_URL?.replace('/trpc', '') || 'http://localhost:3001/health'
-    );
-    return response.ok;
+    // Extract the base URL (removing /trpc if present)
+    const baseUrl = import.meta.env.VITE_API_URL?.includes('/trpc') 
+      ? import.meta.env.VITE_API_URL.split('/trpc')[0]
+      : import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    
+    // Add trailing slash if missing
+    const normalizedUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    
+    // Only use the root health endpoint, not the tRPC one
+    const healthUrl = `${normalizedUrl}health`;
+    
+    console.log(`Checking API availability at ${healthUrl}`);
+    
+    // Try the health endpoint with proper headers but NO credentials
+    // This avoids CORS issues with wildcard origin and credentials
+    const response = await fetch(healthUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-From-Frontend': 'track-it-frontend'
+      },
+      // Use 'same-origin' mode for credentials to avoid CORS issues with '*'
+      credentials: 'same-origin',
+      mode: 'cors',
+    });
+    
+    if (response.ok) {
+      console.log('API health check succeeded');
+      return true;
+    }
+    
+    // Log the failure and return false
+    console.log(`Health check failed, API seems to be down`);
+    return false;
   } catch (error) {
     console.error('API health check failed:', error);
     return false;

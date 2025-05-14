@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { api } from '@/api';
 
 /**
@@ -28,6 +27,11 @@ export const authService = {
    */
   setToken(token: string): void {
     localStorage.setItem('token', token);
+    
+    // Dispatch custom event for auth state change
+    window.dispatchEvent(new CustomEvent('auth_state_change', {
+      detail: { isAuthenticated: true }
+    }));
   },
   
   /**
@@ -35,6 +39,11 @@ export const authService = {
    */
   clearToken(): void {
     localStorage.removeItem('token');
+    
+    // Dispatch custom event for auth state change
+    window.dispatchEvent(new CustomEvent('auth_state_change', {
+      detail: { isAuthenticated: false }
+    }));
   },
   
   /**
@@ -44,13 +53,77 @@ export const authService = {
    * @returns A promise with the login response
    */
   async login(email: string, password: string) {
-    const response = await api.auth.login(email, password);
-    
-    if (response.data?.token) {
-      this.setToken(response.data.token);
+    try {
+      const result = await api.auth.login(email, password);
+      
+      if (result.data && result.data.token) {
+        this.setToken(result.data.token);
+        return { data: result.data, error: null };
+      }
+      
+      return { data: null, error: result.error || 'Login failed' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error.message : 'Authentication failed' 
+      };
     }
-    
-    return response;
+  },
+  
+  /**
+   * Authenticate with Google Identity token
+   * @param idToken The Google Identity token
+   * @returns A promise with the login response
+   */
+  async loginWithGoogle(idToken: string) {
+    try {
+      const result = await api.auth.loginWithGoogle(idToken);
+      
+      if (result.data && result.data.token) {
+        this.setToken(result.data.token);
+        return { data: result.data, error: null };
+      }
+      
+      return { data: null, error: result.error || 'Google login failed' };
+    } catch (error) {
+      console.error('Google login error:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error.message : 'Google authentication failed' 
+      };
+    }
+  },
+  
+  /**
+   * Verify Google token on the backend
+   * @param credential The Google credential
+   * @returns A promise with verification response
+   */
+  async verifyGoogleToken(credential: string) {
+    try {
+      const result = await api.auth.verifyGoogleToken(credential);
+      
+      if (result.data && result.data.valid) {
+        return { 
+          data: { 
+            valid: true, 
+            email: result.data.email, 
+            name: result.data.name,
+            picture: result.data.picture
+          }, 
+          error: null 
+        };
+      }
+      
+      return { data: { valid: false }, error: result.error || 'Invalid Google token' };
+    } catch (error) {
+      console.error('Google token verification error:', error);
+      return { 
+        data: { valid: false }, 
+        error: error instanceof Error ? error.message : 'Token verification failed' 
+      };
+    }
   },
   
   /**
@@ -58,7 +131,20 @@ export const authService = {
    */
   logout(): void {
     this.clearToken();
-    // Additional cleanup if needed
+    
+    // If we have Google auth loaded, sign out from Google too
+    if (window.google?.accounts?.id) {
+      // This method only exists in newer versions of the Google Identity Services
+      try {
+        // @ts-ignore - This method might not exist in all versions
+        if (typeof window.google.accounts.id.revoke === 'function') {
+          window.google.accounts.id.revoke();
+        }
+        window.google.accounts.id.disableAutoSelect();
+      } catch (e) {
+        console.error('Error signing out from Google:', e);
+      }
+    }
   },
   
   /**
@@ -71,6 +157,25 @@ export const authService = {
       return { data: null, error: 'Not authenticated' };
     }
     
-    return api.auth.getCurrentUser();
+    try {
+      const result = await api.auth.getCurrentUser();
+      return { data: result.data, error: result.error };
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      
+      // If the error is authentication related, clear the token
+      if (error instanceof Error && 
+          (error.message.includes('unauthorized') || 
+           error.message.includes('Unauthorized') || 
+           error.message.includes('token') || 
+           error.message.includes('session'))) {
+        this.clearToken();
+      }
+      
+      return { 
+        data: null, 
+        error: error instanceof Error ? error.message : 'Failed to get user data' 
+      };
+    }
   }
 };

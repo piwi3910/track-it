@@ -22,10 +22,12 @@ async function setupServer(): Promise<void> {
   try {
     // Register CORS
     await server.register(cors, {
-      origin: config.corsOrigin,
+      origin: ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin],
       credentials: true,
       methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-From-Frontend']
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-From-Frontend'],
+      exposedHeaders: ['Authorization'],
+      preflight: true
     });
 
     // Register JWT
@@ -34,8 +36,26 @@ async function setupServer(): Promise<void> {
     });
 
     // Health check route
-    server.get('/health', async (): Promise<{ status: string; timestamp: string }> => {
-      return { status: 'ok', timestamp: new Date().toISOString() };
+    server.get('/health', async (request, reply): Promise<{ status: string; timestamp: string; api: string; version: string }> => {
+      // Set appropriate headers for CORS
+      reply.header('Access-Control-Allow-Origin', '*');
+      reply.header('Access-Control-Allow-Methods', 'GET');
+      
+      return { 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        api: 'track-it-backend',
+        version: '1.0.0'
+      };
+    });
+    
+    // Root health check (for API availability checks)
+    server.get('/', async (request, reply): Promise<{ status: string }> => {
+      // Set appropriate headers for CORS
+      reply.header('Access-Control-Allow-Origin', '*');
+      reply.header('Access-Control-Allow-Methods', 'GET');
+      
+      return { status: 'Server is running' };
     });
 
     // Register tRPC plugin

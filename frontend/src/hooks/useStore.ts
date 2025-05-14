@@ -34,7 +34,14 @@ export function useStore() {
     isApiLoading: isApiStatusLoading,
     apiError,
     isMockApi,
-    checkApiAvailability
+    useMockApi,
+    checkApiAvailability,
+    connectionAttempts,
+    recentErrors,
+    lastChecked,
+    setApiAvailable,
+    setApiError,
+    clearErrors: clearApiErrors
   } = useApiStore();
   
   // Auth
@@ -143,6 +150,7 @@ export function useStore() {
   
   // Error handling
   const clearAllErrors = () => {
+    clearApiErrors();
     clearAuthError();
     clearTaskError();
     clearTemplateError();
@@ -171,7 +179,14 @@ export function useStore() {
       isLoading: isApiStatusLoading,
       error: apiError,
       isMockApi,
-      checkAvailability: checkApiAvailability
+      setUseMockApi: useMockApi,
+      connectionAttempts,
+      recentErrors,
+      lastChecked,
+      checkAvailability: checkApiAvailability,
+      setAvailable: setApiAvailable,
+      setError: setApiError,
+      clearErrors: clearApiErrors
     },
     
     // Auth

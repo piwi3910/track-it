@@ -21,8 +21,28 @@ export const trpcClient = trpc.createClient({
           Authorization: token ? `Bearer ${token}` : '',
           // Add custom header to help with CORS issues
           'X-From-Frontend': 'track-it-frontend',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         };
       },
+      fetch(url, options) {
+        // Add debugging for API requests
+        console.log(`Making API request to: ${url}`);
+        
+        return fetch(url, {
+          ...options,
+          credentials: 'include', // Include cookies for authentication
+          mode: 'cors', // Ensure CORS mode
+        }).then(response => {
+          if (!response.ok) {
+            console.error(`API request failed with status: ${response.status}`);
+          }
+          return response;
+        }).catch(error => {
+          console.error('API request error:', error);
+          throw error;
+        });
+      }
     }),
   ],
 });

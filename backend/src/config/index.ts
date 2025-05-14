@@ -16,7 +16,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('1d'),
 
   // CORS
-  CORS_ORIGIN: z.string().default('*'),
+  CORS_ORIGIN: z.string().default('http://localhost:3000'),
 
   // Redis configuration
   REDIS_HOST: z.string().default('localhost'),

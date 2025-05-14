@@ -20,20 +20,59 @@ export const apiHandler = async <T>(
   } catch (error) {
     console.error('API Error:', error);
     let errorMessage = 'Unknown error occurred';
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    // Create a custom event to notify about API errors
+    const event = new CustomEvent('api_error', { 
+      detail: { error, timestamp: new Date().toISOString() } 
+    });
+    window.dispatchEvent(event);
 
     if (error instanceof TRPCClientError) {
+      // Check if the error is a connection error
+      if (error.message.includes('fetch') || 
+          error.message.includes('network') || 
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('Unable to transform response from server')) {
+        errorMessage = 'Cannot connect to the server. Please check that the backend is running.';
+        errorCode = 'CONNECTION_ERROR';
+        
+        // Trigger API availability check
+        const apiCheckEvent = new CustomEvent('check_api_availability');
+        window.dispatchEvent(apiCheckEvent);
+      }
       // Check if the error is an authentication error
-      if (error.message === 'UNAUTHORIZED' || error.data?.code === 'UNAUTHORIZED') {
+      else if (error.message === 'UNAUTHORIZED' || 
+               error.data?.code === 'UNAUTHORIZED' ||
+               error.message.includes('unauthorized') ||
+               error.message.includes('not authenticated')) {
+        errorMessage = 'Authentication failed. Please log in again.';
+        errorCode = 'AUTH_ERROR';
+        
         // Clear token if it's an auth error
         localStorage.removeItem('token');
+        
+        // Dispatch auth error event
+        const authEvent = new CustomEvent('auth_error');
+        window.dispatchEvent(authEvent);
+      } 
+      // Other known TRPC errors
+      else {
+        errorMessage = error.message;
+        errorCode = error.data?.code || 'TRPC_ERROR';
       }
-
-      errorMessage = error.message;
     } else if (error instanceof Error) {
       errorMessage = error.message;
+      errorCode = 'JS_ERROR';
     }
 
-    return { data: null, error: errorMessage };
+    // Log structured error for debugging
+    console.error(`API Error (${errorCode}):`, errorMessage);
+    
+    return { 
+      data: null, 
+      error: errorMessage,
+    };
   }
 };
 

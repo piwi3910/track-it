@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { router, protectedProcedure } from '../trpc/trpc';
-import { TRPCError } from '@trpc/server';
+import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import type {
   Comment
 } from '@track-it/shared';
+import { createNotFoundError, createForbiddenError } from '../utils/error-handler';
 
 // Mock comments database
 const mockComments: Comment[] = [];
@@ -13,9 +13,9 @@ export const commentsRouter = router({
   // Get comments by task ID
   getByTaskId: protectedProcedure
     .input(z.object({ taskId: z.string() }).strict())
-    .query(({ input }) => {
+    .query(({ input }) => safeProcedure(async () => {
       return mockComments.filter(comment => comment.taskId === input.taskId);
-    }),
+    })),
     
   // Get comment count by task ID
   getCommentCount: protectedProcedure
@@ -30,7 +30,7 @@ export const commentsRouter = router({
       taskId: z.string(),
       text: z.string().min(1)
     }).strict())
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const now = new Date().toISOString();
       
       // Extract mentions from text (optional feature)
@@ -48,7 +48,7 @@ export const commentsRouter = router({
       
       mockComments.push(newComment);
       return newComment;
-    }),
+    })),
     
   // Update an existing comment
   update: protectedProcedure
@@ -56,23 +56,17 @@ export const commentsRouter = router({
       id: z.string(),
       text: z.string().min(1)
     }).strict())
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const commentIndex = mockComments.findIndex(comment => comment.id === input.id);
       
       if (commentIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Comment not found'
-        });
+        throw createNotFoundError('Comment', input.id);
       }
       
       // Check if user is authorized to update the comment
       const comment = mockComments[commentIndex];
       if (comment.authorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to update this comment'
-        });
+        throw createForbiddenError('You do not have permission to update this comment');
       }
       
       // Extract mentions from text (optional feature)
@@ -88,31 +82,25 @@ export const commentsRouter = router({
       
       mockComments[commentIndex] = updatedComment;
       return updatedComment;
-    }),
+    })),
     
   // Delete a comment
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .mutation(({ input, ctx }) => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const commentIndex = mockComments.findIndex(comment => comment.id === input.id);
       
       if (commentIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Comment not found'
-        });
+        throw createNotFoundError('Comment', input.id);
       }
       
       // Check if user is authorized to delete the comment
       const comment = mockComments[commentIndex];
       if (comment.authorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to delete this comment'
-        });
+        throw createForbiddenError('You do not have permission to delete this comment');
       }
       
       mockComments.splice(commentIndex, 1);
       return { success: true };
-    })
+    }))
 });

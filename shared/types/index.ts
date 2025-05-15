@@ -2,6 +2,9 @@
  * Shared types between frontend and backend
  */
 
+// Re-export error types
+export * from './errors';
+
 // Task status types
 export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'in_review' | 'done';
 

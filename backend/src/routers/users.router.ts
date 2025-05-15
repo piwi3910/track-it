@@ -1,11 +1,16 @@
 import { z } from 'zod';
-import { router, publicProcedure, protectedProcedure, adminProcedure } from '../trpc/trpc';
-import { TRPCError } from '@trpc/server';
+import { router, publicProcedure, protectedProcedure, adminProcedure, safeProcedure } from '../trpc/trpc';
 import type {
   User,
   LoginResponse,
   RegisterResponse
 } from '@track-it/shared';
+import { 
+  createNotFoundError, 
+  createUnauthorizedError, 
+  createForbiddenError,
+  createValidationError
+} from '../utils/error-handler';
 
 // Mock user database for now
 const mockUsers: User[] = [
@@ -84,15 +89,12 @@ export const usersRouter = router({
   // Public routes (no auth required)
   login: publicProcedure
     .input(userLoginSchema)
-    .mutation(async ({ input, ctx }): Promise<LoginResponse> => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       // In a real app, you would verify the password against a hash
       const user = mockUsers.find(user => user.email === input.email);
       
       if (!user) {
-        throw new TRPCError({ 
-          code: 'UNAUTHORIZED',
-          message: 'Invalid email or password'
-        });
+        throw createUnauthorizedError('Invalid email or password');
       }
       
       // Generate JWT token
@@ -108,81 +110,65 @@ export const usersRouter = router({
         role: user.role || 'member',
         token
       };
-    }),
+    })),
   
   // Google authentication
   loginWithGoogle: publicProcedure
     .input(googleLoginSchema)
-    .mutation(async ({ input, ctx }): Promise<LoginResponse> => {
-      try {
-        // Verify the Google ID token
-        const payload = await verifyGoogleIdToken(input.idToken);
-        
-        if (!payload.email_verified) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'Email not verified with Google'
-          });
-        }
-        
-        // Check if user exists
-        let user = mockUsers.find(user => user.email === payload.email);
-        
-        // If user doesn't exist, create a new user
-        if (!user) {
-          user = {
-            id: `user-google-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            name: payload.name,
-            email: payload.email,
-            avatarUrl: payload.picture,
-            role: 'member',
-            googleId: payload.sub,
-          };
-          
-          mockUsers.push(user);
-        }
-        
-        // Store Google connection
-        googleConnections[payload.sub] = {
-          googleId: payload.sub,
-          email: payload.email,
-          name: payload.name,
-          picture: payload.picture,
-          userId: user.id
-        };
-        
-        // Generate JWT token
-        const token = ctx.req.server.jwt.sign({ 
-          id: user.id,
-          role: user.role || 'member'
-        });
-        
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role || 'member',
-          token,
-          googleConnected: true
-        };
-      } catch (error) {
-        console.error('Google login error:', error);
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: error instanceof Error ? error.message : 'Google authentication failed'
-        });
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      // Verify the Google ID token
+      const payload = await verifyGoogleIdToken(input.idToken);
+      
+      if (!payload.email_verified) {
+        throw createUnauthorizedError('Email not verified with Google');
       }
-    }),
+      
+      // Check if user exists
+      let user = mockUsers.find(user => user.email === payload.email);
+      
+      // If user doesn't exist, create a new user
+      if (!user) {
+        user = {
+          id: `user-google-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: payload.name,
+          email: payload.email,
+          avatarUrl: payload.picture,
+          role: 'member',
+          googleId: payload.sub,
+        };
+        
+        mockUsers.push(user);
+      }
+      
+      // Store Google connection
+      googleConnections[payload.sub] = {
+        googleId: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
+        userId: user.id
+      };
+      
+      // Generate JWT token
+      const token = ctx.req.server.jwt.sign({ 
+        id: user.id,
+        role: user.role || 'member'
+      });
+      
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role || 'member',
+        token,
+        googleConnected: true
+      };
+    })),
   
   // Verify Google token
   verifyGoogleToken: publicProcedure
     .input(googleTokenVerificationSchema)
-    .mutation(async ({ input }): Promise<{
-      valid: boolean;
-      email?: string;
-      name?: string;
-      picture?: string;
-    }> => {
+    .mutation(({ input }) => safeProcedure(async () => {
       try {
         // Verify the Google ID token
         const payload = await verifyGoogleIdToken(input.credential);
@@ -201,17 +187,14 @@ export const usersRouter = router({
         console.error('Google token verification error:', error);
         return { valid: false };
       }
-    }),
+    })),
     
   register: publicProcedure
     .input(userRegisterSchema)
-    .mutation(async ({ input }): Promise<RegisterResponse> => {
+    .mutation(({ input }) => safeProcedure(async () => {
       // Check if user already exists
       if (mockUsers.some(user => user.email === input.email)) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'User with this email already exists'
-        });
+        throw createValidationError('User with this email already exists', 'email');
       }
       
       // Create new user (in a real app, you would hash the password)
@@ -230,18 +213,15 @@ export const usersRouter = router({
         name: newUser.name,
         email: newUser.email
       };
-    }),
+    })),
     
   // Protected routes (auth required)
   getCurrentUser: protectedProcedure
-    .query(({ ctx }): User => {
+    .query(({ ctx }) => safeProcedure(async () => {
       const user = mockUsers.find(user => user.id === ctx.user?.id);
       
       if (!user) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'User not found'
-        });
+        throw createNotFoundError('User', ctx.user?.id);
       }
       
       // Check if user has Google connection
@@ -259,7 +239,7 @@ export const usersRouter = router({
         googleConnected: !!googleConnection,
         googleEmail: googleConnection?.email
       };
-    }),
+    })),
     
   updateProfile: protectedProcedure
     .input(z.object({
@@ -274,14 +254,11 @@ export const usersRouter = router({
         }).optional()
       }).optional()
     }))
-    .mutation(({ input, ctx }): User => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const userIndex = mockUsers.findIndex(user => user.id === ctx.user?.id);
       
       if (userIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'User not found'
-        });
+        throw createNotFoundError('User', ctx.user?.id);
       }
       
       mockUsers[userIndex] = {
@@ -308,18 +285,15 @@ export const usersRouter = router({
         googleConnected: !!googleConnection,
         googleEmail: googleConnection?.email
       };
-    }),
+    })),
   
   // Google account connection
   disconnectGoogleAccount: protectedProcedure
-    .mutation(({ ctx }): { success: boolean } => {
+    .mutation(({ ctx }) => safeProcedure(async () => {
       const user = mockUsers.find(user => user.id === ctx.user?.id);
       
       if (!user) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'User not found'
-        });
+        throw createNotFoundError('User', ctx.user?.id);
       }
       
       // Find Google connection
@@ -333,11 +307,11 @@ export const usersRouter = router({
       }
       
       return { success: false };
-    }),
+    })),
     
   // Admin routes
   getAllUsers: adminProcedure
-    .query((): Pick<User, 'id' | 'name' | 'email' | 'role' | 'avatarUrl'>[] => {
+    .query(() => safeProcedure(async () => {
       return mockUsers.map(user => ({
         id: user.id,
         name: user.name,
@@ -345,21 +319,18 @@ export const usersRouter = router({
         role: user.role,
         avatarUrl: user.avatarUrl
       }));
-    }),
+    })),
     
   updateUserRole: adminProcedure
     .input(z.object({
       userId: z.string(),
       role: z.enum(['admin', 'member', 'guest'])
     }))
-    .mutation(({ input }): Pick<User, 'id' | 'name' | 'role'> => {
+    .mutation(({ input }) => safeProcedure(async () => {
       const userIndex = mockUsers.findIndex(user => user.id === input.userId);
       
       if (userIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'User not found'
-        });
+        throw createNotFoundError('User', input.userId);
       }
       
       mockUsers[userIndex].role = input.role;
@@ -369,5 +340,5 @@ export const usersRouter = router({
         name: mockUsers[userIndex].name,
         role: mockUsers[userIndex].role
       };
-    })
+    }))
 });

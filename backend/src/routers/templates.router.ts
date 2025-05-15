@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { router, publicProcedure, protectedProcedure } from '../trpc/trpc';
-import { TRPCError } from '@trpc/server';
+import { router, publicProcedure, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import type {
   TaskTemplate
 } from '@track-it/shared';
+import { createNotFoundError, createForbiddenError } from '../utils/error-handler';
 
 // Mock templates database
 const mockTemplates: TaskTemplate[] = [];
@@ -12,16 +12,20 @@ const mockTemplates: TaskTemplate[] = [];
 export const templatesRouter = router({
   // Get all templates (public endpoint - available without auth)
   getAll: publicProcedure
-    .query((): TaskTemplate[] => {
+    .query(() => safeProcedure(async () => {
       return mockTemplates;
-    }),
+    })),
     
   // Get template by ID
   getById: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .query(({ input }): TaskTemplate | null => {
-      return mockTemplates.find(template => template.id === input.id) || null;
-    }),
+    .query(({ input }) => safeProcedure(async () => {
+      const template = mockTemplates.find(template => template.id === input.id);
+      if (!template) {
+        throw createNotFoundError('Template', input.id);
+      }
+      return template;
+    })),
     
   // Get templates by category
   getByCategory: protectedProcedure
@@ -53,7 +57,7 @@ export const templatesRouter = router({
       category: z.string().optional(),
       isPublic: z.boolean().default(true)
     }).strict())
-    .mutation(({ input, ctx }): TaskTemplate => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const newTemplate: TaskTemplate = {
         id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: new Date().toISOString(),
@@ -75,7 +79,7 @@ export const templatesRouter = router({
       
       mockTemplates.push(newTemplate);
       return newTemplate;
-    }),
+    })),
     
   // Update an existing template
   update: protectedProcedure
@@ -98,23 +102,17 @@ export const templatesRouter = router({
         isPublic: z.boolean().optional()
       })
     }).strict())
-    .mutation(({ input, ctx }): TaskTemplate => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const templateIndex = mockTemplates.findIndex(template => template.id === input.id);
       
       if (templateIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Template not found'
-        });
+        throw createNotFoundError('Template', input.id);
       }
       
       // Check if user is authorized to update the template
       const template = mockTemplates[templateIndex];
       if (template.createdBy !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to update this template'
-        });
+        throw createForbiddenError('You do not have permission to update this template');
       }
       
       const updatedTemplate = {
@@ -125,38 +123,32 @@ export const templatesRouter = router({
       
       mockTemplates[templateIndex] = updatedTemplate;
       return updatedTemplate;
-    }),
+    })),
     
   // Delete a template
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .mutation(({ input, ctx }): { success: boolean } => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const templateIndex = mockTemplates.findIndex(template => template.id === input.id);
       
       if (templateIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Template not found'
-        });
+        throw createNotFoundError('Template', input.id);
       }
       
       // Check if user is authorized to delete the template
       const template = mockTemplates[templateIndex];
       if (template.createdBy !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to delete this template'
-        });
+        throw createForbiddenError('You do not have permission to delete this template');
       }
       
       mockTemplates.splice(templateIndex, 1);
       return { success: true };
-    }),
+    })),
     
   // Search templates
   search: protectedProcedure
     .input(z.object({ query: z.string() }).strict())
-    .query(({ input }): TaskTemplate[] => {
+    .query(({ input }) => safeProcedure(async () => {
       const lowercaseQuery = input.query.toLowerCase();
       return mockTemplates.filter(
         template =>
@@ -165,5 +157,5 @@ export const templatesRouter = router({
           (template.category?.toLowerCase() || '').includes(lowercaseQuery) ||
           (template.tags?.some(tag => tag.toLowerCase().includes(lowercaseQuery)) || false)
       );
-    })
+    }))
 });

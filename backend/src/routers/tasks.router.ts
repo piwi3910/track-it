@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { router, publicProcedure, protectedProcedure } from '../trpc/trpc';
+import { router, publicProcedure, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import type {
   Task
 } from '@track-it/shared';
+import { createNotFoundError } from '../utils/error-handler';
 
 // Mock database for now - will be replaced with a real DB
 const mockTasks: Task[] = []; 
@@ -60,9 +61,13 @@ export const tasksRouter = router({
   // Protected procedure - requires authentication
   getById: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
-    .query(({ input }): Task | null => {
-      return mockTasks.find(task => task.id === input.id) || null;
-    }),
+    .query(({ input }) => safeProcedure(async () => {
+      const task = mockTasks.find(task => task.id === input.id);
+      if (!task) {
+        throw createNotFoundError('Task', input.id);
+      }
+      return task;
+    })),
 
   getByStatus: protectedProcedure
     .input(z.object({ status: z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'in_review', 'done'] as const) }).strict())
@@ -91,10 +96,10 @@ export const tasksRouter = router({
 
   update: protectedProcedure
     .input(taskUpdateSchema)
-    .mutation(({ input }): Task => {
+    .mutation(({ input }) => safeProcedure(async () => {
       const taskIndex = mockTasks.findIndex(task => task.id === input.id);
       if (taskIndex === -1) {
-        throw new Error('Task not found');
+        throw createNotFoundError('Task', input.id);
       }
 
       const updatedTask = {
@@ -105,7 +110,7 @@ export const tasksRouter = router({
 
       mockTasks[taskIndex] = updatedTask;
       return updatedTask;
-    }),
+    })),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).strict())
@@ -136,23 +141,10 @@ export const tasksRouter = router({
       templateName: z.string().min(1),
       isPublic: z.boolean().default(true)
     }).strict())
-    .mutation(({ input, ctx }): {
-      id: string;
-      name: string;
-      description?: string;
-      priority: string;
-      tags?: string[];
-      estimatedHours?: number;
-      subtasks?: { id: string; title: string; completed: boolean }[];
-      category: string;
-      createdAt: string;
-      createdBy?: string;
-      isPublic: boolean;
-      usageCount: number;
-    } => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       const task = mockTasks.find(t => t.id === input.taskId);
       if (!task) {
-        throw new Error('Task not found');
+        throw createNotFoundError('Task', input.taskId);
       }
 
       // In a real implementation, this would create a template in the database
@@ -170,5 +162,5 @@ export const tasksRouter = router({
         isPublic: input.isPublic,
         usageCount: 0
       };
-    })
+    }))
 });

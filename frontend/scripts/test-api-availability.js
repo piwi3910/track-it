@@ -8,8 +8,8 @@
  */
 
 // Import required modules
-const fetch = require('node-fetch');
-const chalk = require('chalk');
+import fetch from 'node-fetch';
+import chalk from 'chalk';
 
 // Test configuration
 const API_URL = process.env.API_URL || 'http://localhost:3001';

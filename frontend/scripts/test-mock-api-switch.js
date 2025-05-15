@@ -11,8 +11,8 @@
  */
 
 // Import required modules
-const chalk = require('chalk');
-const puppeteer = require('puppeteer');
+import chalk from 'chalk';
+import puppeteer from 'puppeteer';
 
 // Test configuration
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';

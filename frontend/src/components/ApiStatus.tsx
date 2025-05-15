@@ -1,7 +1,7 @@
-import { Badge, Button, Group, Popover, Stack, Text, Tooltip, ActionIcon } from '@mantine/core';
-import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconAlertCircle, IconDatabase } from '@tabler/icons-react';
+import { Badge, Button, Group, Popover, Stack, Text, Tooltip, ActionIcon, Progress } from '@mantine/core';
+import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconAlertCircle, IconDatabase, IconAlarmClock } from '@tabler/icons-react';
 import { useApiStore } from '@/stores/useApiStore';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 /**
  * ApiStatus component displays the current status of the API connection
@@ -16,11 +16,24 @@ export function ApiStatus() {
     isMockApi,
     useMockApi,
     connectionAttempts,
+    maxConnectionAttempts,
     recentErrors,
-    lastChecked
+    lastChecked,
+    nextScheduledCheck,
+    resetConnectionAttempts
   } = useApiStore();
   
   const [opened, setOpened] = useState(false);
+  
+  // Calculate time until next check
+  const timeUntilNextCheck = useMemo(() => {
+    if (!nextScheduledCheck) return null;
+    
+    const diff = nextScheduledCheck - Date.now();
+    if (diff <= 0) return null;
+    
+    return Math.ceil(diff / 1000); // In seconds
+  }, [nextScheduledCheck]);
   
   // Format time ago
   const formatTimeAgo = (timestamp: string | null) => {
@@ -68,14 +81,28 @@ export function ApiStatus() {
           )}
 
           {!isMockApi && (
-            <Tooltip label="Check API connection" position="bottom">
+            <Tooltip 
+              label={
+                isApiLoading ? "Checking API connection..." : 
+                connectionAttempts >= maxConnectionAttempts ? "Connection attempts exhausted" :
+                !apiAvailable && timeUntilNextCheck ? `Next check in ${timeUntilNextCheck}s` :
+                !apiAvailable ? "API unavailable" :
+                "Check API connection"
+              } 
+              position="bottom"
+            >
               <ActionIcon
                 variant="subtle"
-                color="gray"
+                color={
+                  isApiLoading ? "blue" : 
+                  connectionAttempts >= maxConnectionAttempts ? "red" : 
+                  !apiAvailable ? "yellow" : 
+                  "gray"
+                }
                 size="sm"
                 loading={isApiLoading}
                 onClick={() => {
-                  checkApiAvailability();
+                  checkApiAvailability(true); // Force check
                   setOpened(true);
                 }}
               >
@@ -108,8 +135,9 @@ export function ApiStatus() {
               size="compact-xs" 
               rightSection={<IconRefresh size={14} />}
               loading={isApiLoading}
-              onClick={() => checkApiAvailability()}
+              onClick={() => checkApiAvailability(true)} // Force check
               disabled={isMockApi}
+              title="Force API check"
             >
               Check
             </Button>
@@ -122,9 +150,37 @@ export function ApiStatus() {
               </Text>
               
               {connectionAttempts > 0 && (
-                <Text size="xs">
-                  Connection attempts: {connectionAttempts}
-                </Text>
+                <>
+                  <Group gap="xs" align="center">
+                    <Text size="xs">Connection attempts:</Text>
+                    <Progress 
+                      value={(connectionAttempts / maxConnectionAttempts) * 100} 
+                      color={connectionAttempts >= maxConnectionAttempts ? "red" : "yellow"} 
+                      size="xs" 
+                      w={100}
+                    />
+                    <Text size="xs" fw={500}>
+                      {connectionAttempts}/{maxConnectionAttempts}
+                    </Text>
+                  </Group>
+                  
+                  {timeUntilNextCheck && (
+                    <Group gap="xs" align="center">
+                      <IconAlarmClock size={14} />
+                      <Text size="xs">
+                        Next check in {timeUntilNextCheck}s
+                      </Text>
+                      <Button 
+                        variant="subtle" 
+                        color="gray" 
+                        size="compact-xs"
+                        onClick={() => resetConnectionAttempts()}
+                      >
+                        Reset
+                      </Button>
+                    </Group>
+                  )}
+                </>
               )}
               
               {lastChecked && (
@@ -133,14 +189,30 @@ export function ApiStatus() {
                 </Text>
               )}
               
-              <Button
-                variant="light"
-                color="blue" 
-                size="xs"
-                onClick={() => useMockApi(true)}
-              >
-                Switch to Mock API
-              </Button>
+              <Group gap="xs">
+                <Button
+                  variant="light"
+                  color="blue" 
+                  size="xs"
+                  onClick={() => useMockApi(true)}
+                >
+                  Switch to Mock API
+                </Button>
+                
+                {connectionAttempts >= maxConnectionAttempts && (
+                  <Button
+                    variant="outline"
+                    color="green"
+                    size="xs"
+                    onClick={() => {
+                      resetConnectionAttempts();
+                      checkApiAvailability(true);
+                    }}
+                  >
+                    Retry Connection
+                  </Button>
+                )}
+              </Group>
             </>
           )}
           
@@ -156,7 +228,8 @@ export function ApiStatus() {
                 size="xs"
                 onClick={() => {
                   useMockApi(false);
-                  checkApiAvailability();
+                  resetConnectionAttempts();
+                  checkApiAvailability(true);
                 }}
               >
                 Try Real API
@@ -172,6 +245,12 @@ export function ApiStatus() {
                   {new Date(error.timestamp).toLocaleTimeString()}: {error.message}
                 </Text>
               ))}
+              
+              {recentErrors.length > 3 && (
+                <Text size="xs" c="dimmed" fs="italic">
+                  +{recentErrors.length - 3} more errors
+                </Text>
+              )}
             </>
           )}
         </Stack>

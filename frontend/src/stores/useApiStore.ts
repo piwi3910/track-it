@@ -19,6 +19,12 @@ interface ApiState {
   // Error tracking
   recentErrors: ApiError[];
   connectionAttempts: number;
+  maxConnectionAttempts: number;
+  
+  // Backoff strategy
+  lastAttemptTime: number | null;
+  backoffInterval: number;
+  nextScheduledCheck: number | null;
   
   // Mock API functionality
   isMockApi: boolean;
@@ -28,9 +34,10 @@ interface ApiState {
   setApiAvailable: (available: boolean) => void;
   setApiLoading: (loading: boolean) => void;
   setApiError: (error: string | null) => void;
-  checkApiAvailability: () => Promise<boolean>;
+  checkApiAvailability: (force?: boolean) => Promise<boolean>;
   addApiError: (error: ApiError) => void;
   clearErrors: () => void;
+  resetConnectionAttempts: () => void;
 }
 
 export const useApiStore = create<ApiState>((set, get) => ({
@@ -41,25 +48,46 @@ export const useApiStore = create<ApiState>((set, get) => ({
   lastChecked: null,
   recentErrors: [],
   connectionAttempts: 0,
+  maxConnectionAttempts: 5, // Maximum attempts before giving up
+  lastAttemptTime: null,
+  backoffInterval: 1000, // Start with 1 second, will increase exponentially
+  nextScheduledCheck: null,
   isMockApi: false,
   
   // Mock API toggle
   useMockApi: (useMock) => set({ 
     isMockApi: useMock,
     // Clear errors when switching to mock mode
-    ...(useMock ? { apiError: null, apiAvailable: true } : {})
+    ...(useMock ? { 
+      apiError: null, 
+      apiAvailable: true,
+      connectionAttempts: 0, 
+      backoffInterval: 1000,
+      nextScheduledCheck: null 
+    } : {})
   }),
   
   // Actions to update state
   setApiAvailable: (available) => set({ 
     apiAvailable: available,
     // Reset connection attempts when API becomes available
-    ...(available ? { connectionAttempts: 0 } : {})
+    ...(available ? { 
+      connectionAttempts: 0,
+      backoffInterval: 1000,
+      nextScheduledCheck: null
+    } : {})
   }),
   
   setApiLoading: (loading) => set({ isApiLoading: loading }),
   
   setApiError: (error) => set({ apiError: error }),
+  
+  // Reset connection attempts
+  resetConnectionAttempts: () => set({ 
+    connectionAttempts: 0,
+    backoffInterval: 1000,
+    nextScheduledCheck: null
+  }),
   
   // Track API errors
   addApiError: (error) => set(state => ({ 
@@ -68,10 +96,38 @@ export const useApiStore = create<ApiState>((set, get) => ({
   
   clearErrors: () => set({ recentErrors: [], apiError: null }),
   
-  // Function to check API availability
-  checkApiAvailability: async (): Promise<boolean> => {
+  // Function to check API availability with backoff strategy
+  checkApiAvailability: async (force = false): Promise<boolean> => {
     try {
-      const { isMockApi, connectionAttempts } = get();
+      const { 
+        isMockApi, 
+        connectionAttempts, 
+        maxConnectionAttempts, 
+        backoffInterval,
+        nextScheduledCheck,
+        isApiLoading
+      } = get();
+      
+      const now = Date.now();
+      
+      // If already loading, don't start another check
+      if (isApiLoading && !force) {
+        console.log('API check already in progress, skipping');
+        return get().apiAvailable;
+      }
+      
+      // Don't check if we've reached max attempts
+      if (connectionAttempts >= maxConnectionAttempts && !force) {
+        console.log(`Maximum connection attempts (${maxConnectionAttempts}) reached, not checking`);
+        return false;
+      }
+      
+      // Check if we should respect the backoff interval
+      if (nextScheduledCheck && now < nextScheduledCheck && !force) {
+        const waitTime = Math.round((nextScheduledCheck - now) / 1000);
+        console.log(`Respecting backoff period, next check in ${waitTime}s`);
+        return get().apiAvailable;
+      }
       
       // If using mock API, always return available
       if (isMockApi) {
@@ -83,16 +139,27 @@ export const useApiStore = create<ApiState>((set, get) => ({
         return true;
       }
       
+      // Start the check
       set({ 
         isApiLoading: true,
-        connectionAttempts: connectionAttempts + 1
+        connectionAttempts: connectionAttempts + 1,
+        lastAttemptTime: now
       });
       
-      console.log(`Checking API availability (attempt ${connectionAttempts + 1})...`);
+      console.log(`Checking API availability (attempt ${connectionAttempts + 1}/${maxConnectionAttempts})...`);
       const available = await isApiAvailable();
+      
+      // Calculate next backoff interval (exponential with max of 60s)
+      const newBackoffInterval = available 
+        ? 1000 // Reset to 1s if successful
+        : Math.min(backoffInterval * 2, 60000); // Exponential backoff with max 60s
+      
       set({ 
         apiAvailable: available,
-        lastChecked: new Date().toISOString()
+        lastChecked: new Date().toISOString(),
+        backoffInterval: newBackoffInterval,
+        // Schedule next check
+        nextScheduledCheck: available ? null : now + newBackoffInterval
       });
       
       if (!available) {
@@ -103,8 +170,12 @@ export const useApiStore = create<ApiState>((set, get) => ({
           errorMessage = 'Cannot connect to the backend server. Please ensure it is running.';
         }
         
+        if (connectionAttempts >= maxConnectionAttempts) {
+          errorMessage = `Failed to connect after ${maxConnectionAttempts} attempts. Try switching to Mock API or check server status.`;
+        }
+        
         set({ apiError: errorMessage });
-        console.warn(`API is not available (attempt ${connectionAttempts + 1}).`);
+        console.warn(`API is not available (attempt ${connectionAttempts}/${maxConnectionAttempts}). Next check in ${newBackoffInterval/1000}s`);
         
         // Add to error history
         get().addApiError({
@@ -120,11 +191,18 @@ export const useApiStore = create<ApiState>((set, get) => ({
       return available;
     } catch (error) {
       const errorMessage = 'Failed to check API availability';
+      const { connectionAttempts, backoffInterval } = get();
+      const now = Date.now();
+      
+      // Calculate next backoff interval (exponential with max of 60s)
+      const newBackoffInterval = Math.min(backoffInterval * 2, 60000);
       
       set({ 
         apiAvailable: false,
         apiError: errorMessage,
-        connectionAttempts: get().connectionAttempts + 1
+        connectionAttempts: connectionAttempts + 1,
+        backoffInterval: newBackoffInterval,
+        nextScheduledCheck: now + newBackoffInterval
       });
       
       console.error('Failed to check API availability:', error);
@@ -161,16 +239,20 @@ if (typeof window !== 'undefined') {
       timestamp: timestamp || new Date().toISOString()
     });
     
-    // If connection error, check API availability
+    // If connection error, check API availability (but don't force)
     if (error instanceof Error && 
         (error.message.includes('fetch') || 
          error.message.includes('Unable to transform response'))) {
-      store.checkApiAvailability();
+      // Don't initiate a check if we're at max attempts or waiting for backoff
+      if (store.connectionAttempts < store.maxConnectionAttempts && 
+          (!store.nextScheduledCheck || Date.now() >= store.nextScheduledCheck)) {
+        store.checkApiAvailability();
+      }
     }
   });
   
-  // Listen for manual API check requests
+  // Listen for manual API check requests (always force when manually requested)
   window.addEventListener('check_api_availability', () => {
-    useApiStore.getState().checkApiAvailability();
+    useApiStore.getState().checkApiAvailability(true);
   });
 }

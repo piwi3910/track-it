@@ -20,14 +20,16 @@ const server = fastify({
 // Register plugins and routes
 async function setupServer(): Promise<void> {
   try {
-    // Register CORS
+    // Register CORS with improved configuration
     await server.register(cors, {
       origin: ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin],
       credentials: true,
-      methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-From-Frontend'],
-      exposedHeaders: ['Authorization'],
-      preflight: true
+      methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-From-Frontend', 'Accept'],
+      exposedHeaders: ['Authorization', 'Content-Type'],
+      maxAge: 86400, // Cache preflight requests for 24 hours
+      preflight: true,
+      strictPreflight: false // More lenient preflight checking
     });
 
     // Register JWT
@@ -35,11 +37,29 @@ async function setupServer(): Promise<void> {
       secret: config.jwtSecret
     });
 
-    // Health check route
+    // Health check route with improved CORS handling
     server.get('/health', async (request, reply): Promise<{ status: string; timestamp: string; api: string; version: string }> => {
-      // Set appropriate headers for CORS
-      reply.header('Access-Control-Allow-Origin', '*');
-      reply.header('Access-Control-Allow-Methods', 'GET');
+      // Get the origin from request headers or use default origins
+      const requestOrigin = request.headers.origin;
+      const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin];
+      
+      // Set CORS headers based on origin
+      if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+        reply.header('Access-Control-Allow-Origin', requestOrigin);
+        reply.header('Access-Control-Allow-Credentials', 'true');
+      } else {
+        // Fallback to * for health checks from non-browser clients
+        reply.header('Access-Control-Allow-Origin', '*');
+      }
+      
+      reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-From-Frontend, Accept');
+      
+      // Handle preflight OPTIONS request
+      if (request.method === 'OPTIONS') {
+        reply.code(204).send();
+        return {} as any;
+      }
       
       return { 
         status: 'ok', 
@@ -49,11 +69,29 @@ async function setupServer(): Promise<void> {
       };
     });
     
-    // Root health check (for API availability checks)
+    // Root health check (for API availability checks) with improved CORS handling
     server.get('/', async (request, reply): Promise<{ status: string }> => {
-      // Set appropriate headers for CORS
-      reply.header('Access-Control-Allow-Origin', '*');
-      reply.header('Access-Control-Allow-Methods', 'GET');
+      // Get the origin from request headers or use default origins
+      const requestOrigin = request.headers.origin;
+      const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin];
+      
+      // Set CORS headers based on origin
+      if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+        reply.header('Access-Control-Allow-Origin', requestOrigin);
+        reply.header('Access-Control-Allow-Credentials', 'true');
+      } else {
+        // Fallback to * for health checks from non-browser clients
+        reply.header('Access-Control-Allow-Origin', '*');
+      }
+      
+      reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-From-Frontend, Accept');
+      
+      // Handle preflight OPTIONS request
+      if (request.method === 'OPTIONS') {
+        reply.code(204).send();
+        return {} as any;
+      }
       
       return { status: 'Server is running' };
     });

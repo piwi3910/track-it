@@ -29,17 +29,60 @@ export const trpcClient = trpc.createClient({
         // Add debugging for API requests
         console.log(`Making API request to: ${url}`);
         
+        // Create AbortController to add timeout for requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         return fetch(url, {
           ...options,
           credentials: 'include', // Include cookies for authentication
           mode: 'cors', // Ensure CORS mode
+          signal: controller.signal, // Add signal for timeout
         }).then(response => {
+          // Clear timeout since request completed
+          clearTimeout(timeoutId);
+          
           if (!response.ok) {
             console.error(`API request failed with status: ${response.status}`);
+            
+            // Check if it's a 401 Unauthorized - trigger auth error
+            if (response.status === 401) {
+              const authEvent = new CustomEvent('auth_error');
+              window.dispatchEvent(authEvent);
+            }
+            
+            // Check if it's a server error - trigger API availability check
+            if (response.status >= 500) {
+              const apiCheckEvent = new CustomEvent('check_api_availability');
+              window.dispatchEvent(apiCheckEvent);
+            }
           }
           return response;
         }).catch(error => {
-          console.error('API request error:', error);
+          // Clear timeout since request errored
+          clearTimeout(timeoutId);
+          
+          // Special handling for timeout/abort
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            console.error('API request timed out after 10 seconds');
+            // Trigger API availability check
+            const apiCheckEvent = new CustomEvent('check_api_availability');
+            window.dispatchEvent(apiCheckEvent);
+          } else {
+            console.error('API request error:', error);
+            
+            // Structured error event with full details
+            const apiErrorEvent = new CustomEvent('api_error', {
+              detail: {
+                error,
+                timestamp: new Date().toISOString(),
+                url,
+                requestType: options.method || 'GET'
+              }
+            });
+            window.dispatchEvent(apiErrorEvent);
+          }
+          
           throw error;
         });
       }

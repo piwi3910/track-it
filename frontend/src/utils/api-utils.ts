@@ -56,27 +56,46 @@ export async function isApiAvailable(): Promise<boolean> {
     
     console.log(`Checking API availability at ${healthUrl}`);
     
-    // Try the health endpoint with proper headers but NO credentials
-    // This avoids CORS issues with wildcard origin and credentials
-    const response = await fetch(healthUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-From-Frontend': 'track-it-frontend'
-      },
-      // Use 'same-origin' mode for credentials to avoid CORS issues with '*'
-      credentials: 'same-origin',
-      mode: 'cors',
-    });
+    // Set timeout to avoid long waits when server is down
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    if (response.ok) {
-      console.log('API health check succeeded');
-      return true;
+    try {
+      // Use a more CORS-friendly approach
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-From-Frontend': 'track-it-frontend'
+        },
+        // Don't include credentials for health check to avoid CORS preflight issues
+        credentials: 'omit',
+        mode: 'cors',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        console.log('API health check succeeded');
+        return true;
+      }
+      
+      // Log the failure response
+      console.log(`Health check failed with status: ${response.status}`);
+      return false;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      // If it's an abort error, log as timeout
+      if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+        console.log('API health check timed out after 5 seconds');
+      } else {
+        console.log('API health check network error:', fetchError);
+      }
+      
+      return false;
     }
-    
-    // Log the failure and return false
-    console.log(`Health check failed, API seems to be down`);
-    return false;
   } catch (error) {
     console.error('API health check failed:', error);
     return false;

@@ -1,5 +1,5 @@
 import { Badge, Button, Group, Popover, Stack, Text, Tooltip, ActionIcon, Progress } from '@mantine/core';
-import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconAlertCircle, IconDatabase, IconAlarmClock } from '@tabler/icons-react';
+import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconAlertCircle, IconDatabase, IconClock } from '@tabler/icons-react';
 import { useApiStore } from '@/stores/useApiStore';
 import { useState, useMemo } from 'react';
 
@@ -166,7 +166,7 @@ export function ApiStatus() {
                   
                   {timeUntilNextCheck && (
                     <Group gap="xs" align="center">
-                      <IconAlarmClock size={14} />
+                      <IconClock size={14} />
                       <Text size="xs">
                         Next check in {timeUntilNextCheck}s
                       </Text>

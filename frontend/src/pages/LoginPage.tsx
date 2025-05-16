@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -25,6 +25,7 @@ export default function LoginPage() {
   const { currentUser, userLoading } = useApp();
   const { login: googleLogin, renderButton, isGoogleLoaded, loading: googleLoading, error: googleError } = useGoogleAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string | null>('password');
   
@@ -34,12 +35,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect to dashboard if already logged in
+  // Get the return path if redirected from a protected route
+  // This is passed via the 'from' property in the location state
+  const from = location.state?.from?.pathname || '/dashboard';
+
+  // Add informational message if redirected due to auth error
+  useEffect(() => {
+    if (location.state?.authError) {
+      setError('Your session has expired. Please log in again.');
+    }
+  }, [location.state]);
+
+  // Redirect to previous location or dashboard if already logged in
   useEffect(() => {
     if (currentUser && !userLoading) {
-      navigate('/dashboard');
+      navigate(from, { replace: true });
     }
-  }, [currentUser, userLoading, navigate]);
+  }, [currentUser, userLoading, navigate, from]);
 
   // Initialize Google Sign-In button once Google Identity Services are loaded
   useEffect(() => {
@@ -83,6 +95,9 @@ export default function LoginPage() {
     }
   };
 
+  // Show a message if redirected from a protected route
+  const isRedirected = location.state?.from && location.pathname !== '/dashboard';
+
   return (
     <Container size="xs" p="xl">
       <Paper radius="md" p="xl" withBorder>
@@ -99,6 +114,15 @@ export default function LoginPage() {
         <Text size="lg" fw={500} ta="center" mb="xl">
           Sign in to your account
         </Text>
+
+        {isRedirected && !error && (
+          <Alert 
+            color="blue" 
+            mb="md"
+          >
+            Please log in to access {location.state.from.pathname}
+          </Alert>
+        )}
 
         {(error || googleError) && (
           <Alert 

@@ -37,10 +37,13 @@ export function AuthErrorHandler() {
         api.clearErrors();
         auth.clearError();
         
-        // Redirect to login page with the intended destination
+        // Redirect to login page with the intended destination and auth error flag
         if (location.pathname !== '/login') {
           navigate('/login', { 
-            state: { from: location },
+            state: { 
+              from: location, 
+              authError: true 
+            },
             replace: true
           });
         }
@@ -53,9 +56,38 @@ export function AuthErrorHandler() {
     // Create an interval to periodically check for auth errors
     const intervalId = setInterval(checkAuthErrors, 5000);
     
+    // Listen for auth_error events from the API client
+    const handleAuthError = () => {
+      console.log('Auth error event received');
+      
+      // Only handle if the user was previously authenticated
+      if (auth.isAuthenticated) {
+        auth.logout();
+        
+        // Clear any existing errors
+        api.clearErrors();
+        auth.clearError();
+        
+        // Redirect to login page with auth error flag
+        if (location.pathname !== '/login') {
+          navigate('/login', { 
+            state: { 
+              from: location,
+              authError: true 
+            },
+            replace: true
+          });
+        }
+      }
+    };
+    
+    // Add event listener for auth errors
+    window.addEventListener('auth_error', handleAuthError);
+    
     // Cleanup
     return () => {
       clearInterval(intervalId);
+      window.removeEventListener('auth_error', handleAuthError);
     };
   }, [api.error, api.recentErrors, auth, navigate, location]);
   

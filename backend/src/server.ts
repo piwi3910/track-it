@@ -96,6 +96,16 @@ async function setupServer(): Promise<void> {
       return { status: 'Server is running' };
     });
 
+    // Configure content-type parser for trpc
+    server.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+      try {
+        const json = JSON.parse(body as string);
+        done(null, json);
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    });
+
     // Register tRPC plugin
     await server.register(fastifyTRPCPlugin, {
       prefix: '/trpc',

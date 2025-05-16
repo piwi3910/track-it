@@ -168,6 +168,20 @@ export function createValidationError(message: string, field?: string): AppError
  * Create a standardized AppError for unauthorized access
  */
 export function createUnauthorizedError(message = 'Authentication required'): AppError {
+  // Create basic error structure if AppError.create is not available
+  if (!AppError || typeof AppError.create !== 'function') {
+    return {
+      name: 'AppError',
+      message,
+      details: {
+        code: ErrorCode.UNAUTHORIZED,
+        message,
+        statusCode: 401,
+        timestamp: new Date().toISOString()
+      }
+    } as AppError;
+  }
+  
   return AppError.create(ErrorCode.UNAUTHORIZED, message, {
     statusCode: 401
   });
@@ -177,6 +191,20 @@ export function createUnauthorizedError(message = 'Authentication required'): Ap
  * Create a standardized AppError for forbidden access
  */
 export function createForbiddenError(message = 'Access denied'): AppError {
+  // Create basic error structure if AppError.create is not available
+  if (!AppError || typeof AppError.create !== 'function') {
+    return {
+      name: 'AppError',
+      message,
+      details: {
+        code: ErrorCode.FORBIDDEN,
+        message,
+        statusCode: 403,
+        timestamp: new Date().toISOString()
+      }
+    } as AppError;
+  }
+  
   return AppError.create(ErrorCode.FORBIDDEN, message, {
     statusCode: 403
   });

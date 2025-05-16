@@ -64,7 +64,8 @@ export const trpcClient = trpc.createClient({
       url: env.VITE_API_URL || 'http://localhost:3001/trpc',
       // Configuration to handle large inputs
       maxURLLength: 2000, // Limit URL length for GET requests
-      batchMaxSize: 5, // Limit the number of operations in a batch
+      // Disable batching to troubleshoot
+      batchMaxSize: 1, 
       // Add auth headers to all requests
       headers() {
         const token = getAuthToken();
@@ -75,7 +76,19 @@ export const trpcClient = trpc.createClient({
           // Add custom header for CORS and identification
           'X-From-Frontend': 'track-it-client',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         };
+      },
+      fetch(url, options) {
+        return fetch(url, {
+          ...options,
+          credentials: 'include',
+          headers: {
+            ...options.headers,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        });
       },
     }),
   ],

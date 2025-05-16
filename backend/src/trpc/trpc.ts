@@ -28,7 +28,7 @@ const t = initTRPC.context<Context>().create({
         zodError: formattedZodError
       };
       console.error('Validation error:', error.cause.flatten());
-    } else if (error.cause instanceof AppError) {
+    } else if (error.cause && typeof error.cause === 'object' && 'details' in error.cause) {
       // Include AppError details in the response
       formattedError.data = {
         ...formattedError.data,

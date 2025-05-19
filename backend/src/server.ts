@@ -104,6 +104,19 @@ async function setupServer(): Promise<void> {
       return { status: 'Server is running' };
     });
 
+    // Add request logging to diagnose Content-Type issues
+    server.addHook('onRequest', (request, reply, done) => {
+      if (request.url.includes('/trpc')) {
+        logger.debug({
+          message: 'tRPC request headers',
+          contentType: request.headers['content-type'],
+          method: request.method,
+          url: request.url
+        });
+      }
+      done();
+    });
+
     // Configure content-type parser for trpc with better MIME type handling
     // This handles 'application/json' content-type and common variations
     const jsonContentTypes = [
@@ -111,15 +124,28 @@ async function setupServer(): Promise<void> {
       'application/json; charset=utf-8',
       'application/json;charset=utf-8',
       'application/json; charset=UTF-8',
-      'application/json;charset=UTF-8'
+      'application/json;charset=UTF-8',
+      // Add support for the problematic comma-separated Content-Type
+      'application/json, application/json'
     ];
     
     jsonContentTypes.forEach(contentType => {
       server.addContentTypeParser(contentType, { parseAs: 'string' }, (req, body, done) => {
         try {
+          logger.debug({
+            message: 'Parsing content',
+            contentType: req.headers['content-type'],
+            bodyPreview: typeof body === 'string' ? body.substring(0, 100) : typeof body
+          });
+          
           const json = JSON.parse(body as string);
           done(null, json);
         } catch (err) {
+          logger.error({
+            message: 'Error parsing JSON',
+            contentType: req.headers['content-type'],
+            error: err
+          });
           done(err as Error, undefined);
         }
       });

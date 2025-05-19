@@ -33,19 +33,41 @@ export const trpcClient = trpc.createClient({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
         
-        // Ensure content type is set properly
-        const headers = options.headers || {};
+        // Create Headers object for proper header handling and case-insensitivity
+        const headers = new Headers();
         
-        // Create a new headers object with the correct Content-Type
-        const newHeaders = {
-          ...headers,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        };
+        // First add all existing headers
+        if (options.headers) {
+          if (options.headers instanceof Headers) {
+            // If it's already a Headers object, copy each header
+            options.headers.forEach((value, key) => {
+              headers.set(key, value);
+            });
+          } else {
+            // If it's a plain object, add each property
+            Object.entries(options.headers).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                headers.set(key, value.toString());
+              }
+            });
+          }
+        }
+        
+        // Ensure proper Content-Type for JSON requests
+        // Remove any existing content-type headers to avoid duplication
+        headers.delete('content-type');
+        headers.delete('Content-Type');
+        headers.set('Content-Type', 'application/json');
+        
+        // Set other essential headers
+        headers.set('Accept', 'application/json');
+        
+        // Debug the final headers being sent
+        console.log('Request headers:', [...headers.entries()]);
         
         return fetch(url, {
           ...options,
-          headers: newHeaders,
+          headers, // Use the Headers object
           credentials: 'include', // Include cookies for authentication
           mode: 'cors', // Ensure CORS mode
           signal: controller.signal, // Add signal for timeout

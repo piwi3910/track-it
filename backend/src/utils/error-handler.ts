@@ -2,8 +2,84 @@
  * Backend error handling utilities
  */
 import { TRPCError } from '@trpc/server';
-import { AppError, ErrorCode, mapErrorCodeToHttpStatus } from '@track-it/shared';
 import { ZodError } from 'zod';
+
+// Import error types from shared package
+// Note: If there are import errors, we define fallbacks to ensure the app works
+let AppError: any;
+enum ErrorCode {
+  // Connection errors
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  API_UNAVAILABLE = 'API_UNAVAILABLE',
+  TIMEOUT_ERROR = 'TIMEOUT_ERROR',
+  
+  // Authentication/Authorization errors
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  FORBIDDEN = 'FORBIDDEN',
+  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
+  
+  // Resource errors
+  NOT_FOUND = 'NOT_FOUND',
+  ALREADY_EXISTS = 'ALREADY_EXISTS',
+  CONFLICT = 'CONFLICT',
+  
+  // Input errors
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  INVALID_INPUT = 'INVALID_INPUT',
+  MISSING_FIELD = 'MISSING_FIELD',
+  
+  // External service errors
+  EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR',
+  GOOGLE_API_ERROR = 'GOOGLE_API_ERROR',
+  
+  // Business logic errors
+  BUSINESS_RULE_VIOLATION = 'BUSINESS_RULE_VIOLATION',
+  OPERATION_NOT_ALLOWED = 'OPERATION_NOT_ALLOWED',
+  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+  
+  // Backend errors
+  DATABASE_ERROR = 'DATABASE_ERROR',
+  CACHE_ERROR = 'CACHE_ERROR',
+  
+  // Generic errors
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR'
+}
+
+// Try to import from shared package, but use local fallbacks if it fails
+try {
+  const sharedImport = require('@track-it/shared');
+  if (sharedImport.AppError && sharedImport.ErrorCode) {
+    AppError = sharedImport.AppError;
+    // Keep our local ErrorCode enum for safety
+  }
+} catch (e) {
+  console.error('Failed to import error types from shared package, using fallbacks', e);
+}
+
+// Create a fallback AppError if needed
+if (!AppError) {
+  AppError = class AppError extends Error {
+    public details: any;
+    
+    constructor(details: any) {
+      super(details.message);
+      this.name = 'AppError';
+      this.details = {
+        ...details,
+        timestamp: details.timestamp || new Date().toISOString()
+      };
+    }
+    
+    static create(code: ErrorCode, message: string, additionalDetails?: any) {
+      return new AppError({
+        code,
+        message,
+        ...additionalDetails
+      });
+    }
+  };
+}
 
 /**
  * Convert an error to a standardized TRPCError
@@ -13,8 +89,20 @@ export function handleError(error: unknown): never {
   // Log the error (in production, this could use a proper logging service)
   console.error('Error encountered:', error);
   
-  if (error instanceof AppError) {
-    // If it's already an AppError, convert it to a TRPCError
+  // Safe check for AppError - check if it matches our expected structure
+  const isAppError = (err: any): err is AppError => {
+    return (
+      err && 
+      typeof err === 'object' && 
+      err.name === 'AppError' && 
+      err.details && 
+      typeof err.details === 'object' && 
+      'code' in err.details
+    );
+  };
+  
+  if (isAppError(error)) {
+    // If it's an AppError, convert it to a TRPCError
     throw new TRPCError({
       code: mapErrorCodeToTRPC(error.details.code),
       message: error.message,
@@ -84,9 +172,13 @@ export function handleError(error: unknown): never {
 
 /**
  * Map our error codes to TRPC error codes
+ * Always uses our local ErrorCode enum values for safety
  */
-function mapErrorCodeToTRPC(code: ErrorCode): TRPCError['code'] {
-  switch (code) {
+function mapErrorCodeToTRPC(code: string): TRPCError['code'] {
+  // Convert string code to our local enum if it's a string
+  const errorCode = typeof code === 'string' ? code : ErrorCode.UNKNOWN_ERROR;
+  
+  switch (errorCode) {
     case ErrorCode.VALIDATION_ERROR:
     case ErrorCode.INVALID_INPUT:
     case ErrorCode.MISSING_FIELD:
@@ -148,7 +240,25 @@ export function createNotFoundError(resourceName: string, id?: string): AppError
     ? `${resourceName} with ID '${id}' not found` 
     : `${resourceName} not found`;
     
-  return AppError.create(ErrorCode.NOT_FOUND, message, {
+  // Always use our local ErrorCode enum for safety
+  const NOT_FOUND_CODE = ErrorCode.NOT_FOUND;
+  
+  // Create basic error structure if AppError.create is not available
+  if (!AppError || typeof AppError.create !== 'function') {
+    return {
+      name: 'AppError',
+      message,
+      details: {
+        code: NOT_FOUND_CODE,
+        message,
+        statusCode: 404,
+        field: id ? 'id' : undefined,
+        timestamp: new Date().toISOString()
+      }
+    } as AppError;
+  }
+  
+  return AppError.create(NOT_FOUND_CODE, message, {
     statusCode: 404,
     field: id ? 'id' : undefined
   });
@@ -158,7 +268,25 @@ export function createNotFoundError(resourceName: string, id?: string): AppError
  * Create a standardized AppError for validation errors
  */
 export function createValidationError(message: string, field?: string): AppError {
-  return AppError.create(ErrorCode.VALIDATION_ERROR, message, {
+  // Always use our local ErrorCode enum for safety
+  const VALIDATION_ERROR_CODE = ErrorCode.VALIDATION_ERROR;
+  
+  // Create basic error structure if AppError.create is not available
+  if (!AppError || typeof AppError.create !== 'function') {
+    return {
+      name: 'AppError',
+      message,
+      details: {
+        code: VALIDATION_ERROR_CODE,
+        message,
+        statusCode: 400,
+        field,
+        timestamp: new Date().toISOString()
+      }
+    } as AppError;
+  }
+  
+  return AppError.create(VALIDATION_ERROR_CODE, message, {
     statusCode: 400,
     field
   });
@@ -168,13 +296,16 @@ export function createValidationError(message: string, field?: string): AppError
  * Create a standardized AppError for unauthorized access
  */
 export function createUnauthorizedError(message = 'Authentication required'): AppError {
+  // Always use our local ErrorCode enum for safety
+  const UNAUTHORIZED_CODE = ErrorCode.UNAUTHORIZED;
+  
   // Create basic error structure if AppError.create is not available
   if (!AppError || typeof AppError.create !== 'function') {
     return {
       name: 'AppError',
       message,
       details: {
-        code: ErrorCode.UNAUTHORIZED,
+        code: UNAUTHORIZED_CODE,
         message,
         statusCode: 401,
         timestamp: new Date().toISOString()
@@ -182,7 +313,7 @@ export function createUnauthorizedError(message = 'Authentication required'): Ap
     } as AppError;
   }
   
-  return AppError.create(ErrorCode.UNAUTHORIZED, message, {
+  return AppError.create(UNAUTHORIZED_CODE, message, {
     statusCode: 401
   });
 }
@@ -191,13 +322,16 @@ export function createUnauthorizedError(message = 'Authentication required'): Ap
  * Create a standardized AppError for forbidden access
  */
 export function createForbiddenError(message = 'Access denied'): AppError {
+  // Always use our local ErrorCode enum for safety
+  const FORBIDDEN_CODE = ErrorCode.FORBIDDEN;
+  
   // Create basic error structure if AppError.create is not available
   if (!AppError || typeof AppError.create !== 'function') {
     return {
       name: 'AppError',
       message,
       details: {
-        code: ErrorCode.FORBIDDEN,
+        code: FORBIDDEN_CODE,
         message,
         statusCode: 403,
         timestamp: new Date().toISOString()
@@ -205,7 +339,7 @@ export function createForbiddenError(message = 'Access denied'): AppError {
     } as AppError;
   }
   
-  return AppError.create(ErrorCode.FORBIDDEN, message, {
+  return AppError.create(FORBIDDEN_CODE, message, {
     statusCode: 403
   });
 }
@@ -214,7 +348,25 @@ export function createForbiddenError(message = 'Access denied'): AppError {
  * Create a standardized AppError for database errors
  */
 export function createDatabaseError(message: string, details?: any): AppError {
-  return AppError.create(ErrorCode.DATABASE_ERROR, message, {
+  // Always use our local ErrorCode enum for safety
+  const DATABASE_ERROR_CODE = ErrorCode.DATABASE_ERROR;
+  
+  // Create basic error structure if AppError.create is not available
+  if (!AppError || typeof AppError.create !== 'function') {
+    return {
+      name: 'AppError',
+      message,
+      details: {
+        code: DATABASE_ERROR_CODE,
+        message,
+        statusCode: 500,
+        details,
+        timestamp: new Date().toISOString()
+      }
+    } as AppError;
+  }
+  
+  return AppError.create(DATABASE_ERROR_CODE, message, {
     statusCode: 500,
     details
   });
@@ -228,7 +380,28 @@ export function createExternalServiceError(
   message: string,
   details?: any
 ): AppError {
-  return AppError.create(ErrorCode.EXTERNAL_SERVICE_ERROR, message, {
+  // Always use our local ErrorCode enum for safety
+  const EXTERNAL_SERVICE_ERROR_CODE = ErrorCode.EXTERNAL_SERVICE_ERROR;
+  
+  // Create basic error structure if AppError.create is not available
+  if (!AppError || typeof AppError.create !== 'function') {
+    return {
+      name: 'AppError',
+      message,
+      details: {
+        code: EXTERNAL_SERVICE_ERROR_CODE,
+        message,
+        statusCode: 502,
+        details: {
+          service,
+          ...details
+        },
+        timestamp: new Date().toISOString()
+      }
+    } as AppError;
+  }
+  
+  return AppError.create(EXTERNAL_SERVICE_ERROR_CODE, message, {
     statusCode: 502,
     details: {
       service,
@@ -241,7 +414,25 @@ export function createExternalServiceError(
  * Create a standardized AppError for Google API errors
  */
 export function createGoogleApiError(message: string, details?: any): AppError {
-  return AppError.create(ErrorCode.GOOGLE_API_ERROR, message, {
+  // Always use our local ErrorCode enum for safety
+  const GOOGLE_API_ERROR_CODE = ErrorCode.GOOGLE_API_ERROR;
+  
+  // Create basic error structure if AppError.create is not available
+  if (!AppError || typeof AppError.create !== 'function') {
+    return {
+      name: 'AppError',
+      message,
+      details: {
+        code: GOOGLE_API_ERROR_CODE,
+        message,
+        statusCode: 502,
+        details,
+        timestamp: new Date().toISOString()
+      }
+    } as AppError;
+  }
+  
+  return AppError.create(GOOGLE_API_ERROR_CODE, message, {
     statusCode: 502,
     details
   });

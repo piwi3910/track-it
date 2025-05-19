@@ -33,8 +33,19 @@ export const trpcClient = trpc.createClient({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
         
+        // Ensure content type is set properly
+        const headers = options.headers || {};
+        
+        // Create a new headers object with the correct Content-Type
+        const newHeaders = {
+          ...headers,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        };
+        
         return fetch(url, {
           ...options,
+          headers: newHeaders,
           credentials: 'include', // Include cookies for authentication
           mode: 'cors', // Ensure CORS mode
           signal: controller.signal, // Add signal for timeout

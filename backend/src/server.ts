@@ -25,7 +25,15 @@ async function setupServer(): Promise<void> {
       origin: ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin],
       credentials: true,
       methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-From-Frontend', 'Accept'],
+      allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-From-Frontend', 
+        'Accept',
+        'content-type', // Include lowercase variants
+        'accept',
+        'x-from-frontend'
+      ],
       exposedHeaders: ['Authorization', 'Content-Type'],
       maxAge: 86400, // Cache preflight requests for 24 hours
       preflight: true,
@@ -96,14 +104,25 @@ async function setupServer(): Promise<void> {
       return { status: 'Server is running' };
     });
 
-    // Configure content-type parser for trpc
-    server.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
-      try {
-        const json = JSON.parse(body as string);
-        done(null, json);
-      } catch (err) {
-        done(err as Error, undefined);
-      }
+    // Configure content-type parser for trpc with better MIME type handling
+    // This handles 'application/json' content-type and common variations
+    const jsonContentTypes = [
+      'application/json', 
+      'application/json; charset=utf-8',
+      'application/json;charset=utf-8',
+      'application/json; charset=UTF-8',
+      'application/json;charset=UTF-8'
+    ];
+    
+    jsonContentTypes.forEach(contentType => {
+      server.addContentTypeParser(contentType, { parseAs: 'string' }, (req, body, done) => {
+        try {
+          const json = JSON.parse(body as string);
+          done(null, json);
+        } catch (err) {
+          done(err as Error, undefined);
+        }
+      });
     });
 
     // Register tRPC plugin

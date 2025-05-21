@@ -57,3 +57,5 @@
 - The process of clearing, re-initializing, and setting up the basic structure of a React application involves several distinct steps (package management, directory creation, core file modification).
 - Certain newer TypeScript compiler options (like `verbatimModuleSyntax` or `allowImportingTsExtensions`) can sometimes lead to unexpected module resolution or type interpretation issues with Vite and UI libraries like Mantine. Simplifying `tsconfig.app.json` can be a valid troubleshooting step.
 - Path aliasing (`@/`) is a good practice for cleaner and more robust import paths.
+
+[2025-05-21 19:29:11] - Added development process rules to systemPatterns.md to establish a clear workflow for future development.

@@ -70,3 +70,4 @@
 - **[2025-05-09] Decision:** Memory Bank initialization is the first step before any code modification or creation, following custom instructions. (No change)
 - **[2025-05-09] Frontend Scaffolding:** Proceeded with creating a new Vite project, installing dependencies, setting up directory structure, and implementing a basic app shell with routing and Mantine.
 - **[2025-05-09] Error Resolution:** Addressed persistent module resolution and TypeScript errors by implementing path aliasing and simplifying `tsconfig.app.json`. This highlights that overly strict or newer TypeScript module settings can sometimes conflict with Vite/library type inference.
+- **[2025-05-21] Documentation Update:** Added detailed development process rules to systemPatterns.md, establishing a clear workflow for future development that follows best practices for frontend-backend integration.

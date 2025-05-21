@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mcp-server-chart": {
+      "command": "mcp-server-chart",
+      "args": []
+    },
+    "github.com/modelcontextprotocol/servers/tree/main/src/puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    }
+  }
+}

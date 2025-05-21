@@ -75,3 +75,70 @@ Track-It is designed as a client-server application.
 3.  **Service Layer:** Business logic is executed.
 4.  **Data Access (Repository):** Interacts with PostgreSQL (and Redis for caching).
 5.  **API Response:** Backend sends a response back to the frontend.
+
+## 6. Development Process
+
+✅ 1. Plan the App (Before Coding)
+
+Deliverables:
+	•	Feature list (MVP first!)
+	•	Entity-relationship diagram (ERD)
+	•	API design (endpoints or tRPC router structure)
+	•	User flow diagrams (e.g., registration → login → dashboard)
+
+Tools: Whimsical, Excalidraw, dbdiagram.io
+
+⸻
+
+✅ 2. Design Frontend Contracts (API-first or Schema-first)
+	•	Define your zod schemas for both frontend and backend validation.
+	•	Generate mock data that fits these schemas to use before backend is ready.
+	•	Define your tRPC router interface and expected responses.
+
+Tip: Use zod + @trpc/server + @trpc/client to enforce contracts.
+
+⸻
+
+✅ 3. Build Frontend with Mocked API
+	•	Use tools like MSW (Mock Service Worker) to simulate API calls.
+	•	Create reusable UI components using a consistent design system (e.g., Shadcn/UI, Mantine).
+	•	Focus only on UI + logic, not backend connectivity yet.
+
+⸻
+
+✅ 4. Build Backend with Matching Contracts
+	•	Scaffold Express + tRPC backend using the same Zod schemas.
+	•	Implement each router in isolation using the frontend's expected shape.
+	•	Use Prisma for database integration, matching your earlier ERD.
+
+Tip: You can expose REST endpoints alongside tRPC for other integrations.
+
+⸻
+
+✅ 5. Test Integration Between Frontend and Backend
+	•	Swap MSW with live tRPC calls.
+	•	Start with one full flow (e.g., user registration → login).
+	•	Log and inspect request/response payloads to debug mismatches.
+
+⸻
+
+✅ 6. Iterate and Add More Features
+	•	Use Git branches for each new feature or route.
+	•	Add unit and integration tests with Vitest (for frontend) and Jest or Supertest (for backend).
+	•	Start working on deployment once the flows are stable.
+
+⸻
+
+✅ 7. Automate & Deploy
+	•	Dockerize both backend and frontend.
+	•	Use a CI pipeline to lint/test/build.
+	•	Deploy to your local K8s cluster, or something like Railway/Render/VPS.
+
+⸻
+
+✅ Bonus: If You're Using AI to Help Build
+
+Improve your prompts:
+	•	Always provide: API design, Zod schema, feature goal, and existing file structure.
+	•	Tell it to reuse existing schema instead of inventing new ones.
+	•	Ask for unit tests with example inputs and outputs.

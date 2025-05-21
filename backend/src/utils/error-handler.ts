@@ -260,13 +260,61 @@ export function createNotFoundError(resourceName: string, id?: string): AppError
  * Create a standardized AppError for validation errors
  */
 export function createValidationError(message: string, field?: string): AppError {
-  // This will translate to a TRPC BAD_REQUEST error (BAD_REQUEST = 400)
-  // But the API specification expects 'VALIDATION_ERROR' code
   return AppError.create(ErrorCode.VALIDATION_ERROR, message, {
     statusCode: 400,
-    field,
-    code: 'VALIDATION_ERROR' // Ensure code is explicitly set for API spec compliance
+    field
   });
+}
+
+/**
+ * Creates a standardized error response format that complies with API specification
+ * To be used for all error responses across the application
+ */
+export function formatErrorResponse(error: AppError | Error | unknown): { 
+  message: string; 
+  code: string;
+} {
+  // For AppError, we can directly access the code and message
+  if (error instanceof AppError) {
+    return {
+      message: error.message,
+      code: error.details.code
+    };
+  }
+  
+  // For standard Error, we need to determine the appropriate code
+  if (error instanceof Error) {
+    let code = ErrorCode.UNKNOWN_ERROR;
+    
+    if (error.message.includes('not found') || error.message.includes('does not exist')) {
+      code = ErrorCode.NOT_FOUND;
+    } else if (error.message.includes('permission') || 
+               error.message.includes('not allowed') || 
+               error.message.includes('forbidden')) {
+      code = ErrorCode.FORBIDDEN;
+    } else if (error.message.includes('unauthorized') || 
+               error.message.includes('unauthenticated') || 
+               error.message.includes('authentication')) {
+      code = ErrorCode.UNAUTHORIZED;
+    } else if (error.message.includes('validation') || 
+               error.message.includes('invalid') || 
+               error.message.includes('required')) {
+      code = ErrorCode.VALIDATION_ERROR;
+    } else {
+      code = ErrorCode.INTERNAL_SERVER_ERROR;
+    }
+    
+    return {
+      message: error.message,
+      code
+    };
+  }
+  
+  // For other types, use a generic error
+  return {
+    message: typeof error === 'string' ? error : 'An unknown error occurred',
+    code: ErrorCode.UNKNOWN_ERROR
+  };
 }
 
 /**
@@ -322,4 +370,90 @@ export function createGoogleApiError(message: string, details?: any): AppError {
     statusCode: 502,
     details
   });
+}
+
+/**
+ * Format an error for the API response according to the API specification
+ * 
+ * @param error Any error object
+ * @returns Formatted error with message and code properties
+ */
+export function formatErrorResponse(error: any): { message: string; code: string } {
+  // Default error response
+  const defaultResponse = {
+    message: "An unexpected error occurred",
+    code: "INTERNAL_SERVER_ERROR"
+  };
+  
+  // Type guard for AppError
+  const isAppError = (err: any): err is AppError => {
+    return (
+      err && 
+      typeof err === 'object' && 
+      err.name === 'AppError' && 
+      err.details && 
+      typeof err.details === 'object' && 
+      'code' in err.details
+    );
+  };
+  
+  // If it's an AppError, format according to API spec
+  if (isAppError(error)) {
+    return {
+      message: error.message,
+      code: error.details.code as string
+    };
+  } 
+  // If it's a TRPCError, format accordingly
+  else if (error && typeof error === 'object' && 'code' in error) {
+    // Map TRPC error codes to API specification codes
+    let code: string;
+    switch (error.code) {
+      case 'UNAUTHORIZED':
+        code = 'UNAUTHORIZED';
+        break;
+      case 'FORBIDDEN':
+        code = 'FORBIDDEN';
+        break;
+      case 'NOT_FOUND':
+        code = 'NOT_FOUND';
+        break;
+      case 'BAD_REQUEST':
+        code = 'VALIDATION_ERROR';
+        break;
+      default:
+        code = 'INTERNAL_SERVER_ERROR';
+    }
+    
+    return {
+      message: error.message || defaultResponse.message,
+      code
+    };
+  } 
+  // Regular Error object
+  else if (error instanceof Error) {
+    let code = 'INTERNAL_SERVER_ERROR';
+    
+    // Try to guess appropriate code based on error message
+    if (error.message.toLowerCase().includes('not found')) {
+      code = 'NOT_FOUND';
+    } else if (error.message.toLowerCase().includes('permission') || 
+               error.message.toLowerCase().includes('forbidden')) {
+      code = 'FORBIDDEN';
+    } else if (error.message.toLowerCase().includes('unauthorized') || 
+               error.message.toLowerCase().includes('authentication')) {
+      code = 'UNAUTHORIZED';
+    } else if (error.message.toLowerCase().includes('validation') || 
+               error.message.toLowerCase().includes('invalid')) {
+      code = 'VALIDATION_ERROR';
+    }
+    
+    return {
+      message: error.message,
+      code
+    };
+  }
+  
+  // Default case for unknown error types
+  return defaultResponse;
 }

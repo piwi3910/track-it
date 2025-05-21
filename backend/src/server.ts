@@ -54,7 +54,7 @@ app.use(cors({
 app.use(express.json());
 
 // Health check route
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
@@ -64,7 +64,7 @@ app.get('/health', (req, res) => {
 });
 
 // Root health check (for API availability checks)
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({ status: 'Server is running' });
 });
 
@@ -103,7 +103,7 @@ app.use(
 );
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error(err, 'Express error handler');
   
   // Handle auth errors

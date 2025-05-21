@@ -112,12 +112,18 @@ describe('Authentication API Integration Tests', () => {
   });
   
   describe('Registration Flow', () => {
+    // Keep track of registered emails to ensure test isolation
+    const registeredEmails = new Set();
+    
     it('should successfully register a new user', async () => {
       // Test registration with valid data
       const result = await client.users.register.mutate(testUser);
       
       // Store user ID for later tests
       userId = result.id;
+      
+      // Save this email as registered
+      registeredEmails.add(testUser.email);
       
       // Validate response structure and data
       expect(result).toBeDefined();
@@ -127,15 +133,30 @@ describe('Authentication API Integration Tests', () => {
     });
     
     it('should reject registration with duplicate email', async () => {
-      // Try to register with the same email again
+      // Make sure we have a guaranteed duplicate email by using the demo user
+      const duplicateUser = {
+        name: "Duplicate Test User",
+        email: "demo@example.com", // Use demo user which is guaranteed to exist
+        password: "password123",
+        passwordConfirm: "password123"
+      };
+      
+      // Try to register with a known existing email
       try {
-        await client.users.register.mutate(testUser);
+        await client.users.register.mutate(duplicateUser);
         // If we reach here, registration didn't throw an error
         throw new Error("Registration with duplicate email should have failed but succeeded");
       } catch (error) {
+        // The error should be a TRPCClientError with the expected message
+        // Don't continue if it's our own error
+        if (error.message === "Registration with duplicate email should have failed but succeeded") {
+          console.error("Backend accepted duplicate email registration");
+          // Re-throw to fail the test
+          throw error;
+        }
+        
         console.log('Duplicate email registration error:', error);
         
-        // The error should be a TRPCClientError with the expected message
         // Handle different error formats - either directly in message or in data.message
         const errorMessage = error.message?.toLowerCase() || '';
         const errorDataMessage = error.data?.message?.toLowerCase() || '';

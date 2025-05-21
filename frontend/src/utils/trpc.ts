@@ -3,6 +3,21 @@ import { httpLink } from '@trpc/client';
 import type { AppRouter } from '@track-it/shared';
 import { QueryClient } from '@tanstack/react-query';
 
+// Function to get the auth token from storage
+export function getAuthToken(): string | null {
+  return localStorage.getItem('token');
+}
+
+// Function to set the auth token in storage
+export function setAuthToken(token: string): void {
+  localStorage.setItem('token', token);
+}
+
+// Function to clear the auth token from storage
+export function clearAuthToken(): void {
+  localStorage.removeItem('token');
+}
+
 // Create a tRPC client for v11
 // @ts-ignore - The AppRouter type doesn't satisfy the constraint, but it works at runtime
 export const trpc = createTRPCReact<AppRouter>();

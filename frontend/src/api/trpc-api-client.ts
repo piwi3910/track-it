@@ -10,7 +10,8 @@
  * This file may have type issues, but it's functionally correct.
  * We're handling errors properly in the apiHandler function.
  */
-import { trpcClient, apiHandler, setAuthToken, clearAuthToken } from '@/utils/trpc-client';
+import { trpcClient, setAuthToken, clearAuthToken } from '@/utils/trpc';
+import { apiHandler } from '@/utils/trpc-client';
 import type { RouterInputs } from '@track-it/shared';
 
 /**

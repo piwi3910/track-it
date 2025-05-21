@@ -9,10 +9,23 @@ export const trpc = createTRPCReact<AppRouter>();
 
 // Initialize tRPC react-query client
 export const trpcClient = trpc.createClient({
+  // Explicitly disable batching at the client level
+  transformer: undefined,
+  // Forced non-batch query behavior
+  queryClientConfig: {
+    defaultOptions: {
+      queries: {
+        networkMode: 'always', // Always make network requests
+        retry: 2, // Retry failed requests twice
+      },
+    },
+  },
   links: [
     httpLink({
       url: import.meta.env.VITE_API_URL || 'http://localhost:3001/trpc',
       // Use httpLink instead of httpBatchLink to avoid batching which seems to be causing issues
+      // Disable batching completely
+      batch: false,
       headers() {
         const token = localStorage.getItem('token');
 
@@ -28,6 +41,17 @@ export const trpcClient = trpc.createClient({
       fetch(url, options) {
         // Add debugging for API requests
         console.log(`Making API request to: ${url}`);
+        
+        // Log request body for debugging
+        if (options.body) {
+          console.log('Request body:', options.body);
+        }
+        
+        // Check if URL contains batch parameter and remove it as we're using non-batch mode
+        const cleanUrl = url.replace(/[?&]batch=1/g, '');
+        if (cleanUrl !== url) {
+          console.log(`Cleaned batch parameter from URL: ${cleanUrl}`);
+        }
         
         // Create AbortController to add timeout for requests
         const controller = new AbortController();
@@ -65,7 +89,7 @@ export const trpcClient = trpc.createClient({
         // Debug the final headers being sent
         console.log('Request headers:', [...headers.entries()]);
         
-        return fetch(url, {
+        return fetch(cleanUrl, {
           ...options,
           headers, // Use the Headers object
           credentials: 'include', // Include cookies for authentication
@@ -74,6 +98,10 @@ export const trpcClient = trpc.createClient({
         }).then(response => {
           // Clear timeout since request completed
           clearTimeout(timeoutId);
+          
+          // Log response details for debugging
+          console.log(`API response status: ${response.status}`);
+          console.log(`API response URL: ${response.url}`);
           
           if (!response.ok) {
             console.error(`API request failed with status: ${response.status}`);
@@ -88,6 +116,21 @@ export const trpcClient = trpc.createClient({
             if (response.status >= 500) {
               const apiCheckEvent = new CustomEvent('check_api_availability');
               window.dispatchEvent(apiCheckEvent);
+            }
+            
+            // Special handling for 400 Bad Request - might be a batch format issue
+            if (response.status === 400) {
+              console.error('400 Bad Request - This could be a tRPC request format issue');
+              // Clone response to inspect body for debugging without consuming it
+              response.clone().text().then(text => {
+                try {
+                  console.error('Response body:', JSON.parse(text));
+                } catch (e) {
+                  console.error('Response body (not JSON):', text);
+                }
+              }).catch(e => {
+                console.error('Failed to read response body:', e);
+              });
             }
           }
           return response;

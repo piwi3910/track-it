@@ -33,7 +33,7 @@ export const trpcClient = trpc.createClient({
           // Always include the token if available
           Authorization: token ? `Bearer ${token}` : '',
           // Add custom header to help with CORS issues
-          'X-From-Frontend': 'track-it-frontend',
+          'X-From-Frontend': 'track-it-client',
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         };

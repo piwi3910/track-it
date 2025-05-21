@@ -21,7 +21,7 @@ async function testLogin() {
     
     console.log('Request body:', JSON.stringify(batchBody1, null, 2));
     
-    const response1 = await fetch('http://localhost:3001/trpc/users.login?batch=1', {
+    const response1 = await fetch('http://localhost:3002/trpc/users.login?batch=1', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -45,7 +45,7 @@ async function testLogin() {
     
     console.log('Request body:', JSON.stringify(batchBody2, null, 2));
     
-    const response2 = await fetch('http://localhost:3001/trpc/users.login?batch=1', {
+    const response2 = await fetch('http://localhost:3002/trpc/users.login?batch=1', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -76,7 +76,7 @@ async function testLogin() {
     
     console.log('Request body:', JSON.stringify(batchBody3, null, 2));
     
-    const response3 = await fetch('http://localhost:3001/trpc', {
+    const response3 = await fetch('http://localhost:3002/trpc', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -103,7 +103,7 @@ async function testLogin() {
     
     console.log('Request body:', JSON.stringify(directBody, null, 2));
     
-    const directResponse = await fetch('http://localhost:3001/trpc/users.login', {
+    const directResponse = await fetch('http://localhost:3002/trpc/users.login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

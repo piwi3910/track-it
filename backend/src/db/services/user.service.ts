@@ -172,12 +172,8 @@ export async function createUser(data: any) {
 
     // Check for Prisma unique constraint violation (P2002)
     if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-      // This is a duplicate email error - format it according to API spec
-      // Use the exact error message expected by the tests
-      const duplicateError = new Error('Email already exists');
-      // Add code property to match API specification
-      (duplicateError as any).code = 'ALREADY_EXISTS';
-      throw duplicateError;
+      // Let this error propagate to the router where it will be handled
+      throw new Error('Email already exists');
     }
 
     // For other errors, use standard database error

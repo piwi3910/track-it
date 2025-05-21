@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure, adminProcedure, safeProcedure } from '../trpc/trpc';
 import type {
   User,
@@ -261,9 +262,15 @@ export const usersRouter = router({
         if (existingUser) {
           logger.warn({ email: input.email }, 'Registration failed: Email already exists');
           // Create a properly formatted error with code property matching API spec
-          const duplicateError = new Error('Email already exists');
-          (duplicateError as any).code = 'ALREADY_EXISTS';
-          throw duplicateError;
+          // Throw a TRPCError that will be properly formatted through the error formatter
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Email already exists',
+            cause: {
+              code: 'ALREADY_EXISTS',
+              message: 'Email already exists'
+            }
+          });
         }
         
         // Create new user with hashed password
@@ -290,10 +297,15 @@ export const usersRouter = router({
         // Special handling for duplicate email errors
         if (error.message === 'Email already exists' || 
             (error.code === 'P2002' && error.meta?.target?.includes('email'))) {
-          // Create properly formatted error with code property to match API spec
-          const duplicateError = new Error('Email already exists');
-          (duplicateError as any).code = 'ALREADY_EXISTS';
-          throw duplicateError;
+          // Use TRPCError for consistent error handling
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Email already exists',
+            cause: {
+              code: 'ALREADY_EXISTS',
+              message: 'Email already exists'
+            }
+          });
         }
         
         // Pass through validation errors

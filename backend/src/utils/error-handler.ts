@@ -260,9 +260,12 @@ export function createNotFoundError(resourceName: string, id?: string): AppError
  * Create a standardized AppError for validation errors
  */
 export function createValidationError(message: string, field?: string): AppError {
+  // This will translate to a TRPC BAD_REQUEST error (BAD_REQUEST = 400)
+  // But the API specification expects 'VALIDATION_ERROR' code
   return AppError.create(ErrorCode.VALIDATION_ERROR, message, {
     statusCode: 400,
-    field
+    field,
+    code: 'VALIDATION_ERROR' // Ensure code is explicitly set for API spec compliance
   });
 }
 

@@ -98,10 +98,14 @@ export const usersRouter = router({
     .input(userLoginSchema)
     .mutation(({ input }) => safeProcedure(async () => {
       try {
+        // Log login attempt for debugging
+        logger.info({ email: input.email }, 'Login attempt');
+        
         // Get user by email
         const user = await userService.getUserByEmail(input.email);
         
         if (!user || !user.passwordHash) {
+          logger.warn({ email: input.email }, 'Login failed: User not found or no password');
           throw createUnauthorizedError('Invalid email or password');
         }
         
@@ -109,6 +113,7 @@ export const usersRouter = router({
         const isPasswordValid = await userService.verifyPassword(input.password, user.passwordHash);
         
         if (!isPasswordValid) {
+          logger.warn({ email: input.email }, 'Login failed: Invalid password');
           throw createUnauthorizedError('Invalid email or password');
         }
         
@@ -125,6 +130,9 @@ export const usersRouter = router({
           { expiresIn: config.jwtExpiresIn }
         );
         
+        // Log successful login
+        logger.info({ userId: user.id, email: user.email }, 'Login successful');
+        
         // Return data exactly as specified in API spec
         return {
           id: user.id,
@@ -134,7 +142,8 @@ export const usersRouter = router({
           token
         };
       } catch (error) {
-        return handleError(error);
+        logger.error({ error, email: input.email }, 'Login error');
+        throw error; // Important: Allow error to propagate directly
       }
     })),
   
@@ -245,14 +254,13 @@ export const usersRouter = router({
           name: input.name 
         }, 'User registration attempt');
         
-        // Check if user already exists
+        // Check if user already exists 
         const existingUser = await userService.getUserByEmail(input.email);
         
         if (existingUser) {
           logger.warn({ email: input.email }, 'Registration failed: Email already exists');
-          // Throw consistent error message for email already exists
-          // This exact format is expected by the tests
-          throw createValidationError('Email already exists', 'email');
+          // Throw exact error format expected by tests
+          throw new Error('Email already exists');
         }
         
         // Create new user with hashed password
@@ -273,8 +281,23 @@ export const usersRouter = router({
           name: newUser.name,
           email: newUser.email
         };
-      } catch (error) {
+      } catch (error: any) {
         logger.error({ error, input: { email: input.email, name: input.name } }, 'Registration error');
+        
+        // Special handling for duplicate email errors
+        if (error.message === 'Email already exists' || 
+            (error.code === 'P2002' && error.meta?.target?.includes('email'))) {
+          throw new Error('Email already exists');
+        }
+        
+        // Pass through validation errors
+        if (error.message.includes("don't match") || 
+            error.message.includes("invalid") || 
+            error.message.includes("password")) {
+          throw error;
+        }
+        
+        // For other errors, use standard handler
         return handleError(error);
       }
     })),

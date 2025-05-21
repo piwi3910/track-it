@@ -3,19 +3,18 @@
   "version": "1.0.0",
   "description": "Backend API for Track-It task management",
   "main": "dist/server.js",
-  "type": "module",
   "scripts": {
-    "dev": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint .",
     "test": "jest",
-    "db:seed": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node prisma/seed.ts",
+    "db:seed": "ts-node prisma/seed.ts",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "cache:flush": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node -e \"import { getRedisClient } from './src/cache/redis.js'; getRedisClient().flushdb().then(() => console.log('Cache flushed successfully!')).catch(err => console.error('Error flushing cache:', err)).finally(() => process.exit(0))\"",
-    "cache:test": "NODE_OPTIONS=\"--loader ts-node/esm\" ts-node scripts/test-cache.ts"
+    "cache:flush": "ts-node -e \"require('./src/cache/redis').getRedisClient().flushdb().then(() => console.log('Cache flushed successfully!')).catch(err => console.error('Error flushing cache:', err)).finally(() => process.exit(0))\"",
+    "cache:test": "ts-node scripts/test-cache.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",

@@ -1,7 +1,6 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { Context } from './context';
-import { AppError, ErrorCode } from '@track-it/shared';
 import { handleError, createUnauthorizedError, createForbiddenError } from '../utils/error-handler';
 
 // Initialize tRPC with context type
@@ -27,22 +26,21 @@ const t = initTRPC.context<Context>().create({
         ...formattedError.data,
         zodError: formattedZodError
       };
-      console.error('Validation error:', error.cause.flatten());
-    } else if (error.cause && typeof error.cause === 'object' && 'details' in error.cause) {
+    } 
+    // Check for AppError structure in error.cause
+    else if (
+      error.cause && 
+      typeof error.cause === 'object' && 
+      'details' in error.cause && 
+      error.cause.details && 
+      typeof error.cause.details === 'object'
+    ) {
       // Include AppError details in the response
       formattedError.data = {
         ...formattedError.data,
         appError: error.cause.details
       };
     }
-
-    // Log all errors (in production, this would go to a monitoring service)
-    console.error(`[TRPC Error] ${error.code}:`, {
-      message: error.message,
-      path: shape.path,
-      input: shape.input,
-      cause: error.cause
-    });
 
     return formattedError;
   },

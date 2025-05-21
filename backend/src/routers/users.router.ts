@@ -8,9 +8,11 @@ import type {
 import { 
   createNotFoundError, 
   createUnauthorizedError, 
-  createForbiddenError,
   createValidationError
 } from '../utils/error-handler';
+import jwt from 'jsonwebtoken';
+import { config } from '../config';
+import { logger } from '../server';
 
 // Mock user database for now
 const mockUsers: User[] = [
@@ -26,6 +28,13 @@ const mockUsers: User[] = [
     name: 'Jane Smith',
     email: 'jane.smith@example.com',
     avatarUrl: 'https://i.pravatar.cc/150?u=user2',
+    role: 'member'
+  },
+  {
+    id: 'user3',
+    name: 'Demo User',
+    email: 'demo@example.com',
+    avatarUrl: 'https://i.pravatar.cc/150?u=demo',
     role: 'member'
   }
 ];
@@ -69,7 +78,7 @@ const googleTokenVerificationSchema = z.object({
 async function verifyGoogleIdToken(idToken: string) {
   // For development purposes, we're mocking this by assuming the token is valid
   // In production, you would verify this token with Google
-  console.log('Verifying Google ID token:', idToken.substring(0, 10) + '...');
+  logger.info({ tokenPrefix: idToken.substring(0, 10) }, 'Verifying Google ID token');
   
   // Mock decoded token payload (in production this would come from Google)
   return {
@@ -89,7 +98,7 @@ export const usersRouter = router({
   // Public routes (no auth required)
   login: publicProcedure
     .input(userLoginSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input }) => safeProcedure(async () => {
       // In a real app, you would verify the password against a hash
       const user = mockUsers.find(user => user.email === input.email);
       
@@ -97,11 +106,15 @@ export const usersRouter = router({
         throw createUnauthorizedError('Invalid email or password');
       }
       
-      // Generate JWT token
-      const token = ctx.req.server.jwt.sign({ 
-        id: user.id,
-        role: user.role || 'member'
-      });
+      // Generate JWT token using jsonwebtoken
+      const token = jwt.sign(
+        { 
+          id: user.id,
+          role: user.role || 'member'
+        },
+        config.jwtSecret,
+        { expiresIn: config.jwtExpiresIn }
+      );
       
       return {
         id: user.id,
@@ -115,7 +128,7 @@ export const usersRouter = router({
   // Google authentication
   loginWithGoogle: publicProcedure
     .input(googleLoginSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input }) => safeProcedure(async () => {
       // Verify the Google ID token
       const payload = await verifyGoogleIdToken(input.idToken);
       
@@ -129,12 +142,11 @@ export const usersRouter = router({
       // If user doesn't exist, create a new user
       if (!user) {
         user = {
-          id: `user-google-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `user-google-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           name: payload.name,
           email: payload.email,
           avatarUrl: payload.picture,
-          role: 'member',
-          googleId: payload.sub,
+          role: 'member'
         };
         
         mockUsers.push(user);
@@ -150,10 +162,14 @@ export const usersRouter = router({
       };
       
       // Generate JWT token
-      const token = ctx.req.server.jwt.sign({ 
-        id: user.id,
-        role: user.role || 'member'
-      });
+      const token = jwt.sign(
+        { 
+          id: user.id,
+          role: user.role || 'member'
+        },
+        config.jwtSecret,
+        { expiresIn: config.jwtExpiresIn }
+      );
       
       return {
         id: user.id,
@@ -184,7 +200,7 @@ export const usersRouter = router({
           picture: payload.picture
         };
       } catch (error) {
-        console.error('Google token verification error:', error);
+        logger.error({ error }, 'Google token verification error');
         return { valid: false };
       }
     })),
@@ -199,7 +215,7 @@ export const usersRouter = router({
       
       // Create new user (in a real app, you would hash the password)
       const newUser: User = {
-        id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         name: input.name,
         email: input.email,
         role: 'member',
@@ -339,6 +355,34 @@ export const usersRouter = router({
         id: mockUsers[userIndex].id,
         name: mockUsers[userIndex].name,
         role: mockUsers[userIndex].role
+      };
+    })),
+
+  // Update Google integration settings
+  updateGoogleIntegration: protectedProcedure
+    .input(z.object({
+      googleRefreshToken: z.string().nullable().optional(),
+      googleEnabled: z.boolean()
+    }))
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      const userIndex = mockUsers.findIndex(user => user.id === ctx.user?.id);
+      
+      if (userIndex === -1) {
+        throw createNotFoundError('User', ctx.user?.id);
+      }
+
+      // In a real implementation, this would update the database
+      const connected = !!Object.values(googleConnections).find(
+        conn => conn.userId === mockUsers[userIndex].id
+      );
+
+      return {
+        id: mockUsers[userIndex].id,
+        name: mockUsers[userIndex].name,
+        googleIntegration: {
+          enabled: input.googleEnabled,
+          connected
+        }
       };
     }))
 });

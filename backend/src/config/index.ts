@@ -44,6 +44,7 @@ export const config = {
   isDev: env.data.NODE_ENV === 'development',
   isProd: env.data.NODE_ENV === 'production',
   isTest: env.data.NODE_ENV === 'test',
+  logLevel: env.data.NODE_ENV === 'production' ? 'info' : 'debug',
   redis: {
     host: env.data.REDIS_HOST,
     port: env.data.REDIS_PORT,

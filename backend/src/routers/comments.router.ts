@@ -1,61 +1,168 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import type {
-  Comment
-} from '@track-it/shared';
 import { createNotFoundError, createForbiddenError } from '../utils/error-handler';
 
 // Mock comments database
-const mockComments: Comment[] = [];
+const mockComments = [
+  {
+    id: 'comment1',
+    taskId: 'task1',
+    userId: 'user1',
+    userName: 'John Doe',
+    userAvatarUrl: 'https://i.pravatar.cc/150?u=user1',
+    text: 'This is coming along nicely. Let\'s implement the error handling next.',
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: null,
+    mentions: []
+  },
+  {
+    id: 'comment2',
+    taskId: 'task1',
+    userId: 'user2',
+    userName: 'Jane Smith',
+    userAvatarUrl: 'https://i.pravatar.cc/150?u=user2',
+    text: 'I\'ve started working on the error handling. Will update when complete.',
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: null,
+    mentions: ['user1']
+  },
+  {
+    id: 'comment3',
+    taskId: 'task3',
+    userId: 'user3',
+    userName: 'Demo User',
+    userAvatarUrl: 'https://i.pravatar.cc/150?u=demo',
+    text: 'Login issue has been fixed. Root cause was an invalid token handling.',
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    mentions: []
+  }
+];
 
-// Comments router with endpoints
+// Mock tasks for validation
+const mockTasks = [
+  { id: 'task1' },
+  { id: 'task2' },
+  { id: 'task3' }
+];
+
+// Mock users for validation
+const mockUsers = [
+  { id: 'user1', name: 'John Doe', avatarUrl: 'https://i.pravatar.cc/150?u=user1' },
+  { id: 'user2', name: 'Jane Smith', avatarUrl: 'https://i.pravatar.cc/150?u=user2' },
+  { id: 'user3', name: 'Demo User', avatarUrl: 'https://i.pravatar.cc/150?u=demo' }
+];
+
+// Input validation schemas
+const getCommentsByTaskSchema = z.object({
+  taskId: z.string()
+});
+
+const getCommentCountSchema = z.object({
+  taskId: z.string()
+});
+
+const createCommentSchema = z.object({
+  taskId: z.string(),
+  text: z.string().min(1)
+});
+
+const updateCommentSchema = z.object({
+  id: z.string(),
+  text: z.string().min(1)
+});
+
+const deleteCommentSchema = z.object({
+  id: z.string()
+});
+
 export const commentsRouter = router({
-  // Get comments by task ID
   getByTaskId: protectedProcedure
-    .input(z.object({ taskId: z.string() }).strict())
+    .input(getCommentsByTaskSchema)
     .query(({ input }) => safeProcedure(async () => {
-      return mockComments.filter(comment => comment.taskId === input.taskId);
+      // Verify task exists
+      const taskExists = mockTasks.some(task => task.id === input.taskId);
+      
+      if (!taskExists) {
+        throw createNotFoundError('Task', input.taskId);
+      }
+      
+      // Find all comments for the task
+      const comments = mockComments.filter(comment => comment.taskId === input.taskId);
+      
+      // Sort by creation time (oldest first)
+      return comments.sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
     })),
     
-  // Get comment count by task ID
   getCommentCount: protectedProcedure
-    .input(z.object({ taskId: z.string() }).strict())
-    .query(({ input }) => {
-      return mockComments.filter(comment => comment.taskId === input.taskId).length;
-    }),
+    .input(getCommentCountSchema)
+    .query(({ input }) => safeProcedure(async () => {
+      // Verify task exists
+      const taskExists = mockTasks.some(task => task.id === input.taskId);
+      
+      if (!taskExists) {
+        throw createNotFoundError('Task', input.taskId);
+      }
+      
+      // Count comments for the task
+      const count = mockComments.filter(comment => comment.taskId === input.taskId).length;
+      
+      return { taskId: input.taskId, count };
+    })),
     
-  // Create a new comment
   create: protectedProcedure
-    .input(z.object({
-      taskId: z.string(),
-      text: z.string().min(1)
-    }).strict())
+    .input(createCommentSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const now = new Date().toISOString();
+      // Verify task exists
+      const taskExists = mockTasks.some(task => task.id === input.taskId);
       
-      // Extract mentions from text (optional feature)
+      if (!taskExists) {
+        throw createNotFoundError('Task', input.taskId);
+      }
+      
+      // Generate unique ID
+      const commentId = `comment-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Find user info
+      const user = mockUsers.find(user => user.id === ctx.user?.id);
+      
+      if (!user) {
+        throw createNotFoundError('User', ctx.user?.id);
+      }
+      
+      // Parse mentions (looking for @username patterns)
       const mentionRegex = /@(\w+)/g;
-      const mentions = Array.from(input.text.matchAll(mentionRegex), match => match[1]);
+      const mentionMatches = [...input.text.matchAll(mentionRegex)];
+      const mentions = mentionMatches
+        .map(match => match[1])
+        .map(username => {
+          // In a real app, look up user by username
+          // For mock data, just return a random user ID
+          return mockUsers[Math.floor(Math.random() * mockUsers.length)].id;
+        });
       
-      const newComment: Comment = {
-        id: `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      // Create new comment
+      const newComment = {
+        id: commentId,
         taskId: input.taskId,
-        authorId: ctx.user?.id || 'unknown',
+        userId: ctx.user.id,
+        userName: user.name,
+        userAvatarUrl: user.avatarUrl,
         text: input.text,
-        createdAt: now,
-        mentions: mentions.length > 0 ? mentions : undefined
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        mentions
       };
       
       mockComments.push(newComment);
+      
       return newComment;
     })),
     
-  // Update an existing comment
   update: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      text: z.string().min(1)
-    }).strict())
+    .input(updateCommentSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       const commentIndex = mockComments.findIndex(comment => comment.id === input.id);
       
@@ -63,30 +170,36 @@ export const commentsRouter = router({
         throw createNotFoundError('Comment', input.id);
       }
       
-      // Check if user is authorized to update the comment
+      // Check permissions (only creator or admin can update)
       const comment = mockComments[commentIndex];
-      if (comment.authorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
+      if (comment.userId !== ctx.user?.id && ctx.user?.role !== 'admin') {
         throw createForbiddenError('You do not have permission to update this comment');
       }
       
-      // Extract mentions from text (optional feature)
+      // Parse mentions (looking for @username patterns)
       const mentionRegex = /@(\w+)/g;
-      const mentions = Array.from(input.text.matchAll(mentionRegex), match => match[1]);
+      const mentionMatches = [...input.text.matchAll(mentionRegex)];
+      const mentions = mentionMatches
+        .map(match => match[1])
+        .map(username => {
+          // In a real app, look up user by username
+          // For mock data, just return a random user ID
+          return mockUsers[Math.floor(Math.random() * mockUsers.length)].id;
+        });
       
-      const updatedComment: Comment = {
-        ...comment,
+      // Update comment
+      mockComments[commentIndex] = {
+        ...mockComments[commentIndex],
         text: input.text,
         updatedAt: new Date().toISOString(),
-        mentions: mentions.length > 0 ? mentions : comment.mentions
+        mentions
       };
       
-      mockComments[commentIndex] = updatedComment;
-      return updatedComment;
+      return mockComments[commentIndex];
     })),
     
-  // Delete a comment
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).strict())
+    .input(deleteCommentSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       const commentIndex = mockComments.findIndex(comment => comment.id === input.id);
       
@@ -94,13 +207,15 @@ export const commentsRouter = router({
         throw createNotFoundError('Comment', input.id);
       }
       
-      // Check if user is authorized to delete the comment
+      // Check permissions (only creator or admin can delete)
       const comment = mockComments[commentIndex];
-      if (comment.authorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
+      if (comment.userId !== ctx.user?.id && ctx.user?.role !== 'admin') {
         throw createForbiddenError('You do not have permission to delete this comment');
       }
       
+      // Remove comment
       mockComments.splice(commentIndex, 1);
-      return { success: true };
+      
+      return { id: input.id, deleted: true };
     }))
 });

@@ -1,666 +1,431 @@
 import { z } from 'zod';
-import { router, protectedProcedure, publicProcedure, safeProcedure } from '../trpc/trpc';
-import { prisma } from '../db/client';
-import { GoogleApiService } from '../services/google-api.service';
-import { GoogleCalendarService } from '../services/google-calendar.service';
-import { GoogleTasksService } from '../services/google-tasks.service';
-import { GoogleDriveService } from '../services/google-drive.service';
-import { createNotFoundError, createGoogleApiError } from '../utils/error-handler';
+import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
+import { createNotFoundError, createValidationError } from '../utils/error-handler';
+import { logger } from '../server';
 
-/**
- * Google integration router with endpoints for Google services
- * including Calendar, Tasks, and Drive
- */
+// Mock data for Google Calendar
+const mockCalendarEvents = [
+  {
+    id: 'event1',
+    summary: 'Team Meeting',
+    description: 'Weekly team sync',
+    location: 'Conference Room A',
+    start: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+    end: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+    attendees: [
+      { email: 'john.doe@example.com', name: 'John Doe', responseStatus: 'accepted' },
+      { email: 'jane.smith@example.com', name: 'Jane Smith', responseStatus: 'accepted' },
+      { email: 'demo@example.com', name: 'Demo User', responseStatus: 'needsAction' }
+    ],
+    calendarId: 'primary',
+    googleEventId: 'google-event-id-1'
+  },
+  {
+    id: 'event2',
+    summary: 'API Review',
+    description: 'Review API implementation and error handling',
+    location: 'Virtual - Zoom',
+    start: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    end: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
+    attendees: [
+      { email: 'john.doe@example.com', name: 'John Doe', responseStatus: 'accepted' },
+      { email: 'demo@example.com', name: 'Demo User', responseStatus: 'accepted' }
+    ],
+    calendarId: 'primary',
+    googleEventId: 'google-event-id-2'
+  },
+  {
+    id: 'event3',
+    summary: 'Client Demo',
+    description: 'Demonstrate new features to client',
+    location: 'Virtual - Teams',
+    start: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    end: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 120 * 60 * 1000).toISOString(),
+    attendees: [
+      { email: 'john.doe@example.com', name: 'John Doe', responseStatus: 'accepted' },
+      { email: 'jane.smith@example.com', name: 'Jane Smith', responseStatus: 'tentative' },
+      { email: 'demo@example.com', name: 'Demo User', responseStatus: 'accepted' },
+      { email: 'client@company.com', name: 'Client Contact', responseStatus: 'accepted' }
+    ],
+    calendarId: 'primary',
+    googleEventId: 'google-event-id-3'
+  }
+];
+
+// Mock data for Google Tasks
+const mockGoogleTasks = [
+  {
+    id: 'gtask1',
+    title: 'Update documentation',
+    notes: 'Review and update API docs',
+    due: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    completed: false,
+    taskListId: 'primary-list',
+    googleTaskId: 'google-task-id-1'
+  },
+  {
+    id: 'gtask2',
+    title: 'Prepare client demo',
+    notes: 'Create demo script and prepare environment',
+    due: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+    completed: false,
+    taskListId: 'primary-list',
+    googleTaskId: 'google-task-id-2'
+  },
+  {
+    id: 'gtask3',
+    title: 'Send meeting notes',
+    notes: 'Summarize action items from team meeting',
+    due: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+    completed: false,
+    taskListId: 'primary-list',
+    googleTaskId: 'google-task-id-3'
+  }
+];
+
+// Mock data for Google Drive
+const mockDriveFiles = [
+  {
+    id: 'file1',
+    name: 'Project Requirements.docx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    webViewLink: 'https://docs.google.com/document/d/123456',
+    webContentLink: 'https://drive.google.com/uc?id=123456',
+    thumbnailLink: 'https://drive.google.com/thumbnail?id=123456',
+    size: 1024 * 1024 * 1.5, // 1.5 MB
+    createdTime: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    modifiedTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'file2',
+    name: 'API Design.pdf',
+    mimeType: 'application/pdf',
+    webViewLink: 'https://drive.google.com/file/d/234567',
+    webContentLink: 'https://drive.google.com/uc?id=234567',
+    thumbnailLink: 'https://drive.google.com/thumbnail?id=234567',
+    size: 1024 * 1024 * 2.8, // 2.8 MB
+    createdTime: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    modifiedTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'file3',
+    name: 'Project Timeline.xlsx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    webViewLink: 'https://docs.google.com/spreadsheets/d/345678',
+    webContentLink: 'https://drive.google.com/uc?id=345678',
+    thumbnailLink: 'https://drive.google.com/thumbnail?id=345678',
+    size: 1024 * 512, // 512 KB
+    createdTime: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    modifiedTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+  }
+];
+
+// Mock users with Google connections
+const mockUserGoogleConnections = {
+  'user1': {
+    connected: true,
+    email: 'john.doe@example.com',
+    refreshToken: 'mock-refresh-token-1',
+    calendarId: 'primary',
+    taskListId: 'primary-list'
+  },
+  'user2': {
+    connected: true,
+    email: 'jane.smith@example.com',
+    refreshToken: 'mock-refresh-token-2',
+    calendarId: 'primary',
+    taskListId: 'primary-list'
+  },
+  'user3': {
+    connected: true,
+    email: 'demo@example.com',
+    refreshToken: 'mock-refresh-token-3',
+    calendarId: 'primary',
+    taskListId: 'primary-list'
+  }
+};
+
+// Input validation schemas
+const createEventSchema = z.object({
+  summary: z.string().min(1),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  start: z.string(),
+  end: z.string(),
+  attendees: z.array(z.object({
+    email: z.string().email(),
+    name: z.string().optional()
+  })).optional()
+});
+
+const updateEventSchema = z.object({
+  eventId: z.string(),
+  data: z.object({
+    summary: z.string().min(1).optional(),
+    description: z.string().optional(),
+    location: z.string().optional(),
+    start: z.string().optional(),
+    end: z.string().optional(),
+    attendees: z.array(z.object({
+      email: z.string().email(),
+      name: z.string().optional()
+    })).optional()
+  })
+});
+
+const deleteEventSchema = z.object({
+  eventId: z.string()
+});
+
+const importGoogleTaskSchema = z.object({
+  googleTaskId: z.string()
+});
+
 export const googleIntegrationRouter = router({
-  // *** OAuth and Account Management *** //
-  
-  // Generate authorization URL
-  getAuthUrl: publicProcedure
-    .query(() => safeProcedure(async () => {
-      // In a real implementation, this would generate a URL for the OAuth flow
-      const authUrl = GoogleApiService.generateAuthUrl({
-        scope: [
-          'profile', 
-          'email', 
-          'https://www.googleapis.com/auth/calendar', 
-          'https://www.googleapis.com/auth/tasks',
-          'https://www.googleapis.com/auth/drive.readonly'
-        ],
-        redirectUri: 'http://localhost:3000/auth/google/callback',
-        state: 'track-it-auth-' + Date.now()
-      });
-      
-      return { authUrl };
-    })),
-    
-  // Verify Google ID token
-  verifyGoogleToken: publicProcedure
-    .input(z.object({ token: z.string() }).strict())
-    .query(({ input }) => safeProcedure(async () => {
-      try {
-        // Verify token with Google
-        const profile = await GoogleApiService.getUserInfo(input.token);
-        
-        return {
-          valid: true,
-          email: profile.email,
-          name: profile.name,
-          picture: profile.picture
-        };
-      } catch (error) {
-        console.error('Error verifying Google token:', error);
-        return { valid: false };
-      }
-    })),
-    
-  // Link Google account
-  linkGoogleAccount: protectedProcedure
-    .input(z.object({ authCode: z.string() }).strict())
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Exchange auth code for tokens
-        const tokenResponse = await GoogleApiService.exchangeCodeForTokens(input.authCode);
-        
-        // Verify ID token to get user profile
-        const profile = await GoogleApiService.getUserInfo(tokenResponse.id_token || '');
-        
-        // Store tokens and profile in database
-        const googleAccount = await prisma.googleAccount.upsert({
-          where: {
-            userId_googleId: {
-              userId,
-              googleId: profile.sub
-            }
-          },
-          update: {
-            accessToken: tokenResponse.access_token,
-            refreshToken: tokenResponse.refresh_token,
-            tokenExpiry: new Date(tokenResponse.expiry_date),
-            scopes: tokenResponse.scope,
-            name: profile.name,
-            email: profile.email,
-            picture: profile.picture
-          },
-          create: {
-            userId,
-            googleId: profile.sub,
-            accessToken: tokenResponse.access_token,
-            refreshToken: tokenResponse.refresh_token,
-            tokenExpiry: new Date(tokenResponse.expiry_date),
-            scopes: tokenResponse.scope,
-            name: profile.name,
-            email: profile.email,
-            picture: profile.picture
-          }
-        });
-        
-        return {
-          success: true,
-          email: profile.email,
-          name: profile.name,
-          picture: profile.picture
-        };
-      } catch (error) {
-        throw createGoogleApiError('Failed to link Google account', { error });
-      }
-    })),
-  
-  // Unlink Google account
-  unlinkGoogleAccount: protectedProcedure
-    .mutation(({ ctx }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Delete Google account for this user
-        await prisma.googleAccount.deleteMany({
-          where: { userId }
-        });
-        
-        return { success: true };
-      } catch (error) {
-        throw createGoogleApiError('Failed to unlink Google account', { error });
-      }
-    })),
-  
-  // Get Google account status
-  getGoogleAccountStatus: protectedProcedure
+  // Calendar operations
+  getCalendarEvents: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
       }
       
-      try {
-        // Get Google account from database
-        const googleAccount = await prisma.googleAccount.findFirst({
-          where: { userId }
-        });
-        
-        if (!googleAccount) {
-          return {
-            connected: false
-          };
-        }
-        
-        // Check if token is expired
-        const tokenExpired = googleAccount.tokenExpiry < new Date();
-        
-        if (tokenExpired && googleAccount.refreshToken) {
-          // Refresh the token
-          const tokenResponse = await GoogleApiService.refreshAccessToken(googleAccount.refreshToken);
-          
-          // Update token in database
-          await prisma.googleAccount.update({
-            where: { id: googleAccount.id },
-            data: {
-              accessToken: tokenResponse.access_token,
-              tokenExpiry: new Date(tokenResponse.expiry_date)
-            }
-          });
-        }
-        
-        return {
-          connected: true,
-          email: googleAccount.email,
-          name: googleAccount.name,
-          picture: googleAccount.picture,
-          lastSyncTime: googleAccount.lastCalendarSync || googleAccount.lastTasksSync || googleAccount.lastDriveSync,
-          scopes: googleAccount.scopes?.split(' ')
-        };
-      } catch (error) {
-        throw createGoogleApiError('Failed to get Google account status', { error });
-      }
+      // Filter events for the user (by email)
+      const userEvents = mockCalendarEvents.filter(event => 
+        event.attendees.some(attendee => 
+          attendee.email === userConnection.email
+        )
+      );
+      
+      return userEvents;
     })),
   
-  // *** Calendar Integration *** //
+  createCalendarEvent: protectedProcedure
+    .input(createEventSchema)
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
+      }
+      
+      // Generate unique ID
+      const eventId = `event-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Add current user as an attendee if not already included
+      const attendees = input.attendees || [];
+      if (!attendees.some(a => a.email === userConnection.email)) {
+        attendees.push({
+          email: userConnection.email,
+          name: ctx.user?.name || 'User',
+          responseStatus: 'accepted'
+        });
+      }
+      
+      // Create new event
+      const newEvent = {
+        id: eventId,
+        ...input,
+        attendees,
+        calendarId: userConnection.calendarId,
+        googleEventId: `google-event-id-${eventId}`
+      };
+      
+      mockCalendarEvents.push(newEvent);
+      
+      return newEvent;
+    })),
   
-  // Sync Google Calendar
+  updateCalendarEvent: protectedProcedure
+    .input(updateEventSchema)
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
+      }
+      
+      // Find event
+      const eventIndex = mockCalendarEvents.findIndex(event => 
+        event.id === input.eventId || event.googleEventId === input.eventId
+      );
+      
+      if (eventIndex === -1) {
+        throw createNotFoundError('Calendar event', input.eventId);
+      }
+      
+      // Check if user is an attendee
+      const event = mockCalendarEvents[eventIndex];
+      const isAttendee = event.attendees.some(attendee => 
+        attendee.email === userConnection.email
+      );
+      
+      if (!isAttendee) {
+        throw createValidationError('You are not an attendee of this event', 'permission');
+      }
+      
+      // Update event
+      mockCalendarEvents[eventIndex] = {
+        ...mockCalendarEvents[eventIndex],
+        ...input.data
+      };
+      
+      return mockCalendarEvents[eventIndex];
+    })),
+  
+  deleteCalendarEvent: protectedProcedure
+    .input(deleteEventSchema)
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
+      }
+      
+      // Find event
+      const eventIndex = mockCalendarEvents.findIndex(event => 
+        event.id === input.eventId || event.googleEventId === input.eventId
+      );
+      
+      if (eventIndex === -1) {
+        throw createNotFoundError('Calendar event', input.eventId);
+      }
+      
+      // Check if user is an attendee
+      const event = mockCalendarEvents[eventIndex];
+      const isAttendee = event.attendees.some(attendee => 
+        attendee.email === userConnection.email
+      );
+      
+      if (!isAttendee) {
+        throw createValidationError('You are not an attendee of this event', 'permission');
+      }
+      
+      // Remove event
+      mockCalendarEvents.splice(eventIndex, 1);
+      
+      return { id: input.eventId, deleted: true };
+    })),
+  
   syncCalendar: protectedProcedure
     .mutation(({ ctx }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
       }
       
-      try {
-        // Sync calendar events
-        const syncResult = await GoogleCalendarService.syncWithGoogleCalendar(userId);
-        
-        return syncResult;
-      } catch (error) {
-        throw createGoogleApiError('Failed to sync with Google Calendar', { error });
-      }
-    })),
-  
-  // Get calendar events
-  getCalendarEvents: protectedProcedure
-    .input(z.object({
-      days: z.number().int().positive().default(30).optional(),
-      includeTask: z.boolean().default(false).optional()
-    }).strict().optional())
-    .query(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
+      // In a real application, this would sync with Google Calendar
+      logger.info({ userId: ctx.user.id }, 'Syncing calendar for user');
       
-      try {
-        // Get calendar events from database
-        const events = await GoogleCalendarService.getUpcomingEventsForUser(userId, {
-          days: input?.days,
-          includeTask: input?.includeTask
-        });
-        
-        // Map to expected response format
-        return events.map(event => ({
-          id: event.googleEventId,
-          title: event.title,
-          description: event.description,
-          start: event.startTime.toISOString(),
-          end: event.endTime.toISOString(),
-          location: event.location,
-          link: event.eventLink || '',
-          taskId: event.taskId || undefined,
-          task: event.task
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to get calendar events', { error });
-      }
+      // Mock sync result
+      return { 
+        success: true, 
+        synced: mockCalendarEvents.length, 
+        created: 0, 
+        updated: 0, 
+        deleted: 0 
+      };
     })),
   
-  // Get events by date range
-  getEventsByDateRange: protectedProcedure
-    .input(z.object({
-      startDate: z.string(),
-      endDate: z.string(),
-      includeTask: z.boolean().default(false).optional()
-    }).strict())
-    .query(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Get calendar events from database
-        const events = await GoogleCalendarService.getEventsInDateRange(
-          userId,
-          new Date(input.startDate),
-          new Date(input.endDate),
-          { includeTask: input.includeTask }
-        );
-        
-        // Map to expected response format
-        return events.map(event => ({
-          id: event.googleEventId,
-          title: event.title,
-          description: event.description,
-          start: event.startTime.toISOString(),
-          end: event.endTime.toISOString(),
-          location: event.location,
-          link: event.eventLink || '',
-          taskId: event.taskId || undefined,
-          task: event.task
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to get events by date range', { error });
-      }
-    })),
-  
-  // Create task from calendar event
-  createTaskFromEvent: protectedProcedure
-    .input(z.object({
-      eventId: z.string()
-    }).strict())
-    .mutation(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Create task from event
-        const task = await GoogleCalendarService.createTaskFromEvent(input.eventId, userId);
-        
-        return task;
-      } catch (error) {
-        throw createGoogleApiError('Failed to create task from event', { error });
-      }
-    })),
-  
-  // Create calendar event from task
-  createEventFromTask: protectedProcedure
-    .input(z.object({
-      taskId: z.string()
-    }).strict())
-    .mutation(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Create event from task
-        const event = await GoogleCalendarService.createEventFromTask(input.taskId, userId);
-        
-        return {
-          id: event.googleEventId,
-          title: event.title,
-          description: event.description,
-          start: event.startTime.toISOString(),
-          end: event.endTime.toISOString(),
-          location: event.location,
-          link: event.eventLink || ''
-        };
-      } catch (error) {
-        throw createGoogleApiError('Failed to create event from task', { error });
-      }
-    })),
-  
-  // *** Tasks Integration *** //
-  
-  // Sync Google Tasks
-  syncTasks: protectedProcedure
-    .mutation(({ ctx }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Sync tasks
-        const syncResult = await GoogleTasksService.syncTasksFromGoogle(userId);
-        
-        return syncResult;
-      } catch (error) {
-        throw createGoogleApiError('Failed to sync with Google Tasks', { error });
-      }
-    })),
-  
-  // Get task lists
-  getTaskLists: protectedProcedure
-    .query(({ ctx }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Get task lists from database, syncing if needed
-        const taskLists = await GoogleTasksService.syncTaskLists(userId);
-        
-        return taskLists.map(list => ({
-          id: list.googleTaskListId,
-          title: list.title
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to get task lists', { error });
-      }
-    })),
-  
-  // Import Google Tasks
+  // Google Tasks operations
   importGoogleTasks: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
       }
       
-      try {
-        // Import tasks
-        const tasks = await GoogleTasksService.importTasksAsTrackItTasks(userId);
-        
-        return tasks;
-      } catch (error) {
-        throw createGoogleApiError('Failed to import Google Tasks', { error });
-      }
+      // Return all Google Tasks
+      return mockGoogleTasks;
     })),
   
-  // Create Google Task from task
-  createGoogleTaskFromTask: protectedProcedure
-    .input(z.object({
-      taskId: z.string(),
-      taskListId: z.string().optional()
-    }).strict())
-    .mutation(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
+  importGoogleTaskAsTask: protectedProcedure
+    .input(importGoogleTaskSchema)
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
       }
       
-      try {
-        // Create Google Task
-        const googleTask = await GoogleTasksService.createGoogleTaskFromTask(
-          input.taskId,
-          userId,
-          input.taskListId
-        );
-        
-        return {
-          id: googleTask.googleTaskId,
-          title: googleTask.title,
-          notes: googleTask.notes,
-          due: googleTask.due?.toISOString(),
-          status: googleTask.status
-        };
-      } catch (error) {
-        throw createGoogleApiError('Failed to create Google Task from task', { error });
-      }
-    })),
-  
-  // Get Google Tasks
-  getGoogleTasks: protectedProcedure
-    .input(z.object({
-      includeCompleted: z.boolean().default(false).optional(),
-      includeTask: z.boolean().default(false).optional(),
-      limit: z.number().int().positive().default(50).optional()
-    }).strict().optional())
-    .query(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
+      // Find Google Task
+      const googleTask = mockGoogleTasks.find(task => 
+        task.id === input.googleTaskId || task.googleTaskId === input.googleTaskId
+      );
+      
+      if (!googleTask) {
+        throw createNotFoundError('Google Task', input.googleTaskId);
       }
       
-      try {
-        // Get tasks from database
-        const tasks = await GoogleTasksService.getTasksForUser(userId, {
-          includeCompleted: input?.includeCompleted,
-          includeTask: input?.includeTask,
-          includeTaskList: true,
-          limit: input?.limit
-        });
-        
-        // Map to expected response format
-        return tasks.map(task => ({
-          id: task.googleTaskId,
-          title: task.title,
-          notes: task.notes,
-          due: task.due?.toISOString(),
-          status: task.status,
-          completed: task.completed?.toISOString(),
-          taskListId: task.googleTaskListId,
-          taskListTitle: task.taskList?.title,
-          taskId: task.taskId,
-          task: task.task
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to get Google Tasks', { error });
-      }
-    })),
-  
-  // *** Drive Integration *** //
-  
-  // Sync Google Drive files
-  syncDriveFiles: protectedProcedure
-    .input(z.object({
-      query: z.string().optional(),
-      maxResults: z.number().int().positive().default(100).optional()
-    }).strict().optional())
-    .mutation(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
+      // Create a new task from Google Task
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       
-      try {
-        // Sync files
-        const files = await GoogleDriveService.syncFilesFromGoogleDrive(userId, {
-          query: input?.query,
-          maxResults: input?.maxResults
-        });
-        
-        return files.map(file => ({
-          id: file.id,
-          googleFileId: file.googleFileId,
-          name: file.name,
-          mimeType: file.mimeType,
-          webViewLink: file.webViewLink,
-          iconLink: file.iconLink,
-          thumbnailLink: file.thumbnailLink,
-          size: file.size,
-          createdTime: file.createdTime?.toISOString(),
-          modifiedTime: file.modifiedTime?.toISOString()
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to sync Google Drive files', { error });
-      }
+      const newTask = {
+        id: taskId,
+        title: googleTask.title,
+        description: googleTask.notes || '',
+        status: 'todo',
+        priority: 'medium',
+        tags: ['imported', 'google-tasks'],
+        dueDate: googleTask.due,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdById: ctx.user.id,
+        assigneeId: ctx.user.id,
+        estimatedHours: 2, // default
+        actualHours: 0,
+        timeTrackingActive: false,
+        trackingTimeSeconds: 0,
+        subtasks: [],
+        googleTaskId: googleTask.googleTaskId
+      };
+      
+      // In a real app, this would be added to the tasks database
+      
+      return {
+        task: newTask,
+        googleTask
+      };
     })),
   
-  // Get Google Drive files
+  // Google Drive operations
   getGoogleDriveFiles: protectedProcedure
-    .input(z.object({
-      limit: z.number().int().positive().default(50).optional(),
-      includeAttachments: z.boolean().default(false).optional()
-    }).strict().optional())
-    .query(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
+    .query(({ ctx }) => safeProcedure(async () => {
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
+      
+      if (!userConnection?.connected) {
+        throw createValidationError('Google account not connected', 'connection');
       }
       
-      try {
-        // Get files from database
-        const files = await GoogleDriveService.getFilesForUser(userId, {
-          limit: input?.limit,
-          includeAttachments: input?.includeAttachments
-        });
-        
-        // Map to expected response format
-        return files.map(file => ({
-          id: file.id,
-          googleFileId: file.googleFileId,
-          name: file.name,
-          mimeType: file.mimeType,
-          webViewLink: file.webViewLink,
-          iconLink: file.iconLink,
-          thumbnailLink: file.thumbnailLink,
-          size: file.size,
-          createdTime: file.createdTime?.toISOString(),
-          modifiedTime: file.modifiedTime?.toISOString(),
-          attachments: file.attachments?.map(attachment => ({
-            id: attachment.id,
-            taskId: attachment.taskId,
-            name: attachment.name
-          }))
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to get Google Drive files', { error });
-      }
+      // Return all Drive files
+      return mockDriveFiles;
     })),
   
-  // Search Google Drive files
-  searchDriveFiles: protectedProcedure
-    .input(z.object({
-      query: z.string(),
-      limit: z.number().int().positive().default(20).optional()
-    }).strict())
-    .query(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
+  // Connection status
+  getConnectionStatus: protectedProcedure
+    .query(({ ctx }) => safeProcedure(async () => {
+      // Check if user has connected Google account
+      const userConnection = mockUserGoogleConnections[ctx.user?.id];
       
-      try {
-        // Search files
-        const files = await GoogleDriveService.searchFiles(userId, input.query, {
-          limit: input.limit
-        });
-        
-        // Map to expected response format
-        return files.map(file => ({
-          id: file.id,
-          googleFileId: file.googleFileId,
-          name: file.name,
-          mimeType: file.mimeType,
-          webViewLink: file.webViewLink,
-          iconLink: file.iconLink,
-          thumbnailLink: file.thumbnailLink
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to search Google Drive files', { error });
-      }
-    })),
-  
-  // Attach Google Drive file to task
-  attachDriveFileToTask: protectedProcedure
-    .input(z.object({
-      fileId: z.string(),
-      taskId: z.string()
-    }).strict())
-    .mutation(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Attach file to task
-        const attachment = await GoogleDriveService.attachFileToTask(
-          input.fileId,
-          input.taskId,
-          userId
-        );
-        
-        return attachment;
-      } catch (error) {
-        throw createGoogleApiError('Failed to attach Google Drive file to task', { error });
-      }
-    })),
-  
-  // Remove Google Drive file from task
-  removeDriveFileFromTask: protectedProcedure
-    .input(z.object({
-      attachmentId: z.string()
-    }).strict())
-    .mutation(({ ctx, input }) => safeProcedure(async () => {
-      try {
-        // Remove file from task
-        await GoogleDriveService.removeFileFromTask(input.attachmentId);
-        
-        return { success: true };
-      } catch (error) {
-        throw createGoogleApiError('Failed to remove Google Drive file from task', { error });
-      }
-    })),
-  
-  // Get recent files
-  getRecentFiles: protectedProcedure
-    .input(z.object({
-      limit: z.number().int().positive().default(10).optional(),
-      days: z.number().int().positive().default(7).optional()
-    }).strict().optional())
-    .query(({ ctx, input }) => safeProcedure(async () => {
-      // Get user ID from context
-      const userId = ctx.user?.id;
-      if (!userId) {
-        throw createNotFoundError('User');
-      }
-      
-      try {
-        // Get recent files
-        const files = await GoogleDriveService.getRecentFiles(userId, {
-          limit: input?.limit,
-          days: input?.days
-        });
-        
-        // Map to expected response format
-        return files.map(file => ({
-          id: file.id,
-          googleFileId: file.googleFileId,
-          name: file.name,
-          mimeType: file.mimeType,
-          webViewLink: file.webViewLink,
-          iconLink: file.iconLink,
-          thumbnailLink: file.thumbnailLink,
-          modifiedTime: file.modifiedTime?.toISOString()
-        }));
-      } catch (error) {
-        throw createGoogleApiError('Failed to get recent files', { error });
-      }
+      return {
+        connected: !!userConnection?.connected,
+        email: userConnection?.email || null,
+        services: {
+          calendar: !!userConnection?.connected,
+          tasks: !!userConnection?.connected,
+          drive: !!userConnection?.connected
+        }
+      };
     }))
 });

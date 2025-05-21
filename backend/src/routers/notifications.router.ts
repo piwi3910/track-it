@@ -1,171 +1,136 @@
 import { z } from 'zod';
-import { router, protectedProcedure } from '../trpc/trpc';
-import { TRPCError } from '@trpc/server';
-import { Notification } from '@track-it/shared';
+import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
+import { createNotFoundError, createForbiddenError } from '../utils/error-handler';
 
-// Mock notifications database - Add some sample notifications
-const mockNotifications: Notification[] = [
+// Mock notifications database
+const mockNotifications = [
   {
-    id: 'notification-1',
+    id: 'notification1',
     userId: 'user1',
-    type: 'assignment',
-    message: 'You have been assigned to a new task',
-    relatedTaskId: 'task-1',
-    createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    read: false
+    type: 'task_assigned',
+    title: 'New Task Assigned',
+    message: 'You have been assigned to "Complete API Implementation"',
+    relatedEntityId: 'task1',
+    relatedEntityType: 'task',
+    read: false,
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
-    id: 'notification-2',
+    id: 'notification2',
     userId: 'user1',
-    type: 'comment',
-    message: 'Someone commented on your task',
-    relatedTaskId: 'task-2',
-    relatedCommentId: 'comment-1',
-    createdAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-    read: true
+    type: 'comment_mention',
+    title: 'Mentioned in Comment',
+    message: 'Jane Smith mentioned you in a comment on "Complete API Implementation"',
+    relatedEntityId: 'comment2',
+    relatedEntityType: 'comment',
+    read: true,
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
-    id: 'notification-3',
-    userId: 'user1',
-    type: 'due_soon',
-    message: 'A task is due soon',
-    relatedTaskId: 'task-3',
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    read: false
+    id: 'notification3',
+    userId: 'user2',
+    type: 'task_assigned',
+    title: 'New Task Assigned',
+    message: 'You have been assigned to "Add Dark Mode"',
+    relatedEntityId: 'task2',
+    relatedEntityType: 'task',
+    read: false,
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notification4',
+    userId: 'user3',
+    type: 'task_completed',
+    title: 'Task Completed',
+    message: 'You completed "Fix Login Issues"',
+    relatedEntityId: 'task3',
+    relatedEntityType: 'task',
+    read: true,
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'notification5',
+    userId: 'user3',
+    type: 'task_due_soon',
+    title: 'Task Due Soon',
+    message: 'Task "Fix Login Issues" is due in 1 day',
+    relatedEntityId: 'task3',
+    relatedEntityType: 'task',
+    read: true,
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
   }
 ];
 
-// Notifications router with endpoints
+// Input validation schemas
+const markAsReadSchema = z.object({
+  id: z.string()
+});
+
 export const notificationsRouter = router({
-  // Get all notifications for the current user
   getAll: protectedProcedure
-    .query(({ ctx }) => {
-      // In a real implementation, this would filter by the current user
-      // For now, return all mock notifications since they're all assigned to user1
-      return mockNotifications;
-    }),
-    
-  // Get unread notification count
-  getUnreadCount: protectedProcedure
-    .query(({ ctx }) => {
-      // Count unread notifications for the current user
-      const unreadCount = mockNotifications.filter(
-        notification => notification.userId === ctx.user?.id && !notification.read
-      ).length;
+    .query(({ ctx }) => safeProcedure(async () => {
+      // Find all notifications for the user
+      const userNotifications = mockNotifications.filter(notification => 
+        notification.userId === ctx.user?.id
+      );
       
-      return unreadCount;
-    }),
-    
-  // Mark a notification as read
+      // Sort by creation time (newest first)
+      return userNotifications.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    })),
+  
   markAsRead: protectedProcedure
-    .input(z.object({ id: z.string() }).strict())
-    .mutation(({ input, ctx }) => {
-      const notificationIndex = mockNotifications.findIndex(notification => notification.id === input.id);
+    .input(markAsReadSchema)
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      const notificationIndex = mockNotifications.findIndex(notification => 
+        notification.id === input.id
+      );
       
       if (notificationIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Notification not found'
-        });
+        throw createNotFoundError('Notification', input.id);
       }
       
-      // Check if the notification belongs to the current user
+      // Check if notification belongs to the user
       const notification = mockNotifications[notificationIndex];
       if (notification.userId !== ctx.user?.id) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to mark this notification as read'
-        });
+        throw createForbiddenError('You do not have permission to update this notification');
       }
       
-      // Mark the notification as read
-      mockNotifications[notificationIndex] = {
-        ...notification,
-        read: true
-      };
+      // Mark as read
+      mockNotifications[notificationIndex].read = true;
       
-      return { success: true };
-    }),
-    
-  // Mark all notifications as read
+      return { 
+        id: notification.id, 
+        read: true 
+      };
+    })),
+  
   markAllAsRead: protectedProcedure
-    .mutation(({ ctx }) => {
-      // Mark all notifications for the current user as read
+    .mutation(({ ctx }) => safeProcedure(async () => {
+      // Find all unread notifications for the user
+      let markedCount = 0;
+      
       mockNotifications.forEach((notification, index) => {
-        if (notification.userId === ctx.user?.id) {
-          mockNotifications[index] = {
-            ...notification,
-            read: true
-          };
+        if (notification.userId === ctx.user?.id && !notification.read) {
+          mockNotifications[index].read = true;
+          markedCount++;
         }
       });
       
-      return { success: true };
-    }),
-    
-  // Delete a notification
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }).strict())
-    .mutation(({ input, ctx }) => {
-      const notificationIndex = mockNotifications.findIndex(notification => notification.id === input.id);
-      
-      if (notificationIndex === -1) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Notification not found'
-        });
-      }
-      
-      // Check if the notification belongs to the current user
-      const notification = mockNotifications[notificationIndex];
-      if (notification.userId !== ctx.user?.id) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to delete this notification'
-        });
-      }
-      
-      // Remove the notification
-      mockNotifications.splice(notificationIndex, 1);
-      
-      return { success: true };
-    }),
-    
-  // Update notification preferences
-  updatePreferences: protectedProcedure
-    .input(z.object({
-      email: z.boolean().optional(),
-      inApp: z.boolean().optional(),
-      types: z.array(z.enum(['assignment', 'mention', 'comment', 'due_soon', 'status_change'])).optional(),
-    }).strict())
-    .mutation(({ input, ctx }) => {
-      // In a real implementation, this would update user preferences in the database
-      return { success: true, preferences: input };
-    }),
-    
-  // Create a notification (internal use only)
-  // This would be called by other parts of the system when events occur
-  createNotification: protectedProcedure
-    .input(z.object({
-      userId: z.string(),
-      type: z.enum(['assignment', 'mention', 'comment', 'due_soon', 'status_change']),
-      message: z.string(),
-      relatedTaskId: z.string().optional(),
-      relatedCommentId: z.string().optional()
-    }).strict())
-    .mutation(({ input }) => {
-      const newNotification: Notification = {
-        id: `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        userId: input.userId,
-        type: input.type,
-        message: input.message,
-        relatedTaskId: input.relatedTaskId,
-        relatedCommentId: input.relatedCommentId,
-        createdAt: new Date().toISOString(),
-        read: false
+      return { 
+        markedCount,
+        success: true
       };
+    })),
+  
+  getUnreadCount: protectedProcedure
+    .query(({ ctx }) => safeProcedure(async () => {
+      // Count unread notifications for the user
+      const unreadCount = mockNotifications.filter(notification => 
+        notification.userId === ctx.user?.id && !notification.read
+      ).length;
       
-      mockNotifications.push(newNotification);
-      return newNotification;
-    })
+      return { count: unreadCount };
+    }))
 });

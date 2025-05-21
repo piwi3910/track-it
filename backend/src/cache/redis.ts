@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import { config } from '../config';
-import { logger } from '../utils/logger';
+import { logger } from '../server';
 
 // Define Redis client connection options
 const redisOptions = {
@@ -30,7 +30,7 @@ export class RedisClient {
       });
       
       RedisClient.instance.on('error', (err) => {
-        logger.error('Redis client error:', err);
+        logger.error({ err }, 'Redis client error');
       });
       
       RedisClient.instance.on('reconnecting', () => {

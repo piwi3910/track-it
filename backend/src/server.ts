@@ -1,204 +1,155 @@
-import fastify from 'fastify';
-import cors from '@fastify/cors';
-import jwt from '@fastify/jwt';
-import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
-import { TRPCError } from '@trpc/server';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import { expressjwt } from 'express-jwt';
+import pino from 'pino';
+import pinoHttp from 'pino-http';
 import { config } from './config';
-import { logger } from './utils/logger';
-import { createContext } from './trpc/context';
 import { appRouter } from './trpc/router';
+import { createContext } from './trpc/context';
 import { RedisClient } from './cache/redis';
 
-// Export type definition of API
+// Export type definition of API for client usage
 export type AppRouter = typeof appRouter;
 
-// Create Fastify server
-const server = fastify({
-  logger: logger
+// Create Express application
+const app = express();
+
+// Create logger instance
+export const logger = pino({
+  level: config.logLevel || 'info',
+  transport: process.env.NODE_ENV !== 'production' 
+    ? { target: 'pino-pretty' } 
+    : undefined
 });
 
-// Register plugins and routes
-async function setupServer(): Promise<void> {
+// Configure middleware
+app.use(helmet()); // Security headers
+app.use(pinoHttp({ logger })); // Request logging
+
+// Configure CORS
+app.use(cors({
+  origin: [
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000', 
+    config.corsOrigin
+  ],
+  credentials: true,
+  methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-From-Frontend', 
+    'Accept',
+    'content-type',
+    'accept',
+    'x-from-frontend'
+  ],
+  exposedHeaders: ['Authorization', 'Content-Type'],
+  maxAge: 86400, // Cache preflight requests for 24 hours
+}));
+
+// JSON parsing middleware
+app.use(express.json());
+
+// Health check route
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    api: 'track-it-backend',
+    version: '1.0.0'
+  });
+});
+
+// Root health check (for API availability checks)
+app.get('/', (req, res) => {
+  res.json({ status: 'Server is running' });
+});
+
+// JWT authentication middleware for protected routes
+app.use('/trpc', 
+  // Skip JWT check for certain procedures
+  expressjwt({ 
+    secret: config.jwtSecret,
+    algorithms: ['HS256'],
+    // Skip auth for login and public endpoints
+    credentialsRequired: false, 
+  }).unless({ 
+    path: [
+      '/trpc/users.login',
+      '/trpc/users.register',
+      '/trpc/users.loginWithGoogle',
+      '/trpc/users.verifyGoogleToken',
+      '/trpc/health'
+    ]
+  })
+);
+
+// Mount tRPC middleware
+app.use(
+  '/trpc',
+  createExpressMiddleware({
+    router: appRouter,
+    createContext,
+    onError({ error, path }) {
+      if (error.code === 'INTERNAL_SERVER_ERROR') {
+        // Log internal server errors
+        logger.error({ path, error }, 'tRPC Error');
+      }
+    },
+  })
+);
+
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error(err, 'Express error handler');
+  
+  // Handle auth errors
+  if (err.name === 'UnauthorizedError') {
+    return res.status(401).json({ 
+      message: 'Authentication required',
+      code: 'UNAUTHORIZED'
+    });
+  }
+
+  // Handle other errors
+  return res.status(err.statusCode || 500).json({
+    message: err.message || 'Internal server error',
+    code: err.code || 'INTERNAL_SERVER_ERROR'
+  });
+});
+
+// Start the server
+const startServer = async () => {
   try {
-    // Register CORS with improved configuration
-    await server.register(cors, {
-      origin: ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin],
-      credentials: true,
-      methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD'],
-      allowedHeaders: [
-        'Content-Type', 
-        'Authorization', 
-        'X-From-Frontend', 
-        'Accept',
-        'content-type', // Include lowercase variants
-        'accept',
-        'x-from-frontend'
-      ],
-      exposedHeaders: ['Authorization', 'Content-Type'],
-      maxAge: 86400, // Cache preflight requests for 24 hours
-      preflight: true,
-      strictPreflight: false // More lenient preflight checking
+    // Start listening for requests
+    app.listen(config.port, config.host, () => {
+      logger.info(`Server is running on http://${config.host}:${config.port}`);
     });
-
-    // Register JWT
-    await server.register(jwt, {
-      secret: config.jwtSecret
-    });
-
-    // Health check route with improved CORS handling
-    server.get('/health', async (request, reply): Promise<{ status: string; timestamp: string; api: string; version: string }> => {
-      // Get the origin from request headers or use default origins
-      const requestOrigin = request.headers.origin;
-      const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin];
-      
-      // Set CORS headers based on origin
-      if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
-        reply.header('Access-Control-Allow-Origin', requestOrigin);
-        reply.header('Access-Control-Allow-Credentials', 'true');
-      } else {
-        // Fallback to * for health checks from non-browser clients
-        reply.header('Access-Control-Allow-Origin', '*');
-      }
-      
-      reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-From-Frontend, Accept');
-      
-      // Handle preflight OPTIONS request
-      if (request.method === 'OPTIONS') {
-        reply.code(204).send();
-        return {} as any;
-      }
-      
-      return { 
-        status: 'ok', 
-        timestamp: new Date().toISOString(),
-        api: 'track-it-backend',
-        version: '1.0.0'
-      };
-    });
-    
-    // Root health check (for API availability checks) with improved CORS handling
-    server.get('/', async (request, reply): Promise<{ status: string }> => {
-      // Get the origin from request headers or use default origins
-      const requestOrigin = request.headers.origin;
-      const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000', config.corsOrigin];
-      
-      // Set CORS headers based on origin
-      if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
-        reply.header('Access-Control-Allow-Origin', requestOrigin);
-        reply.header('Access-Control-Allow-Credentials', 'true');
-      } else {
-        // Fallback to * for health checks from non-browser clients
-        reply.header('Access-Control-Allow-Origin', '*');
-      }
-      
-      reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-      reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-From-Frontend, Accept');
-      
-      // Handle preflight OPTIONS request
-      if (request.method === 'OPTIONS') {
-        reply.code(204).send();
-        return {} as any;
-      }
-      
-      return { status: 'Server is running' };
-    });
-
-    // Add request logging to diagnose Content-Type issues
-    server.addHook('onRequest', (request, reply, done) => {
-      if (request.url.includes('/trpc')) {
-        logger.debug({
-          message: 'tRPC request headers',
-          contentType: request.headers['content-type'],
-          method: request.method,
-          url: request.url
-        });
-      }
-      done();
-    });
-
-    // Configure content-type parser for trpc with better MIME type handling
-    // This handles 'application/json' content-type and common variations
-    const jsonContentTypes = [
-      'application/json', 
-      'application/json; charset=utf-8',
-      'application/json;charset=utf-8',
-      'application/json; charset=UTF-8',
-      'application/json;charset=UTF-8',
-      // Add support for the problematic comma-separated Content-Type
-      'application/json, application/json'
-    ];
-    
-    jsonContentTypes.forEach(contentType => {
-      server.addContentTypeParser(contentType, { parseAs: 'string' }, (req, body, done) => {
-        try {
-          logger.debug({
-            message: 'Parsing content',
-            contentType: req.headers['content-type'],
-            bodyPreview: typeof body === 'string' ? body.substring(0, 100) : typeof body
-          });
-          
-          const json = JSON.parse(body as string);
-          done(null, json);
-        } catch (err) {
-          logger.error({
-            message: 'Error parsing JSON',
-            contentType: req.headers['content-type'],
-            error: err
-          });
-          done(err as Error, undefined);
-        }
-      });
-    });
-
-    // Register tRPC plugin
-    await server.register(fastifyTRPCPlugin, {
-      prefix: '/trpc',
-      trpcOptions: { 
-        router: appRouter, 
-        createContext,
-        onError({ error }: { error: TRPCError }): void {
-          if (error.code === 'INTERNAL_SERVER_ERROR') {
-            // Log internal server errors
-            logger.error('Something went wrong', error);
-          }
-        },
-      }
-    });
-
-    // Start the server
-    await server.listen({ 
-      port: config.port, 
-      host: config.host 
-    });
-
-    logger.info(`Server is running on http://${config.host}:${config.port}`);
   } catch (err) {
-    logger.error(err);
+    logger.error(err, 'Failed to start server');
     process.exit(1);
   }
-}
+};
 
-setupServer();
+startServer();
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
 
   try {
-    // Close fastify server
-    await server.close();
-    logger.info('Server closed');
-
     // Disconnect from Redis
     await RedisClient.disconnect();
     logger.info('Redis disconnected');
 
     // Add any other cleanup here
-
+    
     process.exit(0);
   } catch (err) {
-    logger.error('Error during graceful shutdown:', err);
+    logger.error(err, 'Error during graceful shutdown');
     process.exit(1);
   }
 });

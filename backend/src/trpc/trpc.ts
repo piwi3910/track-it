@@ -1,62 +1,75 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { Context } from './context';
-import { handleError, createUnauthorizedError, createForbiddenError } from '../utils/error-handler';
+import { 
+  handleError, 
+  createUnauthorizedError, 
+  createForbiddenError,
+  formatErrorResponse
+} from '../utils/error-handler';
 
 // Initialize tRPC with context type
 const t = initTRPC.context<Context>().create({
   errorFormatter({ shape, error }) {
-    // Start with the basic shape
-    const formattedError = { 
+    // Get HTTP status code for internal use
+    const httpStatus = getHttpStatusFromError(error);
+    
+    // Special handling for Zod validation errors
+    if (error.cause instanceof z.ZodError) {
+      // Format validation error message from all Zod issues
+      const formattedIssues = error.cause.issues.map(issue => {
+        const path = issue.path.join('.') || 'value';
+        return `${path}: ${issue.message}`;
+      }).join('; ');
+      
+      return {
+        ...shape,
+        data: {
+          httpStatus,
+          message: formattedIssues || 'Validation error',
+          code: 'VALIDATION_ERROR'
+        }
+      };
+    }
+    
+    // If the error or cause directly has a code property, use it
+    if (error.cause && typeof error.cause === 'object' && 'code' in error.cause) {
+      return {
+        ...shape,
+        data: {
+          httpStatus,
+          message: error.cause.message || 'An error occurred',
+          code: error.cause.code
+        }
+      };
+    }
+    
+    // Check if the original error has a code
+    if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error.code !== 'INTERNAL_SERVER_ERROR') {
+      // It has a specific error code, preserve it
+      return {
+        ...shape,
+        data: {
+          httpStatus,
+          message: error.message || 'An error occurred',
+          code: error.code
+        }
+      };
+    }
+    
+    // Use our formatErrorResponse utility for all other errors
+    // This ensures consistent error format that complies with API spec
+    const formattedError = formatErrorResponse(error.cause || error);
+    
+    // Return the error in API specification format
+    return {
       ...shape,
       data: {
-        ...shape.data,
-        // Include HTTP status code for the client
-        httpStatus: getHttpStatusFromError(error)
+        httpStatus,
+        message: formattedError.message,
+        code: formattedError.code
       }
     };
-
-    // Format for Zod validation errors
-    if (error.cause instanceof z.ZodError) {
-      // Format Zod validation errors for better client-side presentation
-      const formattedZodError: Record<string, string> = {};
-      for (const issue of error.cause.issues) {
-        const path = issue.path.join('.') || 'value';
-        formattedZodError[path] = issue.message;
-      }
-      formattedError.data = {
-        ...formattedError.data,
-        zodError: formattedZodError,
-        code: 'VALIDATION_ERROR' // Ensure consistent code for validation errors
-      };
-    } 
-    // Check for AppError structure in error.cause
-    else if (
-      error.cause && 
-      typeof error.cause === 'object' && 
-      'details' in error.cause && 
-      error.cause.details && 
-      typeof error.cause.details === 'object'
-    ) {
-      // Include AppError details in the response
-      formattedError.data = {
-        ...formattedError.data,
-        // Maintain the same field names as expected in the API specification
-        ...(error.cause.details.field && { field: error.cause.details.field }),
-        // Ensure the error code is properly propagated
-        code: error.cause.details.code || shape.data?.code || error.code,
-        // Include all other details
-        appError: error.cause.details
-      };
-      
-      // Ensure message is set correctly from the AppError if available
-      if (error.cause.message) {
-        formattedError.message = error.cause.message;
-      }
-    }
-
-    // Ensure error responses match the API specification format
-    return formattedError;
   },
 });
 

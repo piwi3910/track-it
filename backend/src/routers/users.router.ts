@@ -134,6 +134,7 @@ export const usersRouter = router({
         logger.info({ userId: user.id, email: user.email }, 'Login successful');
         
         // Return data exactly as specified in API spec
+        // Format exactly as the LoginResponse interface requires
         return {
           id: user.id,
           name: user.name,
@@ -259,8 +260,10 @@ export const usersRouter = router({
         
         if (existingUser) {
           logger.warn({ email: input.email }, 'Registration failed: Email already exists');
-          // Throw exact error format expected by tests
-          throw new Error('Email already exists');
+          // Create a properly formatted error with code property matching API spec
+          const duplicateError = new Error('Email already exists');
+          (duplicateError as any).code = 'ALREADY_EXISTS';
+          throw duplicateError;
         }
         
         // Create new user with hashed password
@@ -287,7 +290,10 @@ export const usersRouter = router({
         // Special handling for duplicate email errors
         if (error.message === 'Email already exists' || 
             (error.code === 'P2002' && error.meta?.target?.includes('email'))) {
-          throw new Error('Email already exists');
+          // Create properly formatted error with code property to match API spec
+          const duplicateError = new Error('Email already exists');
+          (duplicateError as any).code = 'ALREADY_EXISTS';
+          throw duplicateError;
         }
         
         // Pass through validation errors

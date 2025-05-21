@@ -92,6 +92,17 @@ describe('Authentication API Integration Tests', () => {
       console.error('\x1b[33m%s\x1b[0m', 'Please start the backend server with: cd ../backend && npm run dev');
       throw new Error('Backend server is not running. Tests will be skipped.');
     }
+    
+    // Check if we can connect to the backend
+    try {
+      const pingClient = createClient();
+      console.log('\x1b[36m%s\x1b[0m', '🔄 Testing connection to backend...');
+      await pingClient.users.ping.query();
+      console.log('\x1b[32m%s\x1b[0m', '✅ Backend connection successful!');
+    } catch (error) {
+      console.error('\x1b[31m%s\x1b[0m', `⚠️  Backend API not available or not responding: ${(error as Error).message}`);
+      console.log('\x1b[33m%s\x1b[0m', 'Some tests may be skipped due to backend API issues.');
+    }
   });
   
   beforeEach(() => {

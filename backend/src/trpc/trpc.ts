@@ -6,6 +6,7 @@ import { handleError, createUnauthorizedError, createForbiddenError } from '../u
 // Initialize tRPC with context type
 const t = initTRPC.context<Context>().create({
   errorFormatter({ shape, error }) {
+    // Start with the basic shape
     const formattedError = { 
       ...shape,
       data: {
@@ -15,6 +16,7 @@ const t = initTRPC.context<Context>().create({
       }
     };
 
+    // Format for Zod validation errors
     if (error.cause instanceof z.ZodError) {
       // Format Zod validation errors for better client-side presentation
       const formattedZodError: Record<string, string> = {};
@@ -24,7 +26,8 @@ const t = initTRPC.context<Context>().create({
       }
       formattedError.data = {
         ...formattedError.data,
-        zodError: formattedZodError
+        zodError: formattedZodError,
+        code: 'VALIDATION_ERROR' // Ensure consistent code for validation errors
       };
     } 
     // Check for AppError structure in error.cause
@@ -38,10 +41,21 @@ const t = initTRPC.context<Context>().create({
       // Include AppError details in the response
       formattedError.data = {
         ...formattedError.data,
+        // Maintain the same field names as expected in the API specification
+        ...(error.cause.details.field && { field: error.cause.details.field }),
+        // Ensure the error code is properly propagated
+        code: error.cause.details.code || shape.data?.code || error.code,
+        // Include all other details
         appError: error.cause.details
       };
+      
+      // Ensure message is set correctly from the AppError if available
+      if (error.cause.message) {
+        formattedError.message = error.cause.message;
+      }
     }
 
+    // Ensure error responses match the API specification format
     return formattedError;
   },
 });

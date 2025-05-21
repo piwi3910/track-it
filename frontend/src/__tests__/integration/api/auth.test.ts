@@ -33,8 +33,10 @@ const createClient = () => {
     links: [
       httpBatchLink({
         url: BASE_URL,
+        // Important: disable batching for tests
+        batch: false,
         fetch: (url, options = {}) => {
-          const fetchOptions = options as any;
+          const fetchOptions = { ...options } as any;
           const headers = fetchOptions.headers || {};
           const token = localStorageMock.getItem('token');
           
@@ -43,6 +45,12 @@ const createClient = () => {
           }
           
           fetchOptions.headers = headers;
+          
+          // Remove the signal to avoid AbortController issues in tests
+          if (fetchOptions.signal) {
+            delete fetchOptions.signal;
+          }
+          
           return crossFetch(url, fetchOptions);
         }
       }),

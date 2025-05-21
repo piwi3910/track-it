@@ -116,17 +116,26 @@ if (process.env.SUPPRESS_LOG_ERRORS) {
   global.console.warn = jest.fn();
 }
 
-// Mock AbortController for fetch request cancellation
-global.AbortController = jest.fn().mockImplementation(() => ({
-  signal: { 
-    aborted: false,
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-    onabort: null
-  },
-  abort: jest.fn(),
-}));
+// Mock AbortController and AbortSignal for fetch request cancellation
+const MockAbortSignal = function() {
+  this.aborted = false;
+  this.onabort = null;
+  this.addEventListener = jest.fn();
+  this.removeEventListener = jest.fn();
+  this.dispatchEvent = jest.fn();
+};
+
+// Create proper inheritance chain for instanceof checks
+Object.setPrototypeOf(MockAbortSignal.prototype, Object.getPrototypeOf(Object.prototype));
+global.AbortSignal = MockAbortSignal;
+
+// Mock AbortController using the AbortSignal
+global.AbortController = jest.fn().mockImplementation(() => {
+  return {
+    signal: new MockAbortSignal(),
+    abort: jest.fn()
+  };
+});
 
 // Mock crypto for secure random values
 if (!global.crypto) {

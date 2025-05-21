@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container,
   Title,
@@ -14,6 +14,7 @@ import {
   Stack,
   Paper,
   Box,
+  Loader,
 } from '@mantine/core';
 import {
   IconPlus,
@@ -29,46 +30,7 @@ import {
 import TaskModal from '@/components/TaskModal';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task, TaskPriority } from '@/types/task';
-
-// Mock data for demonstration
-const mockTasks = [
-  { 
-    id: '1', 
-    title: 'Implement dashboard', 
-    description: 'Create the dashboard view with stats', 
-    status: 'backlog', 
-    priority: 'high', 
-    tags: ['frontend'],
-    dueDate: '2023-07-15'
-  },
-  { 
-    id: '2', 
-    title: 'Create task form', 
-    description: 'Implement form for creating new tasks', 
-    status: 'backlog', 
-    priority: 'medium', 
-    tags: ['frontend', 'forms'],
-    dueDate: '2023-07-10'
-  },
-  { 
-    id: '3', 
-    title: 'Design UI components', 
-    description: 'Create reusable UI components', 
-    status: 'backlog', 
-    priority: 'low', 
-    tags: ['design', 'ui'],
-    dueDate: '2023-07-20'
-  },
-  { 
-    id: '4', 
-    title: 'Connect to API', 
-    description: 'Set up API integration', 
-    status: 'backlog', 
-    priority: 'urgent', 
-    tags: ['backend'],
-    dueDate: '2023-07-05'
-  },
-];
+import { api } from '@/api';
 
 // Map priority to color
 const priorityColorMap: Record<TaskPriority, string> = {
@@ -79,13 +41,53 @@ const priorityColorMap: Record<TaskPriority, string> = {
 };
 
 export function BacklogPage() {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks as Task[]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string | null>('priority');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Load tasks from API
+  useEffect(() => {
+    const fetchBacklogTasks = async () => {
+      setLoading(true);
+      try {
+        // First try to get tasks by status
+        const { data, error } = await api.tasks.getByStatus('backlog');
+        
+        if (error) {
+          throw new Error(error);
+        }
+        
+        if (data) {
+          setTasks(data);
+        } else {
+          // Fallback to getting all tasks and filtering locally
+          const allTasksResult = await api.tasks.getAll();
+          if (allTasksResult.error) {
+            throw new Error(allTasksResult.error);
+          }
+          
+          if (allTasksResult.data) {
+            // Filter tasks with 'backlog' status
+            const backlogTasks = allTasksResult.data.filter(task => task.status === 'backlog');
+            setTasks(backlogTasks);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load backlog tasks:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load tasks');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBacklogTasks();
+  }, []);
   
   // Filter and sort tasks
   const filteredAndSortedTasks = tasks
@@ -133,34 +135,72 @@ export function BacklogPage() {
     setTaskModalOpen(true);
   };
   
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
-  };
-  
-  const handleMoveToTodo = (taskId: string) => {
-    setTasks(prev => 
-      prev.map(task => 
-        task.id === taskId ? { ...task, status: 'todo' } : task
-      )
-    );
-  };
-  
-  const handleTaskSubmit = (taskData: any) => {
-    if (taskData.id) {
-      // Update existing task
-      setTasks(prev => 
-        prev.map(task => task.id === taskData.id ? { ...task, ...taskData } : task)
-      );
-    } else {
-      // Create new task
-      const newTask = {
-        ...taskData,
-        id: `task-${Date.now()}`, // Generate a unique ID
-        status: 'backlog', // Force the status to be backlog
-      };
-      setTasks(prev => [...prev, newTask]);
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const { error } = await api.tasks.delete(taskId);
+      if (error) {
+        throw new Error(error);
+      }
+      // On success, update the local state
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      // Show error to user (you could add a toast notification here)
     }
-    setTaskModalOpen(false);
+  };
+  
+  const handleMoveToTodo = async (taskId: string) => {
+    try {
+      const { error } = await api.tasks.updateStatus(taskId, 'todo');
+      if (error) {
+        throw new Error(error);
+      }
+      // On success, update the local state
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+    } catch (err) {
+      console.error('Failed to move task to todo:', err);
+      // Show error to user
+    }
+  };
+  
+  const handleTaskSubmit = async (taskData: any) => {
+    try {
+      if (taskData.id) {
+        // Update existing task
+        const { data, error } = await api.tasks.update(taskData.id, taskData);
+        if (error) {
+          throw new Error(error);
+        }
+        
+        if (data) {
+          // Update local state
+          setTasks(prev => 
+            prev.map(task => task.id === taskData.id ? data : task)
+          );
+        }
+      } else {
+        // Create new task with backlog status
+        const newTaskData = {
+          ...taskData,
+          status: 'backlog',
+        };
+        
+        const { data, error } = await api.tasks.create(newTaskData);
+        if (error) {
+          throw new Error(error);
+        }
+        
+        if (data) {
+          // Add to local state
+          setTasks(prev => [...prev, data]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save task:', err);
+      // Show error to user
+    } finally {
+      setTaskModalOpen(false);
+    }
   };
   
   const toggleSortDirection = () => {
@@ -174,10 +214,28 @@ export function BacklogPage() {
       </Group>
 
       <Box mb="xl">
-        <QuickAddTask defaultStatus="backlog" onTaskAdded={() => console.log('Task added from quick add')} />
+        <QuickAddTask 
+          defaultStatus="backlog" 
+          onTaskAdded={(task) => {
+            if (task) {
+              setTasks(prev => [...prev, task]);
+            }
+          }} 
+        />
       </Box>
 
       <Paper withBorder p="md" mb="xl">
+        {loading ? (
+          <Stack align="center" p="xl">
+            <Loader size="md" />
+            <Text c="dimmed">Loading tasks...</Text>
+          </Stack>
+        ) : error ? (
+          <Text c="red" p="md" ta="center">
+            {error}
+          </Text>
+        ) : (
+        <>
         <Group mb="md">
           <TextInput
             placeholder="Search tasks..."
@@ -334,6 +392,8 @@ export function BacklogPage() {
             )}
           </Table.Tbody>
         </Table>
+        </>
+        )}
       </Paper>
       
       <TaskModal

@@ -8,46 +8,26 @@ import type {
 import { 
   createNotFoundError, 
   createUnauthorizedError, 
-  createValidationError
+  createValidationError,
+  handleError
 } from '../utils/error-handler';
+import * as userService from '../db/services/user.service';
+import { USER_ROLE, formatEnumForApi, formatEnumForDb } from '../utils/constants';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { logger } from '../server';
 
-// Mock user database for now
-const mockUsers: User[] = [
-  {
-    id: 'user1',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatarUrl: 'https://i.pravatar.cc/150?u=user1',
-    role: 'admin'
-  },
-  {
-    id: 'user2',
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    avatarUrl: 'https://i.pravatar.cc/150?u=user2',
-    role: 'member'
-  },
-  {
-    id: 'user3',
-    name: 'Demo User',
-    email: 'demo@example.com',
-    avatarUrl: 'https://i.pravatar.cc/150?u=demo',
-    role: 'member'
-  }
-];
-
-// Store for Google connected accounts
-// In a real app, this would be stored in the database
-const googleConnections: Record<string, {
-  googleId: string;
-  email: string;
-  name: string;
-  picture: string;
-  userId: string;
-}> = {};
+// Helper function to normalize user data for API response
+const normalizeUserData = (user: any) => {
+  return {
+    ...user,
+    role: formatEnumForApi(user.role),
+    // Format dates as ISO strings if they exist as Date objects
+    createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
+    updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
+    lastLogin: user.lastLogin instanceof Date ? user.lastLogin.toISOString() : user.lastLogin
+  };
+};
 
 // Input validation schemas
 const userLoginSchema = z.object({
@@ -73,112 +53,158 @@ const googleTokenVerificationSchema = z.object({
   credential: z.string()
 });
 
-// Mock function to decode and verify a Google ID token
+// Function to decode and verify a Google ID token
 // In a real app, you would use the Google OAuth2 API to verify the token
 async function verifyGoogleIdToken(idToken: string) {
-  // For development purposes, we're mocking this by assuming the token is valid
-  // In production, you would verify this token with Google
-  logger.info({ tokenPrefix: idToken.substring(0, 10) }, 'Verifying Google ID token');
-  
-  // Mock decoded token payload (in production this would come from Google)
-  return {
-    sub: 'google-123456789',
-    email: 'user@example.com',
-    email_verified: true,
-    name: 'Test User',
-    picture: 'https://i.pravatar.cc/150?u=google-user',
-    given_name: 'Test',
-    family_name: 'User',
-    locale: 'en'
-  };
+  try {
+    // Log token verification attempt (only show prefix for security)
+    logger.info({ tokenPrefix: idToken.substring(0, 10) }, 'Verifying Google ID token');
+    
+    // For development purposes, we're mocking this by assuming the token is valid
+    // In production, you would verify this token with Google OAuth2 library
+    // Example with real implementation:
+    // const ticket = await googleClient.verifyIdToken({
+    //   idToken,
+    //   audience: config.googleClientId
+    // });
+    // const payload = ticket.getPayload();
+    
+    // Mock decoded token payload (in production this would come from Google)
+    return {
+      sub: 'google-123456789',
+      email: 'user@example.com',
+      email_verified: true,
+      name: 'Test User',
+      picture: 'https://i.pravatar.cc/150?u=google-user',
+      given_name: 'Test',
+      family_name: 'User',
+      locale: 'en'
+    };
+  } catch (error) {
+    logger.error({ error }, 'Google token verification failed');
+    throw createUnauthorizedError('Failed to verify Google token');
+  }
 }
 
 // Users router with endpoints
 export const usersRouter = router({
   // Public routes (no auth required)
+  ping: publicProcedure
+    .query(() => {
+      return { status: 'ok' };
+    }),
+    
   login: publicProcedure
     .input(userLoginSchema)
     .mutation(({ input }) => safeProcedure(async () => {
-      // In a real app, you would verify the password against a hash
-      const user = mockUsers.find(user => user.email === input.email);
-      
-      if (!user) {
-        throw createUnauthorizedError('Invalid email or password');
-      }
-      
-      // Generate JWT token using jsonwebtoken
-      const token = jwt.sign(
-        { 
+      try {
+        // Get user by email
+        const user = await userService.getUserByEmail(input.email);
+        
+        if (!user || !user.passwordHash) {
+          throw createUnauthorizedError('Invalid email or password');
+        }
+        
+        // Verify password
+        const isPasswordValid = await userService.verifyPassword(input.password, user.passwordHash);
+        
+        if (!isPasswordValid) {
+          throw createUnauthorizedError('Invalid email or password');
+        }
+        
+        // Update login timestamp
+        await userService.updateLoginTimestamp(user.id);
+        
+        // Generate JWT token
+        const token = jwt.sign(
+          { 
+            id: user.id,
+            role: formatEnumForApi(user.role)
+          },
+          config.jwtSecret,
+          { expiresIn: config.jwtExpiresIn }
+        );
+        
+        // Return data exactly as specified in API spec
+        return {
           id: user.id,
-          role: user.role || 'member'
-        },
-        config.jwtSecret,
-        { expiresIn: config.jwtExpiresIn }
-      );
-      
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role || 'member',
-        token
-      };
+          name: user.name,
+          email: user.email,
+          role: formatEnumForApi(user.role),
+          token
+        };
+      } catch (error) {
+        return handleError(error);
+      }
     })),
   
   // Google authentication
   loginWithGoogle: publicProcedure
     .input(googleLoginSchema)
     .mutation(({ input }) => safeProcedure(async () => {
-      // Verify the Google ID token
-      const payload = await verifyGoogleIdToken(input.idToken);
-      
-      if (!payload.email_verified) {
-        throw createUnauthorizedError('Email not verified with Google');
-      }
-      
-      // Check if user exists
-      let user = mockUsers.find(user => user.email === payload.email);
-      
-      // If user doesn't exist, create a new user
-      if (!user) {
-        user = {
-          id: `user-google-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          name: payload.name,
-          email: payload.email,
-          avatarUrl: payload.picture,
-          role: 'member'
-        };
+      try {
+        // Verify the Google ID token
+        const payload = await verifyGoogleIdToken(input.idToken);
         
-        mockUsers.push(user);
-      }
-      
-      // Store Google connection
-      googleConnections[payload.sub] = {
-        googleId: payload.sub,
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-        userId: user.id
-      };
-      
-      // Generate JWT token
-      const token = jwt.sign(
-        { 
+        if (!payload.email_verified) {
+          throw createUnauthorizedError('Email not verified with Google');
+        }
+        
+        // Check if user already exists with this Google ID
+        let user = await userService.getUserByGoogleId(payload.sub);
+        
+        // If no user with this Google ID, check for user with same email
+        if (!user) {
+          user = await userService.getUserByEmail(payload.email);
+        }
+        
+        // If user exists, update Google connection
+        if (user) {
+          // Update Google information
+          await userService.connectGoogleAccount(
+            user.id, 
+            payload.sub, 
+            input.idToken, 
+            undefined, // Refresh token would be handled in a full implementation
+            payload // Store the full profile
+          );
+          
+          // Update login timestamp
+          await userService.updateLoginTimestamp(user.id);
+        } else {
+          // If user doesn't exist, create a new user
+          user = await userService.createUser({
+            name: payload.name,
+            email: payload.email,
+            avatarUrl: payload.picture,
+            role: formatEnumForDb(USER_ROLE.MEMBER),
+            googleId: payload.sub,
+            googleToken: input.idToken,
+            googleProfile: payload
+          });
+        }
+        
+        // Generate JWT token
+        const token = jwt.sign(
+          { 
+            id: user.id,
+            role: formatEnumForApi(user.role)
+          },
+          config.jwtSecret,
+          { expiresIn: config.jwtExpiresIn }
+        );
+        
+        return {
           id: user.id,
-          role: user.role || 'member'
-        },
-        config.jwtSecret,
-        { expiresIn: config.jwtExpiresIn }
-      );
-      
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role || 'member',
-        token,
-        googleConnected: true
-      };
+          name: user.name,
+          email: user.email,
+          role: formatEnumForApi(user.role),
+          token,
+          googleConnected: true
+        };
+      } catch (error) {
+        return handleError(error);
+      }
     })),
   
   // Verify Google token
@@ -193,11 +219,15 @@ export const usersRouter = router({
           return { valid: false };
         }
         
+        // Check if user with this email already exists
+        const existingUser = await userService.getUserByEmail(payload.email);
+        
         return {
           valid: true,
           email: payload.email,
           name: payload.name,
-          picture: payload.picture
+          picture: payload.picture,
+          userExists: !!existingUser
         };
       } catch (error) {
         logger.error({ error }, 'Google token verification error');
@@ -208,53 +238,80 @@ export const usersRouter = router({
   register: publicProcedure
     .input(userRegisterSchema)
     .mutation(({ input }) => safeProcedure(async () => {
-      // Check if user already exists
-      if (mockUsers.some(user => user.email === input.email)) {
-        throw createValidationError('User with this email already exists', 'email');
+      try {
+        // Log registration attempt (don't log the password for security)
+        logger.info({ 
+          email: input.email, 
+          name: input.name 
+        }, 'User registration attempt');
+        
+        // Check if user already exists
+        const existingUser = await userService.getUserByEmail(input.email);
+        
+        if (existingUser) {
+          logger.warn({ email: input.email }, 'Registration failed: Email already exists');
+          // Throw consistent error message for email already exists
+          // This exact format is expected by the tests
+          throw createValidationError('Email already exists', 'email');
+        }
+        
+        // Create new user with hashed password
+        const newUser = await userService.createUser({
+          name: input.name,
+          email: input.email,
+          password: input.password, // Will be hashed in the service
+          passwordConfirm: input.passwordConfirm, // Will be removed in the service
+          role: formatEnumForDb(USER_ROLE.MEMBER),
+          preferences: { theme: 'light', defaultView: 'dashboard' } // Default preferences
+        });
+        
+        logger.info({ userId: newUser.id }, 'User registration successful');
+        
+        // Return format matches API specification
+        return {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email
+        };
+      } catch (error) {
+        logger.error({ error, input: { email: input.email, name: input.name } }, 'Registration error');
+        return handleError(error);
       }
-      
-      // Create new user (in a real app, you would hash the password)
-      const newUser: User = {
-        id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        name: input.name,
-        email: input.email,
-        role: 'member',
-        // In a real app: passwordHash: await hashPassword(input.password)
-      };
-      
-      mockUsers.push(newUser);
-      
-      return {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email
-      };
     })),
     
   // Protected routes (auth required)
   getCurrentUser: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
-      const user = mockUsers.find(user => user.id === ctx.user?.id);
-      
-      if (!user) {
-        throw createNotFoundError('User', ctx.user?.id);
+      try {
+        const user = await userService.getUserById(ctx.user.id);
+        
+        if (!user) {
+          throw createNotFoundError('User', ctx.user.id);
+        }
+        
+        const normalized = normalizeUserData(user);
+        
+        // Return exact structure as specified in API specification
+        return {
+          id: normalized.id,
+          name: normalized.name,
+          email: normalized.email,
+          role: normalized.role,
+          avatarUrl: normalized.avatarUrl,
+          preferences: {
+            theme: normalized.preferences?.theme || 'light',
+            defaultView: normalized.preferences?.defaultView || 'dashboard',
+            notifications: {
+              email: normalized.preferences?.notifications?.email ?? true,
+              inApp: normalized.preferences?.notifications?.inApp ?? true
+            }
+          },
+          googleConnected: !!normalized.googleId,
+          googleEmail: normalized.googleId ? normalized.email : null
+        };
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Check if user has Google connection
-      const googleConnection = Object.values(googleConnections).find(
-        conn => conn.userId === user.id
-      );
-      
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatarUrl: user.avatarUrl,
-        preferences: user.preferences,
-        googleConnected: !!googleConnection,
-        googleEmail: googleConnection?.email
-      };
     })),
     
   updateProfile: protectedProcedure
@@ -271,91 +328,112 @@ export const usersRouter = router({
       }).optional()
     }))
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const userIndex = mockUsers.findIndex(user => user.id === ctx.user?.id);
-      
-      if (userIndex === -1) {
-        throw createNotFoundError('User', ctx.user?.id);
-      }
-      
-      mockUsers[userIndex] = {
-        ...mockUsers[userIndex],
-        ...input,
-        preferences: {
-          ...mockUsers[userIndex].preferences,
-          ...input.preferences
+      try {
+        const user = await userService.getUserById(ctx.user.id);
+        
+        if (!user) {
+          throw createNotFoundError('User', ctx.user.id);
         }
-      };
-      
-      // Check for Google connection
-      const googleConnection = Object.values(googleConnections).find(
-        conn => conn.userId === mockUsers[userIndex].id
-      );
-      
-      return {
-        id: mockUsers[userIndex].id,
-        name: mockUsers[userIndex].name,
-        email: mockUsers[userIndex].email,
-        role: mockUsers[userIndex].role,
-        avatarUrl: mockUsers[userIndex].avatarUrl,
-        preferences: mockUsers[userIndex].preferences,
-        googleConnected: !!googleConnection,
-        googleEmail: googleConnection?.email
-      };
+        
+        // Update basic profile fields
+        const updateData: any = {};
+        
+        if (input.name) updateData.name = input.name;
+        if (input.avatarUrl) updateData.avatarUrl = input.avatarUrl;
+        
+        // Update user record
+        const updatedUser = await userService.updateUser(ctx.user.id, updateData);
+        
+        // If preferences provided, update them separately
+        if (input.preferences) {
+          await userService.updateUserPreferences(ctx.user.id, input.preferences);
+        }
+        
+        // Get fresh user data with updated preferences
+        const refreshedUser = await userService.getUserById(ctx.user.id);
+        const normalized = normalizeUserData(refreshedUser);
+        
+        // Return exact structure as specified in API specification
+        return {
+          id: normalized.id,
+          name: normalized.name,
+          email: normalized.email,
+          role: normalized.role,
+          avatarUrl: normalized.avatarUrl,
+          preferences: {
+            theme: normalized.preferences?.theme || 'light',
+            defaultView: normalized.preferences?.defaultView || 'dashboard',
+            notifications: {
+              email: normalized.preferences?.notifications?.email ?? true,
+              inApp: normalized.preferences?.notifications?.inApp ?? true
+            }
+          },
+          googleConnected: !!normalized.googleId,
+          googleEmail: normalized.googleId ? normalized.email : null
+        };
+      } catch (error) {
+        return handleError(error);
+      }
     })),
   
   // Google account connection
   disconnectGoogleAccount: protectedProcedure
     .mutation(({ ctx }) => safeProcedure(async () => {
-      const user = mockUsers.find(user => user.id === ctx.user?.id);
-      
-      if (!user) {
-        throw createNotFoundError('User', ctx.user?.id);
-      }
-      
-      // Find Google connection
-      const googleId = Object.entries(googleConnections).find(
-        ([_, conn]) => conn.userId === user.id
-      )?.[0];
-      
-      if (googleId) {
-        delete googleConnections[googleId];
+      try {
+        const user = await userService.getUserById(ctx.user.id);
+        
+        if (!user) {
+          throw createNotFoundError('User', ctx.user.id);
+        }
+        
+        if (!user.googleId) {
+          return { success: false, message: 'No Google account connected' };
+        }
+        
+        // Disconnect Google account
+        await userService.disconnectGoogleAccount(ctx.user.id);
+        
         return { success: true };
+      } catch (error) {
+        return handleError(error);
       }
-      
-      return { success: false };
     })),
     
   // Admin routes
   getAllUsers: adminProcedure
     .query(() => safeProcedure(async () => {
-      return mockUsers.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatarUrl: user.avatarUrl
-      }));
+      try {
+        const users = await userService.getAllUsers();
+        return users.map(normalizeUserData);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   updateUserRole: adminProcedure
     .input(z.object({
       userId: z.string(),
-      role: z.enum(['admin', 'member', 'guest'])
+      role: z.enum(Object.values(USER_ROLE) as [string, ...string[]])
     }))
     .mutation(({ input }) => safeProcedure(async () => {
-      const userIndex = mockUsers.findIndex(user => user.id === input.userId);
-      
-      if (userIndex === -1) {
-        throw createNotFoundError('User', input.userId);
+      try {
+        const user = await userService.getUserById(input.userId);
+        
+        if (!user) {
+          throw createNotFoundError('User', input.userId);
+        }
+        
+        // Update user role
+        const updatedUser = await userService.updateUserRole(input.userId, input.role);
+        
+        return {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          role: formatEnumForApi(updatedUser.role)
+        };
+      } catch (error) {
+        return handleError(error);
       }
-      
-      mockUsers[userIndex].role = input.role;
-      
-      return {
-        id: mockUsers[userIndex].id,
-        name: mockUsers[userIndex].name,
-        role: mockUsers[userIndex].role
-      };
     })),
 
   // Update Google integration settings
@@ -365,24 +443,43 @@ export const usersRouter = router({
       googleEnabled: z.boolean()
     }))
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const userIndex = mockUsers.findIndex(user => user.id === ctx.user?.id);
-      
-      if (userIndex === -1) {
-        throw createNotFoundError('User', ctx.user?.id);
-      }
-
-      // In a real implementation, this would update the database
-      const connected = !!Object.values(googleConnections).find(
-        conn => conn.userId === mockUsers[userIndex].id
-      );
-
-      return {
-        id: mockUsers[userIndex].id,
-        name: mockUsers[userIndex].name,
-        googleIntegration: {
-          enabled: input.googleEnabled,
-          connected
+      try {
+        const user = await userService.getUserById(ctx.user.id);
+        
+        if (!user) {
+          throw createNotFoundError('User', ctx.user.id);
         }
-      };
+        
+        // Update Google integration settings
+        const updateData: any = {};
+        
+        // If we're enabling integration and a refresh token is provided
+        if (input.googleEnabled && input.googleRefreshToken) {
+          updateData.googleRefreshToken = input.googleRefreshToken;
+        }
+        
+        // If Google is disabled, disconnect Google account
+        if (!input.googleEnabled && user.googleId) {
+          await userService.disconnectGoogleAccount(ctx.user.id);
+        }
+        
+        // Update preferences to store the enabled setting
+        await userService.updateUserPreferences(ctx.user.id, {
+          googleIntegration: {
+            enabled: input.googleEnabled
+          }
+        });
+        
+        return {
+          id: user.id,
+          name: user.name,
+          googleIntegration: {
+            enabled: input.googleEnabled,
+            connected: !!user.googleId
+          }
+        };
+      } catch (error) {
+        return handleError(error);
+      }
     }))
 });

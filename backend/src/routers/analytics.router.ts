@@ -111,7 +111,7 @@ const mockTasks = [
   {
     id: 'task-w5-1',
     title: 'Complete API Implementation',
-    status: 'in-progress',
+    status: 'in_progress',
     priority: 'high',
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     completedAt: null,
@@ -180,213 +180,92 @@ export const analyticsRouter = router({
           startDate = now - 7 * 24 * 60 * 60 * 1000;
       }
       
-      // Calculate completion stats
-      let completedTasks = 0;
-      let totalTasks = 0;
-      let avgCompletionTime = 0;
-      let totalEstimatedHours = 0;
-      let totalActualHours = 0;
+      // Format for the API specification
+      const result: { date: string; completed: number }[] = [];
       
-      // Group tasks by day, week, or month based on timeframe
-      const periods: Record<string, {
-        label: string;
-        completed: number;
-        created: number;
-        estimatedHours: number;
-        actualHours: number;
-      }> = {};
+      // Group tasks by day
+      const dailyCompletions: Record<string, number> = {};
       
       mockTasks.forEach(task => {
-        const createdDate = new Date(task.createdAt).getTime();
-        
-        // Skip tasks created before the start date
-        if (createdDate < startDate) {
+        if (task.status !== 'done' || !task.completedAt) {
           return;
         }
         
-        totalTasks++;
-        totalEstimatedHours += task.estimatedHours;
-        
-        if (task.status === 'done' && task.completedAt) {
-          completedTasks++;
-          totalActualHours += task.actualHours;
-          
-          // Calculate completion time in days
-          const completionTime = (new Date(task.completedAt).getTime() - createdDate) / (24 * 60 * 60 * 1000);
-          avgCompletionTime += completionTime;
+        const completedDate = new Date(task.completedAt);
+        // Skip tasks completed before the start date
+        if (completedDate.getTime() < startDate) {
+          return;
         }
         
-        // Group by period
-        let periodKey: string;
-        let periodLabel: string;
+        const dateKey = completedDate.toISOString().split('T')[0];
         
-        if (input.timeframe === 'week') {
-          // Group by day
-          periodKey = new Date(task.createdAt).toISOString().split('T')[0];
-          periodLabel = new Date(task.createdAt).toLocaleDateString();
-        } else if (input.timeframe === 'month') {
-          // Group by week
-          const date = new Date(task.createdAt);
-          const weekNum = Math.ceil((date.getDate() + (date.getDay() + 1)) / 7);
-          periodKey = `${date.getFullYear()}-${date.getMonth() + 1}-W${weekNum}`;
-          periodLabel = `Week ${weekNum}`;
-        } else {
-          // Group by month
-          const date = new Date(task.createdAt);
-          periodKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-          periodLabel = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+        if (!dailyCompletions[dateKey]) {
+          dailyCompletions[dateKey] = 0;
         }
         
-        // Create period if it doesn't exist
-        if (!periods[periodKey]) {
-          periods[periodKey] = {
-            label: periodLabel,
-            completed: 0,
-            created: 0,
-            estimatedHours: 0,
-            actualHours: 0
-          };
-        }
-        
-        // Update period stats
-        periods[periodKey].created++;
-        periods[periodKey].estimatedHours += task.estimatedHours;
-        
-        if (task.status === 'done' && task.completedAt) {
-          // Check if completion date is in this period
-          const completedDate = new Date(task.completedAt);
-          let completedPeriodKey: string;
-          
-          if (input.timeframe === 'week') {
-            completedPeriodKey = completedDate.toISOString().split('T')[0];
-          } else if (input.timeframe === 'month') {
-            const weekNum = Math.ceil((completedDate.getDate() + (completedDate.getDay() + 1)) / 7);
-            completedPeriodKey = `${completedDate.getFullYear()}-${completedDate.getMonth() + 1}-W${weekNum}`;
-          } else {
-            completedPeriodKey = `${completedDate.getFullYear()}-${completedDate.getMonth() + 1}`;
-          }
-          
-          // Create period if it doesn't exist
-          if (!periods[completedPeriodKey]) {
-            let completedPeriodLabel: string;
-            
-            if (input.timeframe === 'week') {
-              completedPeriodLabel = completedDate.toLocaleDateString();
-            } else if (input.timeframe === 'month') {
-              const weekNum = Math.ceil((completedDate.getDate() + (completedDate.getDay() + 1)) / 7);
-              completedPeriodLabel = `Week ${weekNum}`;
-            } else {
-              completedPeriodLabel = `${completedDate.toLocaleString('default', { month: 'short' })} ${completedDate.getFullYear()}`;
-            }
-            
-            periods[completedPeriodKey] = {
-              label: completedPeriodLabel,
-              completed: 0,
-              created: 0,
-              estimatedHours: 0,
-              actualHours: 0
-            };
-          }
-          
-          periods[completedPeriodKey].completed++;
-          periods[completedPeriodKey].actualHours += task.actualHours;
-        }
+        dailyCompletions[dateKey]++;
       });
       
-      // Calculate average completion time
-      if (completedTasks > 0) {
-        avgCompletionTime /= completedTasks;
-      }
-      
-      // Convert periods to array
-      const chartData = Object.values(periods).sort((a, b) => {
-        // For sorting, we need to convert the label back to a date-like value
-        return a.label.localeCompare(b.label);
+      // Convert to array format required by API spec
+      Object.entries(dailyCompletions).forEach(([date, count]) => {
+        result.push({
+          date,
+          completed: count
+        });
       });
       
-      return {
-        summary: {
-          totalTasks,
-          completedTasks,
-          completionRate: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
-          avgCompletionTime,
-          totalEstimatedHours,
-          totalActualHours,
-          estimationAccuracy: totalEstimatedHours > 0 ? (totalActualHours / totalEstimatedHours) * 100 : 0
-        },
-        chartData
-      };
+      // Sort by date
+      result.sort((a, b) => a.date.localeCompare(b.date));
+      
+      return result;
     })),
   
   getUserWorkload: protectedProcedure
     .query(() => safeProcedure(async () => {
-      // Calculate user workload stats
-      const userWorkloads: Record<string, {
-        userId: string;
-        userName: string;
-        totalTasks: number;
-        completedTasks: number;
-        inProgressTasks: number;
-        todoTasks: number;
-        estimatedRemainingHours: number;
-      }> = {};
+      // Calculate user workload stats according to API spec
+      const result: { userId: string; taskCount: number }[] = [];
       
-      // Initialize user workloads
-      mockUsers.forEach(user => {
-        userWorkloads[user.id] = {
-          userId: user.id,
-          userName: user.name,
-          totalTasks: 0,
-          completedTasks: 0,
-          inProgressTasks: 0,
-          todoTasks: 0,
-          estimatedRemainingHours: 0
-        };
-      });
+      // Count tasks per user (only active tasks)
+      const userTaskCounts: Record<string, number> = {};
       
-      // Populate workload data
       mockTasks.forEach(task => {
-        if (!task.assigneeId || !userWorkloads[task.assigneeId]) {
+        // Only count active tasks (not done)
+        if (task.status === 'done' || !task.assigneeId) {
           return;
         }
         
-        const userWorkload = userWorkloads[task.assigneeId];
-        userWorkload.totalTasks++;
-        
-        if (task.status === 'done') {
-          userWorkload.completedTasks++;
-        } else if (task.status === 'in-progress') {
-          userWorkload.inProgressTasks++;
-          // For in-progress tasks, estimate remaining hours based on progress
-          userWorkload.estimatedRemainingHours += task.estimatedHours - task.actualHours;
-        } else {
-          userWorkload.todoTasks++;
-          userWorkload.estimatedRemainingHours += task.estimatedHours;
+        if (!userTaskCounts[task.assigneeId]) {
+          userTaskCounts[task.assigneeId] = 0;
         }
+        
+        userTaskCounts[task.assigneeId]++;
       });
       
-      return Object.values(userWorkloads);
+      // Convert to array format required by API spec
+      Object.entries(userTaskCounts).forEach(([userId, taskCount]) => {
+        result.push({
+          userId,
+          taskCount
+        });
+      });
+      
+      // Sort by task count (descending)
+      result.sort((a, b) => b.taskCount - a.taskCount);
+      
+      return result;
     })),
   
   getTasksByPriority: protectedProcedure
     .query(() => safeProcedure(async () => {
-      // Calculate task counts by priority
-      const totalCounts = {
-        high: 0,
-        medium: 0,
-        low: 0
-      };
+      // Calculate task counts by priority according to API spec
+      const result: { priority: string; count: number }[] = [];
       
-      const openCounts = {
-        high: 0,
-        medium: 0,
-        low: 0
-      };
-      
-      const completedCounts = {
-        high: 0,
-        medium: 0,
-        low: 0
+      // Count tasks by priority
+      const priorityCounts: Record<string, number> = {
+        'low': 0,
+        'medium': 0,
+        'high': 0,
+        'urgent': 0
       };
       
       mockTasks.forEach(task => {
@@ -395,24 +274,26 @@ export const analyticsRouter = router({
         }
         
         const priority = task.priority.toLowerCase();
-        if (priority !== 'high' && priority !== 'medium' && priority !== 'low') {
-          return;
-        }
-        
-        totalCounts[priority]++;
-        
-        if (task.status === 'done') {
-          completedCounts[priority]++;
-        } else {
-          openCounts[priority]++;
+        if (priority === 'high' || priority === 'medium' || priority === 'low' || priority === 'urgent') {
+          priorityCounts[priority]++;
         }
       });
       
-      return {
-        total: totalCounts,
-        open: openCounts,
-        completed: completedCounts
-      };
+      // Convert to array format required by API spec
+      Object.entries(priorityCounts).forEach(([priority, count]) => {
+        if (count > 0) {
+          result.push({
+            priority,
+            count
+          });
+        }
+      });
+      
+      // Sort by priority (high to low)
+      const priorityOrder = { 'urgent': 0, 'high': 1, 'medium': 2, 'low': 3 };
+      result.sort((a, b) => priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder]);
+      
+      return result;
     })),
   
   getCompletionTimeByPriority: protectedProcedure

@@ -2,14 +2,12 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError } from '../utils/error-handler';
 
-// Mock comments database
+// Mock comments database (updated to match API spec)
 const mockComments = [
   {
     id: 'comment1',
     taskId: 'task1',
-    userId: 'user1',
-    userName: 'John Doe',
-    userAvatarUrl: 'https://i.pravatar.cc/150?u=user1',
+    authorId: 'user1',
     text: 'This is coming along nicely. Let\'s implement the error handling next.',
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: null,
@@ -18,9 +16,7 @@ const mockComments = [
   {
     id: 'comment2',
     taskId: 'task1',
-    userId: 'user2',
-    userName: 'Jane Smith',
-    userAvatarUrl: 'https://i.pravatar.cc/150?u=user2',
+    authorId: 'user2',
     text: 'I\'ve started working on the error handling. Will update when complete.',
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: null,
@@ -29,9 +25,7 @@ const mockComments = [
   {
     id: 'comment3',
     taskId: 'task3',
-    userId: 'user3',
-    userName: 'Demo User',
-    userAvatarUrl: 'https://i.pravatar.cc/150?u=demo',
+    authorId: 'user3',
     text: 'Login issue has been fixed. Root cause was an invalid token handling.',
     createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -109,7 +103,8 @@ export const commentsRouter = router({
       // Count comments for the task
       const count = mockComments.filter(comment => comment.taskId === input.taskId).length;
       
-      return { taskId: input.taskId, count };
+      // Return just the number as per API specification
+      return count;
     })),
     
   create: protectedProcedure
@@ -147,9 +142,7 @@ export const commentsRouter = router({
       const newComment = {
         id: commentId,
         taskId: input.taskId,
-        userId: ctx.user.id,
-        userName: user.name,
-        userAvatarUrl: user.avatarUrl,
+        authorId: ctx.user.id, // Changed from userId to authorId per API spec
         text: input.text,
         createdAt: new Date().toISOString(),
         updatedAt: null,
@@ -172,7 +165,7 @@ export const commentsRouter = router({
       
       // Check permissions (only creator or admin can update)
       const comment = mockComments[commentIndex];
-      if (comment.userId !== ctx.user?.id && ctx.user?.role !== 'admin') {
+      if (comment.authorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
         throw createForbiddenError('You do not have permission to update this comment');
       }
       
@@ -209,13 +202,14 @@ export const commentsRouter = router({
       
       // Check permissions (only creator or admin can delete)
       const comment = mockComments[commentIndex];
-      if (comment.userId !== ctx.user?.id && ctx.user?.role !== 'admin') {
+      if (comment.authorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
         throw createForbiddenError('You do not have permission to delete this comment');
       }
       
       // Remove comment
       mockComments.splice(commentIndex, 1);
       
-      return { id: input.id, deleted: true };
+      // Return success response as per API specification
+      return { success: true };
     }))
 });

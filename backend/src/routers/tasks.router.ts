@@ -9,7 +9,7 @@ const mockTasks = [
     id: 'task1',
     title: 'Complete API Implementation',
     description: 'Implement all API endpoints and test with Postman',
-    status: 'in-progress',
+    status: 'in_progress',
     priority: 'high',
     tags: ['backend', 'api'],
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -72,12 +72,16 @@ const mockTasks = [
 // Mock template for saving tasks as templates
 const mockTemplates = [];
 
+// Enum definitions for task properties
+const taskStatusEnum = z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'in_review', 'done']);
+const taskPriorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
+
 // Input validation schemas
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  status: z.string().default('todo'),
-  priority: z.string(),
+  status: taskStatusEnum.default('todo'),
+  priority: taskPriorityEnum,
   tags: z.array(z.string()).optional(),
   dueDate: z.string().nullable().optional(),
   assigneeId: z.string().nullable().optional(),
@@ -93,8 +97,8 @@ const updateTaskSchema = z.object({
   data: z.object({
     title: z.string().min(1).optional(),
     description: z.string().optional(),
-    status: z.string().optional(),
-    priority: z.string().optional(),
+    status: taskStatusEnum.optional(),
+    priority: taskPriorityEnum.optional(),
     tags: z.array(z.string()).optional(),
     dueDate: z.string().nullable().optional(),
     assigneeId: z.string().nullable().optional(),

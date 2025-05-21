@@ -61,6 +61,9 @@ const mockTemplates = [
   }
 ];
 
+// Enum definitions for template properties
+const taskPriorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
+
 // Schema definitions
 const getTemplateByIdSchema = z.object({
   id: z.string()
@@ -73,7 +76,7 @@ const getByCategorySchema = z.object({
 const createTemplateSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
-  priority: z.string(),
+  priority: taskPriorityEnum,
   tags: z.array(z.string()).optional(),
   estimatedHours: z.number().optional(),
   subtasks: z.array(z.object({
@@ -89,7 +92,7 @@ const updateTemplateSchema = z.object({
   data: z.object({
     name: z.string().min(1).optional(),
     description: z.string().optional(),
-    priority: z.string().optional(),
+    priority: taskPriorityEnum.optional(),
     tags: z.array(z.string()).optional(),
     estimatedHours: z.number().optional(),
     subtasks: z.array(z.object({
@@ -240,7 +243,7 @@ export const templatesRouter = router({
       // Remove template
       mockTemplates.splice(templateIndex, 1);
       
-      return { id: input.id, deleted: true };
+      return { success: true };
     })),
     
   search: protectedProcedure

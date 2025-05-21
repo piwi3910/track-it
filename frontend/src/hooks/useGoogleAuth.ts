@@ -35,7 +35,7 @@ declare global {
 }
 
 interface UseGoogleAuthResult {
-  login: () => Promise<void>;
+  login: () => Promise<boolean>;
   renderButton: (elementId: string) => void;
   isGoogleLoaded: boolean;
   loading: boolean;
@@ -171,27 +171,58 @@ export function useGoogleAuth(): UseGoogleAuthResult {
   const login = useCallback(async () => {
     if (!window.google?.accounts?.id) {
       setError('Google Identity Services not loaded');
-      return;
+      return false;
     }
     
     setLoading(true);
     setError(null);
     
     try {
-      // Prompt the user to select their Google account
-      window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // If the One Tap dialog is not displayed or skipped, fall back to a render button
-          console.log('Google One Tap was skipped or not displayed:', notification.getNotDisplayedReason());
-          setError('Google sign-in popup was blocked. Please enable popups or use the Sign in with Google button.');
-        }
+      // Create a promise that will resolve when login completes
+      const loginPromise = new Promise<boolean>((resolve) => {
+        // Store the original callback
+        const originalCallback = handleCredentialResponse;
+        
+        // Create a wrapped callback that resolves the promise
+        const wrappedCallback = async (response: GoogleCredentialResponse) => {
+          try {
+            await originalCallback(response);
+            resolve(true);
+          } catch (error) {
+            resolve(false);
+          }
+        };
+        
+        // Temporarily replace the callback
+        // @ts-ignore - We're doing a runtime override
+        window.google.accounts.id.callback = wrappedCallback;
+        
+        // Prompt the user to select their Google account
+        window.google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            // If the One Tap dialog is not displayed or skipped, fall back to a render button
+            console.log('Google One Tap was skipped or not displayed:', notification.getNotDisplayedReason());
+            setError('Google sign-in popup was blocked. Please enable popups or use the Sign in with Google button.');
+            resolve(false);
+          }
+        });
+        
+        // Reset the callback after 30 seconds (timeout)
+        setTimeout(() => {
+          resolve(false);
+        }, 30000);
       });
+      
+      // Wait for login to complete and return result
+      const success = await loginPromise;
+      return success;
     } catch (err) {
       console.error('Error prompting Google account selection:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
       setLoading(false);
+      return false;
     }
-  }, []);
+  }, [handleCredentialResponse]);
 
   // Render a Google Sign-In button in the specified element
   const renderButton = useCallback((elementId: string) => {

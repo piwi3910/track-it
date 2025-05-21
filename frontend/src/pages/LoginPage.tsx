@@ -45,6 +45,23 @@ export default function LoginPage() {
       setError('Your session has expired. Please log in again.');
     }
   }, [location.state]);
+  
+  // Add event listener for auth state changes to handle redirects
+  useEffect(() => {
+    const handleAuthStateChange = (event: Event) => {
+      // Check if we have a custom event with authentication details
+      if (event instanceof CustomEvent && event.detail?.isAuthenticated) {
+        // Redirect to the intended page
+        navigate(from, { replace: true });
+      }
+    };
+    
+    window.addEventListener('auth_state_change', handleAuthStateChange);
+    
+    return () => {
+      window.removeEventListener('auth_state_change', handleAuthStateChange);
+    };
+  }, [navigate, from]);
 
   // Redirect to previous location or dashboard if already logged in
   useEffect(() => {
@@ -62,9 +79,12 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setError(null);
-    await googleLogin();
-    // The useEffect hook will handle redirection after successful login
-    // when currentUser is updated
+    const success = await googleLogin();
+    
+    if (success) {
+      // Manually redirect after successful login
+      navigate(from, { replace: true });
+    }
   };
   
   const handlePasswordLogin = async () => {
@@ -86,6 +106,9 @@ export default function LoginPage() {
       window.dispatchEvent(new CustomEvent('auth_state_change', {
         detail: { isAuthenticated: true }
       }));
+      
+      // Manually redirect after successful login
+      navigate(from, { replace: true });
       
     } catch (err) {
       console.error('Login failed:', err);

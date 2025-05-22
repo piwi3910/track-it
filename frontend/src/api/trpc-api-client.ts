@@ -464,6 +464,13 @@ export const admin = {
     );
   },
 
+  // Get user deletion statistics
+  getUserDeletionStats: async (userId: string) => {
+    return apiHandler(() => 
+      trpcClient.users.getUserDeletionStats.query({ userId })
+    );
+  },
+
   // Create a new user
   createUser: async (userData: { name: string; email: string; password: string; role?: 'admin' | 'member' | 'guest' }) => {
     return apiHandler(() => 

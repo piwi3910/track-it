@@ -208,16 +208,129 @@ export async function updateUser(id: string, data: Prisma.UserUpdateInput) {
 }
 
 /**
- * Delete a user
+ * Delete a user and handle related data
+ * This function performs a cascade deletion to handle foreign key constraints
  */
 export async function deleteUser(id: string) {
   try {
-    await prisma.user.delete({
-      where: { id }
+    // Use a transaction to ensure all deletions happen atomically
+    return await prisma.$transaction(async (tx) => {
+      // First, delete all notifications for this user
+      await tx.notification.deleteMany({
+        where: { userId: id }
+      });
+
+      // Delete all comments made by this user
+      await tx.comment.deleteMany({
+        where: { authorId: id }
+      });
+
+      // Handle tasks created by this user
+      // Option 1: Delete all tasks created by this user (including their comments and attachments)
+      const userTasks = await tx.task.findMany({
+        where: { creatorId: id },
+        include: {
+          comments: true,
+          attachments: true,
+          subtasks: true
+        }
+      });
+
+      // Delete attachments for each task
+      for (const task of userTasks) {
+        if (task.attachments.length > 0) {
+          await tx.attachment.deleteMany({
+            where: { taskId: task.id }
+          });
+        }
+        
+        // Delete comments for each task
+        if (task.comments.length > 0) {
+          await tx.comment.deleteMany({
+            where: { taskId: task.id }
+          });
+        }
+
+        // Delete subtasks
+        if (task.subtasks.length > 0) {
+          await tx.task.deleteMany({
+            where: { parentId: task.id }
+          });
+        }
+      }
+
+      // Delete all tasks created by this user
+      await tx.task.deleteMany({
+        where: { creatorId: id }
+      });
+
+      // For tasks assigned to this user, just remove the assignment (set assigneeId to null)
+      await tx.task.updateMany({
+        where: { assigneeId: id },
+        data: { assigneeId: null }
+      });
+
+      // Finally, delete the user
+      await tx.user.delete({
+        where: { id }
+      });
+
+      return true;
     });
-    return true;
   } catch (error) {
     throw createDatabaseError(`Failed to delete user with ID ${id}`, { error });
+  }
+}
+
+/**
+ * Get user deletion statistics
+ * Returns information about what will be deleted if this user is removed
+ */
+export async function getUserDeletionStats(id: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            createdTasks: true,
+            assignedTasks: true,
+            comments: true,
+            notifications: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw createDatabaseError(`User with ID ${id} not found`, {});
+    }
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      },
+      stats: {
+        createdTasks: user._count.createdTasks,
+        assignedTasks: user._count.assignedTasks,
+        comments: user._count.comments,
+        notifications: user._count.notifications
+      },
+      consequences: {
+        willDelete: [
+          `${user._count.createdTasks} task(s) created by this user`,
+          `${user._count.comments} comment(s) made by this user`,
+          `${user._count.notifications} notification(s) for this user`
+        ],
+        willUpdate: [
+          `${user._count.assignedTasks} task(s) assigned to this user will be unassigned`
+        ]
+      }
+    };
+  } catch (error) {
+    throw createDatabaseError(`Failed to get deletion stats for user with ID ${id}`, { error });
   }
 }
 

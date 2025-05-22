@@ -50,12 +50,32 @@ interface PasswordResetData {
   confirmPassword: string;
 }
 
+interface DeletionStats {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  stats: {
+    createdTasks: number;
+    assignedTasks: number;
+    comments: number;
+    notifications: number;
+  };
+  consequences: {
+    willDelete: string[];
+    willUpdate: string[];
+  };
+}
+
 export function AdminPage() {
   const { currentUser } = useApp();
   const [activeTab, setActiveTab] = useState<string | null>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deletionStats, setDeletionStats] = useState<DeletionStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   
   // Modal states
   const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
@@ -239,6 +259,7 @@ export function AdminPage() {
       
       closeDeleteModal();
       setSelectedUser(null);
+      setDeletionStats(null);
       
       // Refresh users list
       await loadUsers();
@@ -275,10 +296,31 @@ export function AdminPage() {
     openPasswordModal();
   };
 
-  // Open delete modal
-  const openDeleteUserModal = (user: User) => {
+  // Open delete modal with statistics
+  const openDeleteUserModal = async (user: User) => {
     setSelectedUser(user);
+    setLoadingStats(true);
     openDeleteModal();
+    
+    try {
+      const { data, error } = await api.admin.getUserDeletionStats(user.id);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
+      setDeletionStats(data || null);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load deletion statistics';
+      notifications.show({
+        title: 'Warning',
+        message: errorMessage,
+        color: 'orange',
+        icon: <IconAlertCircle size={16} />
+      });
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   // Get role badge color
@@ -550,23 +592,72 @@ export function AdminPage() {
       <Modal
         opened={deleteModalOpened}
         onClose={closeDeleteModal}
-        title="Delete User"
+        title="Delete User - Impact Assessment"
         centered
-        size="md"
+        size="lg"
       >
         <Stack>
           <Alert
             icon={<IconAlertCircle size={16} />}
             color="red"
+            title="Warning: This action cannot be undone"
           >
-            Are you sure you want to delete <strong>{selectedUser?.name}</strong>? This action cannot be undone.
+            You are about to permanently delete <strong>{selectedUser?.name}</strong> and all associated data.
           </Alert>
+
+          {loadingStats ? (
+            <Center py="xl">
+              <Loader size="sm" />
+              <Text ml="sm">Loading impact assessment...</Text>
+            </Center>
+          ) : deletionStats ? (
+            <Stack gap="md">
+              <Text fw={500}>Deletion Impact:</Text>
+              
+              {deletionStats.consequences.willDelete.length > 0 && (
+                <Alert color="red" icon={<IconX size={16} />} title="Will be permanently deleted:">
+                  <Stack gap="xs">
+                    {deletionStats.consequences.willDelete.map((item, index) => (
+                      <Text key={index} size="sm">• {item}</Text>
+                    ))}
+                  </Stack>
+                </Alert>
+              )}
+
+              {deletionStats.consequences.willUpdate.length > 0 && (
+                <Alert color="orange" icon={<IconAlertCircle size={16} />} title="Will be updated:">
+                  <Stack gap="xs">
+                    {deletionStats.consequences.willUpdate.map((item, index) => (
+                      <Text key={index} size="sm">• {item}</Text>
+                    ))}
+                  </Stack>
+                </Alert>
+              )}
+
+              {deletionStats.stats.createdTasks === 0 && 
+               deletionStats.stats.comments === 0 && 
+               deletionStats.stats.assignedTasks === 0 ? (
+                <Alert color="green" icon={<IconCheck size={16} />}>
+                  This user has no associated tasks or comments. Deletion will be clean.
+                </Alert>
+              ) : null}
+            </Stack>
+          ) : (
+            <Alert color="orange" icon={<IconAlertCircle size={16} />}>
+              Unable to load deletion statistics. Proceeding may have unexpected consequences.
+            </Alert>
+          )}
+
           <Group justify="flex-end" mt="md">
             <Button variant="outline" onClick={closeDeleteModal}>
               Cancel
             </Button>
-            <Button color="red" onClick={handleDeleteUser}>
-              Delete User
+            <Button 
+              color="red" 
+              onClick={handleDeleteUser}
+              disabled={loadingStats}
+            >
+              {loadingStats ? <Loader size="xs" /> : 'Delete User'}
             </Button>
           </Group>
         </Stack>

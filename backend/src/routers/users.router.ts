@@ -630,6 +630,19 @@ export const usersRouter = router({
       }
     })),
 
+  // Admin: Get user deletion statistics
+  getUserDeletionStats: adminProcedure
+    .input(z.object({
+      userId: z.string()
+    }))
+    .query(({ input }) => safeProcedure(async () => {
+      try {
+        return await userService.getUserDeletionStats(input.userId);
+      } catch (error) {
+        return handleError(error);
+      }
+    })),
+
   // Admin: Delete user
   deleteUser: adminProcedure
     .input(z.object({

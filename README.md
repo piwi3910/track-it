@@ -43,12 +43,12 @@ A comprehensive task tracking and collaboration application with Google Suite in
 - **React 18** with TypeScript for type-safe development
 - **Vite** for fast build tooling and hot module replacement
 - **Mantine UI** component library for modern, accessible components
-- **React Router v7** for client-side navigation
+- **React Router v6** for client-side navigation
 - **TanStack Query** for efficient data fetching and caching
-- **Zustand** for lightweight state management
+- **React Context API** for app-wide state with **Zustand** for specific feature stores
 
 ### Backend
-- **Fastify** server with TypeScript support
+- **Express** server with TypeScript support
 - **tRPC** for end-to-end type safety and API development
 - **PostgreSQL** database for reliable data persistence
 - **Prisma ORM** for type-safe database operations

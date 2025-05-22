@@ -729,6 +729,30 @@ export type AppRouter = {
         };
       };
     };
+    updateAvatar: {
+      _def: {
+        input: [{
+          avatarUrl: string | null;
+        }];
+        mutation: () => {
+          id: string;
+          name: string;
+          email: string;
+          role: string;
+          avatarUrl?: string | null;
+          preferences?: {
+            theme?: string;
+            defaultView?: string;
+            notifications?: {
+              email?: boolean;
+              inApp?: boolean;
+            };
+          } | null;
+          googleConnected?: boolean;
+          googleEmail?: string | null;
+        };
+      };
+    };
     updateUserRole: {
       _def: {
         input: [{

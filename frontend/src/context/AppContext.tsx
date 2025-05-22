@@ -318,28 +318,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Search tasks
   const searchTasks = useCallback(async (query: string) => {
     try {
-      // Handle both mock API and real tRPC API patterns
-      if (typeof api.tasks.search === 'function') {
-        // Mock API style
-        const result = await api.tasks.search(query);
-        return Array.isArray(result) ? result : [];
-      } else if (api.tasks.search && typeof api.tasks.search.query === 'function') {
-        // Real tRPC API style
-        const { data, error } = await api.tasks.search.query(query);
-        if (error) throw new Error(typeof error === 'string' ? error : error.message);
-        return data || [];
-      } else {
-        // Fallback to filtering existing tasks in memory (useful if API not available)
-        console.warn('Search API not available, filtering in-memory tasks');
-        return tasks.filter(task => 
-          task.title.toLowerCase().includes(query.toLowerCase()) || 
-          (task.description && task.description.toLowerCase().includes(query.toLowerCase())) ||
-          (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
-        );
+      // Use the tRPC API search function
+      const { data, error } = await api.tasks.search(query);
+      if (error) {
+        console.error('Search API error:', error);
+        throw new Error(typeof error === 'string' ? error : error.message);
       }
+      return data || [];
     } catch (error) {
       console.error('Failed to search tasks:', error);
-      return [];
+      
+      // Fallback to filtering existing tasks in memory
+      return tasks.filter(task => 
+        task.title.toLowerCase().includes(query.toLowerCase()) || 
+        (task.description && task.description.toLowerCase().includes(query.toLowerCase())) ||
+        (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))) ||
+        (task.taskNumber && task.taskNumber.toString().includes(query))
+      );
     }
   }, [tasks]); // Depends on tasks for fallback local filtering
   

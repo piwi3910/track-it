@@ -1,38 +1,59 @@
-# Track-It
+# Track-It v1.0.0
 
-A task tracking and collaboration application with Google Suite integration, featuring a Kanban-style board for weekly planning and a calendar view for long-term planning.
+A comprehensive task tracking and collaboration application with Google Suite integration, featuring a modern React frontend and robust tRPC backend API.
 
 ## Features
 
-- Dashboard for task overview
-- Kanban board for weekly planning
-- Calendar view for long-term planning
-  - Month, week, and day views
-  - Detailed hover overlays
-  - Drag-and-drop task scheduling
-- Backlog management for unscheduled items
-- Task management features:
-  - Subtasks with progress tracking
-  - Recurring tasks (daily, weekly, monthly, etc.)
-  - Time tracking with start/stop functionality
-  - User assignments with role information
-- Google Suite integration (Docs, Drive, Calendar)
+### Core Functionality
+- **Dashboard** for comprehensive task overview with analytics
+- **Kanban Board** for weekly planning with drag-and-drop functionality
+- **Calendar View** for long-term planning with multiple view modes
+- **Backlog Management** for unscheduled task organization
+- **Global Search** with support for task IDs, titles, and tags
+
+### Task Management
+- User-friendly task numbering system (TASK-1, TASK-2, etc.)
+- Subtasks with progress tracking and completion visualization
+- Recurring tasks (daily, weekly, monthly, quarterly, yearly)
+- Real-time time tracking with start/stop functionality
+- User assignments with role-based permissions
+- Priority levels with visual indicators
+- Tag-based organization and filtering
+- Rich commenting system for collaboration
+- File attachments support
+
+### User Experience
+- Modern, responsive UI with Mantine components
+- Intuitive task card layout with corner-positioned elements
+- Real-time updates and optimistic UI interactions
+- Comprehensive error handling and loading states
+- Keyboard shortcuts for power users (Ctrl+K for search)
+
+### Technical Features
+- Type-safe API with tRPC integration
+- PostgreSQL database with Prisma ORM
+- Redis caching for improved performance
+- Comprehensive testing suite
+- Google OAuth integration
+- RESTful API design patterns
 
 ## Technology Stack
 
 ### Frontend
-- Vite for build tooling
-- React with TypeScript
-- Mantine UI component library
-- React Router for navigation
-- Zustand for state management
-- TanStack Query for data fetching
+- **React 18** with TypeScript for type-safe development
+- **Vite** for fast build tooling and hot module replacement
+- **Mantine UI** component library for modern, accessible components
+- **React Router v7** for client-side navigation
+- **TanStack Query** for efficient data fetching and caching
+- **Zustand** for lightweight state management
 
-### Backend (Planned)
-- Fastify server
-- PostgreSQL database
-- Redis for caching
-- tRPC for type-safe API
+### Backend
+- **Fastify** server with TypeScript support
+- **tRPC** for end-to-end type safety and API development
+- **PostgreSQL** database for reliable data persistence
+- **Prisma ORM** for type-safe database operations
+- **Redis** for caching and session management
+- **JWT** authentication with Google OAuth integration
 
 ## Setup and Installation
 
@@ -44,25 +65,34 @@ A task tracking and collaboration application with Google Suite integration, fea
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/track-it.git
+git clone https://github.com/piwi3910/track-it.git
 cd track-it
 ```
 
-2. Install frontend dependencies:
-```bash
-cd frontend
-npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-4. Start database services (when backend is implemented):
+2. Start database services:
 ```bash
 docker-compose up -d
 ```
+
+3. Install and setup backend:
+```bash
+cd backend
+npm install
+npx prisma migrate dev
+npx prisma db seed
+npm run dev
+```
+
+4. Install and start frontend:
+```bash
+cd ../frontend
+npm install
+npm run dev
+```
+
+5. Access the application:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
 
 ## Project Structure
 

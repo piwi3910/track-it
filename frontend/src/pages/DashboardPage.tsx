@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { useState } from 'react';
 // Using centralized theme system
 import {
@@ -10,14 +9,12 @@ import {
   SimpleGrid,
   Stack,
   RingProgress,
-  Button,
   ThemeIcon,
   Box,
   Badge,
   rem
 } from '@mantine/core';
 import {
-  IconPlus,
   IconListCheck,
   IconCheckbox,
   IconClockHour4,
@@ -29,7 +26,10 @@ import type { Task } from '@/types/task';
 import { useApp } from '@/hooks/useApp';
 
 export function DashboardPage() {
-  const { tasks, currentUser, updateTask, createTask } = useApp();
+  const { tasks: appTasks, currentUser, updateTask, createTask } = useApp();
+  
+  // Cast tasks to our frontend Task type which includes taskNumber
+  const tasks = appTasks as Task[];
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -47,10 +47,6 @@ export function DashboardPage() {
     ? Math.round((myCompletedTasks / totalMyTasks) * 100)
     : 0;
 
-  const handleAddTask = () => {
-    setSelectedTask(null);
-    setTaskModalOpen(true);
-  };
 
   const handleEditTask = (task: Task) => {
     setSelectedTask(task);
@@ -87,7 +83,7 @@ export function DashboardPage() {
         <QuickAddTask onTaskAdded={() => console.log('Task added from quick add')} />
       </Box>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} gap="lg">
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
         <StatCard
           title="My Tasks"
           value={totalMyTasks.toString()}
@@ -142,7 +138,7 @@ export function DashboardPage() {
             <Text ta="center" c="dimmed">You don't have any assigned tasks yet.</Text>
           </Card>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} gap="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
             {myTasks.map(task => (
               <Card
                 key={task.id}
@@ -180,7 +176,7 @@ export function DashboardPage() {
             <Text ta="center" c="dimmed">You don't have any tasks in progress.</Text>
           </Card>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} gap="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
             {myTasks
               .filter(task => task.status === 'in_progress')
               .map(task => (
@@ -212,7 +208,7 @@ export function DashboardPage() {
             <Text ta="center" c="dimmed">You don't have any tasks in your todo list.</Text>
           </Card>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} gap="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
             {myTasks
               .filter(task => task.status === 'todo')
               .map(task => (

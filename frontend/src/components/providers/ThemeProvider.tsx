@@ -23,14 +23,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   
   // Expose theme toggle for development purposes
   useEffect(() => {
-    // @ts-expect-error Adding global property for development
-    window.__toggleTheme = () => {
+    // Adding global property for development
+    (window as any).__toggleTheme = () => {
       toggleColorScheme();
     };
     
     return () => {
-      // @ts-expect-error Removing global property 
-      delete window.__toggleTheme;
+      // Removing global property 
+      delete (window as any).__toggleTheme;
     };
   }, [toggleColorScheme]);
   

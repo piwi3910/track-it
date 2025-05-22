@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { useState, useEffect, useRef } from 'react';
 import {
   Card,
@@ -30,13 +29,11 @@ import {
   IconSubtask,
   IconClock,
   IconCheck,
-  IconWeight,
   IconHourglass,
   IconRepeat,
   IconPlayerPlay,
   IconPlayerStop,
-  IconPlus,
-  IconCopy
+  IconPlus
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
@@ -44,7 +41,15 @@ import type { Task, TaskPriority, TaskRecurrence } from '@/types/task';
 import { api } from '@/api';
 
 // Global users cache to avoid refetching in every component
-let globalUsersCache: any[] = [];
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl?: string | null;
+}
+
+let globalUsersCache: User[] = [];
 let globalUsersCacheTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -69,7 +74,7 @@ const fetchUsersIfNeeded = async () => {
   try {
     const { data, error } = await api.admin.getAllUsers();
     if (data && !error) {
-      globalUsersCache = data;
+      globalUsersCache = data as User[];
       globalUsersCacheTime = now;
     } else {
       console.error('Failed to fetch users for TaskCard:', error);
@@ -178,12 +183,11 @@ function EditableTitle({ value, onChange, onSave }: {
 
 export default function TaskCard({ task, onEdit, onDelete, onViewConversation }: TaskCardProps) {
   const mantineTheme = useMantineTheme();
-  const { getPriorityColor, colors, shadows, spacing, typography } = useTheme();
+  const { getPriorityColor } = useTheme();
   
   const [localTask, setLocalTask] = useState<Task>(task);
   const [titleChanged, setTitleChanged] = useState(false);
   const [priorityPopoverOpened, setPriorityPopoverOpened] = useState(false);
-  const [weightPopoverOpened, setWeightPopoverOpened] = useState(false);
   const [timePopoverOpened, setTimePopoverOpened] = useState(false);
   const [assignmentPopoverOpened, setAssignmentPopoverOpened] = useState(false);
   const [isTimeTrackingActive, setIsTimeTrackingActive] = useState(!!task.timeTrackingActive);
@@ -193,7 +197,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
     fetchUsersIfNeeded();
   }, []);
   const [trackingTime, setTrackingTime] = useState(task.trackingTimeSeconds || 0); // in seconds
-  const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [trackingInterval, setTrackingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [commentCount, setCommentCount] = useState(0);
   const { updateTask } = useApp();
 
@@ -201,8 +205,12 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
   useEffect(() => {
     const fetchCommentCount = async () => {
       try {
-        const count = await api.comments.getCommentCount(task.id);
-        setCommentCount(count);
+        const result = await api.comments.getCommentCount(task.id);
+        if (typeof result === 'number') {
+          setCommentCount(result);
+        } else if (result && typeof result === 'object' && 'data' in result && typeof result.data === 'number') {
+          setCommentCount(result.data);
+        }
       } catch (error) {
         console.error('Failed to fetch comment count:', error);
       }
@@ -264,15 +272,6 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
     setPriorityPopoverOpened(false);
   };
   
-  // Handle weight change
-  const handleWeightChange = (value: number | string) => {
-    if (typeof value === 'number') {
-      setLocalTask(prev => ({ ...prev, weight: value }));
-      updateTask(localTask.id, { weight: value });
-    }
-    setWeightPopoverOpened(false);
-  };
-  
   // Handle time change
   const handleTimeChange = (field: 'estimatedHours' | 'actualHours', value: number | string) => {
     if (typeof value === 'number') {
@@ -315,8 +314,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
       updateTask(localTask.id, { 
         actualHours: totalHours,
         timeTrackingActive: false,
-        trackingTimeSeconds: 0,
-        lastTrackedTimestamp: new Date().toISOString() 
+        trackingTimeSeconds: 0
       });
 
       // Update local state
@@ -324,8 +322,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         ...prev,
         actualHours: totalHours,
         timeTrackingActive: false,
-        trackingTimeSeconds: 0,
-        lastTrackedTimestamp: new Date().toISOString()
+        trackingTimeSeconds: 0
       }));
 
       // Reset tracking time
@@ -354,16 +351,14 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
       // Update task immediately to mark it as being tracked
       updateTask(localTask.id, { 
         timeTrackingActive: true,
-        trackingTimeSeconds: trackingTime,
-        startTrackedTimestamp: new Date().toISOString() 
+        trackingTimeSeconds: trackingTime
       });
       
       // Update local state
       setLocalTask(prev => ({
         ...prev,
         timeTrackingActive: true,
-        trackingTimeSeconds: trackingTime,
-        startTrackedTimestamp: new Date().toISOString()
+        trackingTimeSeconds: trackingTime
       }));
 
       setTrackingInterval(interval);
@@ -382,8 +377,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         if (isTimeTrackingActive) {
           updateTask(localTask.id, {
             trackingTimeSeconds: trackingTime,
-            timeTrackingActive: true,
-            lastSavedTimestamp: new Date().toISOString()
+            timeTrackingActive: true
           });
         }
       }
@@ -461,12 +455,11 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                     borderRadius: '4px',
                     cursor: 'pointer',
                     backgroundColor: localTask.assigneeId === user.id ?
-                      mantineTheme.colorScheme === 'dark' ? mantineTheme.colors.blue[9] : mantineTheme.colors.blue[0] :
+                      mantineTheme.colors.blue[0] :
                       'transparent'
                   }}
                   className="hover-highlight"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     setLocalTask(prev => ({ ...prev, assigneeId: user.id }));
                     updateTask(localTask.id, { assigneeId: user.id });
                     setAssignmentPopoverOpened(false);
@@ -498,8 +491,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                       cursor: 'pointer',
                     }}
                     className="hover-highlight"
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onClick={() => {
                       setLocalTask(prev => ({ ...prev, assigneeId: null }));
                       updateTask(localTask.id, { assigneeId: null });
                       setAssignmentPopoverOpened(false);
@@ -631,18 +623,21 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               e.stopPropagation();
               navigator.clipboard.writeText(localTask.taskNumber.toString());
               // Apply temporary visual feedback
-              e.currentTarget.style.opacity = '0.6';
+              const element = e.currentTarget as HTMLDivElement;
+              element.style.opacity = '0.6';
               setTimeout(() => {
-                e.currentTarget.style.opacity = '1';
+                element.style.opacity = '1';
               }, 150);
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15)';
+              const element = e.currentTarget as HTMLDivElement;
+              element.style.transform = 'scale(1.05)';
+              element.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.12)';
+              const element = e.currentTarget as HTMLDivElement;
+              element.style.transform = 'scale(1)';
+              element.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.12)';
             }}
           >
             {localTask.taskNumber}
@@ -702,8 +697,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 <Group
                   key={priority}
                   gap="xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={() => {
                     handlePriorityChange(priority as TaskPriority);
                   }}
                   style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}
@@ -753,7 +747,6 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                   <Checkbox
                     checked={subtask.completed}
                     onChange={(e) => {
-                      e.stopPropagation();
                       // Create a copy of subtasks with the updated one
                       const updatedSubtasks = localTask.subtasks?.map(st =>
                         st.id === subtask.id
@@ -784,8 +777,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 size="xs"
                 variant="light"
                 leftSection={<IconSubtask size={14} />}
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={() => {
                   onEdit?.();
                 }}
               >
@@ -809,8 +801,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
             gap="xs"
             mt="xs"
             style={{ cursor: 'pointer' }}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               setTimePopoverOpened(true);
             }}
             data-no-propagation="true"
@@ -860,8 +851,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 variant={isTimeTrackingActive ? 'filled' : 'light'}
                 color={isTimeTrackingActive ? 'red' : 'blue'}
                 leftSection={isTimeTrackingActive ? <IconPlayerStop size={14} /> : <IconPlayerPlay size={14} />}
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={() => {
                   handleToggleTimeTracking();
                 }}
               >
@@ -879,8 +869,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               <ActionIcon
                 variant="filled"
                 color="blue"
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={() => {
                   handleSaveTimeChanges();
                 }}
               >
@@ -893,8 +882,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
       
       {/* Comments indicator */}
       {commentCount > 0 && (
-        <Group gap="xs" mt="xs" data-no-propagation="true" onClick={(e) => {
-          e.stopPropagation();
+        <Group gap="xs" mt="xs" data-no-propagation="true" onClick={() => {
           onViewConversation?.();
         }} style={{ cursor: 'pointer' }}>
           <IconMessageCircle2 size={12} />
@@ -965,8 +953,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               position="bottom-end"
               label={commentCount}
               zIndex={20}
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 onViewConversation?.();
               }}
               style={{ cursor: 'pointer' }}
@@ -1015,8 +1002,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
             position="bottom-end"
             label={commentCount}
             zIndex={20}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               onViewConversation?.();
             }}
             style={{ cursor: 'pointer' }}

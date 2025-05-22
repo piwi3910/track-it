@@ -194,8 +194,8 @@ export function useGoogleAuth(): UseGoogleAuthResult {
         };
         
         // Temporarily replace the callback
-        // @ts-ignore - We're doing a runtime override
-        window.google.accounts.id.callback = wrappedCallback;
+        // We're doing a runtime override
+        (window as any).google.accounts.id.callback = wrappedCallback;
         
         // Prompt the user to select their Google account
         window.google.accounts.id.prompt((notification: any) => {

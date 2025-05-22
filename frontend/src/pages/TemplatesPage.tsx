@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { useState, useEffect } from 'react';
 // Using centralized theme system
 import {
@@ -9,7 +8,6 @@ import {
   Button,
   Card,
   Badge,
-  Grid,
   TextInput,
   ActionIcon,
   Menu,
@@ -18,7 +16,6 @@ import {
   Paper,
   Loader,
   Select,
-  useMantineTheme,
   Center,
   Modal,
   Stack,
@@ -34,7 +31,6 @@ import {
   IconCopy,
   IconFilter,
   IconTag,
-  IconCheck,
   IconClock
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
@@ -48,7 +44,7 @@ function TemplateCard({ template, onUse, onEdit, onDelete }: {
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { getPriorityColor, typography, spacing, shadows, borderRadius } = useTheme();
+  const { getPriorityColor } = useTheme();
 
   return (
     <Card
@@ -164,15 +160,12 @@ function TemplateCard({ template, onUse, onEdit, onDelete }: {
         <div style={{ position: 'absolute', bottom: 0, right: 0 }}>
           <Button
             size="xs"
-            compact
             onClick={onUse}
-            styles={{
-              root: {
-                padding: '2px 6px',
-                height: 'auto',
-                minHeight: '18px',
-                fontSize: '0.65rem'
-              }
+            style={{
+              padding: '2px 6px',
+              height: 'auto',
+              minHeight: '18px',
+              fontSize: '0.65rem'
             }}
           >
             Use Template
@@ -185,7 +178,6 @@ function TemplateCard({ template, onUse, onEdit, onDelete }: {
 
 // Main page component
 export function TemplatesPage() {
-  const theme = useMantineTheme();
   const {
     templates,
     templatesLoading,
@@ -473,7 +465,7 @@ export function TemplatesPage() {
           <Tabs.Panel value="all">
             <SimpleGrid
               cols={{ base: 1, sm: 2, md: 3 }}
-              gap="md"
+              spacing="md"
             >
               {filteredTemplates.map((template) => (
                 <TemplateCard
@@ -490,7 +482,7 @@ export function TemplatesPage() {
           <Tabs.Panel value="my">
             <SimpleGrid
               cols={{ base: 1, sm: 2, md: 3 }}
-              gap="md"
+              spacing="md"
             >
               {filteredTemplates
                 .filter(template => template.createdBy === 'user1') // Filter for current user
@@ -509,7 +501,7 @@ export function TemplatesPage() {
           <Tabs.Panel value="popular">
             <SimpleGrid
               cols={{ base: 1, sm: 2, md: 3 }}
-              gap="md"
+              spacing="md"
             >
               {filteredTemplates
                 .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
@@ -571,7 +563,7 @@ export function TemplatesPage() {
               placeholder="Enter category"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              icon={<IconTag size={16} />}
+              leftSection={<IconTag size={16} />}
             />
           </Group>
           

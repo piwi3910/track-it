@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { useState } from 'react';
 // Using centralized theme system
 import {
@@ -7,13 +6,11 @@ import {
   Group,
   Paper,
   Text,
-  Button,
   Stack,
   ScrollArea,
   Box,
   Badge
 } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
 // Import drag and drop library
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import TaskModal from '@/components/TaskModal';
@@ -35,7 +32,10 @@ const columns: { id: TaskStatus; title: string }[] = [
 
 export function KanbanPage() {
   const { colors } = useTheme();
-  const { tasks, updateTask, createTask, deleteTask } = useApp();
+  const { tasks: appTasks, updateTask, createTask, deleteTask } = useApp();
+  
+  // Cast tasks to our frontend Task type which includes taskNumber
+  const tasks = appTasks as Task[];
   const [selectedColumn, setSelectedColumn] = useState<TaskStatus | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -46,12 +46,8 @@ export function KanbanPage() {
   };
 
   // State to track which column is being dragged over
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [, setDragOverColumn] = useState<string | null>(null);
 
-  const handleAddTask = () => {
-    setSelectedTask(null);
-    setTaskModalOpen(true);
-  };
   
   const handleEditTask = (task: Task) => {
     setSelectedTask(task);

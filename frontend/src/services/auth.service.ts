@@ -136,7 +136,7 @@ export const authService = {
     if (window.google?.accounts?.id) {
       // This method only exists in newer versions of the Google Identity Services
       try {
-        // @ts-ignore - This method might not exist in all versions
+        // This method might not exist in all versions
         if (typeof window.google.accounts.id.revoke === 'function') {
           window.google.accounts.id.revoke();
         }

@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { api } from '@/api';
-import { RouterOutputs } from '@track-it/shared';
+import type { RouterOutputs } from '@track-it/shared';
 
-// @ts-ignore - Ignore type errors for now
 type Notification = RouterOutputs['notifications']['getAll'][0];
 
 interface NotificationState {

@@ -1,4 +1,3 @@
-// @ts-nocheck - Disable type checking for this file
 /**
  * tRPC client for the frontend
  * This file provides a typesafe API client to interact with the backend
@@ -388,9 +387,9 @@ export const comments = {
     );
   },
   
-  create: async (taskId: string, text: string) => {
+  create: async (taskId: string, text: string, parentId?: string) => {
     return apiHandler(() => 
-      trpcClient.comments.create.mutate({ taskId, text })
+      trpcClient.comments.create.mutate({ taskId, text, parentId })
     );
   },
   

@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -14,7 +13,6 @@ import {
   Loader,
   useMantineTheme,
   ActionIcon,
-  Tooltip,
   Modal,
   ScrollArea,
   Divider,
@@ -29,7 +27,6 @@ import {
   IconCirclePlus,
   IconWeight,
   IconListDetails,
-  IconX,
   IconEdit,
   IconCalendarTime,
   IconCheck,
@@ -47,14 +44,18 @@ import { useTheme } from '@/context/ThemeContext';
 import { useApp } from '@/hooks/useApp';
 import { useGoogle } from '@/context/GoogleContext';
 
-// Helper function to get tasks that have due dates for calendar display
-const getTasksWithDueDates = (tasks: Task[]) => {
-  return tasks.filter(task => task.dueDate);
-};
+
+// Extended Task interface with multi-day display properties
+interface TaskWithMultiDayInfo extends Task {
+  _isFirstDay?: boolean;
+  _isLastDay?: boolean;
+  _isMiddleDay?: boolean;
+  _totalDays?: number;
+}
 
 // Map to get tasks by date
 const getTasksByDate = (tasks: Task[]) => {
-  const taskMap: Record<string, Task[]> = {};
+  const taskMap: Record<string, TaskWithMultiDayInfo[]> = {};
 
   tasks.forEach(task => {
     if (task.isMultiDay && task.startDate && task.endDate) {
@@ -75,15 +76,15 @@ const getTasksByDate = (tasks: Task[]) => {
         const isLastDay = dateStr === task.endDate;
 
         // Add the task with multi-day specific properties
-        taskMap[dateStr].push({
+        const extendedTask: TaskWithMultiDayInfo = {
           ...task,
-          _multiDay: {
-            isFirstDay,
-            isLastDay,
-            isMiddleDay: !isFirstDay && !isLastDay,
-            totalDays: Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-          }
-        });
+          // Store multi-day info in a separate property
+          _isFirstDay: isFirstDay,
+          _isLastDay: isLastDay,
+          _isMiddleDay: !isFirstDay && !isLastDay,
+          _totalDays: Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        };
+        taskMap[dateStr].push(extendedTask);
 
         // Move to the next day
         currentDate.setDate(currentDate.getDate() + 1);
@@ -397,7 +398,7 @@ function DayCell({
   onClick: () => void; // For adding a task
   onDateClick: () => void; // For viewing day detail
   children: React.ReactNode;
-  allDayTasks: Task[]; // All tasks for this day
+  allDayTasks: TaskWithMultiDayInfo[]; // All tasks for this day
   onViewTask: (task: Task) => void; // To view a specific task
 }) {
   const [hovered, setHovered] = useState(false);
@@ -501,7 +502,7 @@ function DayCell({
               { left: '100%', marginLeft: '10px' }     // Position to the right for other days
             ),
             zIndex: 999,
-            backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.white,
+            backgroundColor: theme.white,
             overflow: 'hidden'
           }}
           onClick={(e) => e.stopPropagation()}
@@ -662,14 +663,13 @@ export function CalendarPage() {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [date, setDate] = useState<Date | null>(new Date());
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [allTasks, setAllTasks] = useState<TaskWithMultiDayInfo[]>([]);
   const [successNotification, setSuccessNotification] = useState<string | null>(null);
   const [viewType, setViewType] = useState<CalendarViewType>('month');
 
   // State for day detail modal
   const [dayDetailOpen, setDayDetailOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [tasksByDateMap, setTasksByDateMap] = useState<Record<string, Task[]>>({});
 
   // Combine app tasks and Google calendar events
   useEffect(() => {
@@ -684,14 +684,12 @@ export function CalendarPage() {
       dueDate: new Date(event.start).toISOString().split('T')[0],
       source: 'google',
       createdAt: new Date().toISOString(),
+      taskNumber: 0, // Required field for Task type
     } as Task));
 
     // Combine real task sources only (no more mock data)
-    const combinedTasks = [...appTasks, ...calendarTasks];
+    const combinedTasks = [...appTasks, ...calendarTasks] as TaskWithMultiDayInfo[];
     setAllTasks(combinedTasks);
-    
-    // Also create a map of tasks by date for easy access
-    setTasksByDateMap(getTasksByDate(combinedTasks));
   }, [appTasks, calendarEvents]);
 
   // Sync calendar on initial load if authenticated
@@ -722,14 +720,6 @@ export function CalendarPage() {
     return tasksByDate[dateString] || [];
   };
 
-  const handleAddTask = () => {
-    // Pre-fill with the selected date if available
-    const newTask: Partial<Task> = {
-      dueDate: date ? date.toISOString().split('T')[0] : undefined,
-    };
-    setSelectedTask(newTask as Task);
-    setTaskModalOpen(true);
-  };
 
   // Handle adding task for a specific day
   const handleAddTaskForDay = (day: Date) => {
@@ -906,15 +896,17 @@ export function CalendarPage() {
           <Group>
             <ActionIcon
               onClick={() => {
-                const newDate = new Date(date);
-                if (viewType === 'month') {
-                  newDate.setMonth(newDate.getMonth() - 1);
-                } else if (viewType === 'week') {
-                  newDate.setDate(newDate.getDate() - 7);
-                } else {
-                  newDate.setDate(newDate.getDate() - 1);
+                if (date) {
+                  const newDate = new Date(date);
+                  if (viewType === 'month') {
+                    newDate.setMonth(newDate.getMonth() - 1);
+                  } else if (viewType === 'week') {
+                    newDate.setDate(newDate.getDate() - 7);
+                  } else {
+                    newDate.setDate(newDate.getDate() - 1);
+                  }
+                  setDate(newDate);
                 }
-                setDate(newDate);
               }}
             >
               <IconChevronLeft size={18} />
@@ -936,15 +928,17 @@ export function CalendarPage() {
 
             <ActionIcon
               onClick={() => {
-                const newDate = new Date(date);
-                if (viewType === 'month') {
-                  newDate.setMonth(newDate.getMonth() + 1);
-                } else if (viewType === 'week') {
-                  newDate.setDate(newDate.getDate() + 7);
-                } else {
-                  newDate.setDate(newDate.getDate() + 1);
+                if (date) {
+                  const newDate = new Date(date);
+                  if (viewType === 'month') {
+                    newDate.setMonth(newDate.getMonth() + 1);
+                  } else if (viewType === 'week') {
+                    newDate.setDate(newDate.getDate() + 7);
+                  } else {
+                    newDate.setDate(newDate.getDate() + 1);
+                  }
+                  setDate(newDate);
                 }
-                setDate(newDate);
               }}
             >
               <IconChevronRight size={18} />
@@ -955,7 +949,7 @@ export function CalendarPage() {
 
       <Box mb="xl">
         <QuickAddTask
-          defaultDueDate={date ? date.toISOString().split('T')[0] : undefined}
+          defaultDueDate={date instanceof Date ? date : null}
           onTaskAdded={() => console.log('Task added from calendar quick add')}
         />
       </Box>
@@ -1107,7 +1101,7 @@ export function CalendarPage() {
                             {/* App tasks */}
                             {appTasks.slice(0, 2).map((task, index) => {
                               // Check if this is a multi-day task
-                              const isMultiDay = task._multiDay;
+                              const isMultiDay = task._isFirstDay || task._isLastDay || task._isMiddleDay;
 
                               return (
                                 <Draggable
@@ -1123,9 +1117,9 @@ export function CalendarPage() {
                                       style={{
                                         ...provided.draggableProps.style,
                                         opacity: snapshot.isDragging ? 0.8 : 1,
-                                        width: isMultiDay ? (isMultiDay.isFirstDay ? '95%' : isMultiDay.isLastDay ? '95%' : '100%') : 'auto',
-                                        marginLeft: isMultiDay && !isMultiDay.isFirstDay ? '-3px' : '0',
-                                        marginRight: isMultiDay && !isMultiDay.isLastDay ? '-3px' : '0'
+                                        width: isMultiDay ? (task._isFirstDay ? '95%' : task._isLastDay ? '95%' : '100%') : 'auto',
+                                        marginLeft: isMultiDay && !task._isFirstDay ? '-3px' : '0',
+                                        marginRight: isMultiDay && !task._isLastDay ? '-3px' : '0'
                                       }}
                                     >
                                       <Card
@@ -1133,10 +1127,10 @@ export function CalendarPage() {
                                         style={{
                                           cursor: 'pointer',
                                           borderRadius: isMultiDay ?
-                                            (isMultiDay.isFirstDay ? '3px 0 0 3px' :
-                                             isMultiDay.isLastDay ? '0 3px 3px 0' : '0')
+                                            (task._isFirstDay ? '3px 0 0 3px' :
+                                             task._isLastDay ? '0 3px 3px 0' : '0')
                                             : '3px',
-                                          borderLeft: isMultiDay && !isMultiDay.isFirstDay ? 'none' :
+                                          borderLeft: isMultiDay && !task._isFirstDay ? 'none' :
                                             `3px solid ${
                                               task.priority === 'high' ? theme.colors.orange[6] :
                                               task.priority === 'urgent' ? theme.colors.red[6] :
@@ -1144,7 +1138,7 @@ export function CalendarPage() {
                                               theme.colors.blue[6]
                                             }`,
                                           backgroundColor: isMultiDay ? theme.colors.blue[1] : undefined,
-                                          borderRight: isMultiDay && !isMultiDay.isLastDay ? 'none' : undefined
+                                          borderRight: isMultiDay && !task._isLastDay ? 'none' : undefined
                                         }}
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -1154,14 +1148,14 @@ export function CalendarPage() {
                                         <Group gap={4} wrap="nowrap" align="center">
                                           {isMultiDay && (
                                             <Badge size="xs" color="blue" radius={0} style={{ padding: '2px 4px' }}>
-                                              {isMultiDay.isFirstDay ? 'Start' : isMultiDay.isLastDay ? 'End' : 'Day ' + (isMultiDay.totalDays > 3 ? Math.floor(isMultiDay.totalDays / 2) : '')}
+                                              {task._isFirstDay ? 'Start' : task._isLastDay ? 'End' : 'Day ' + (task._totalDays && task._totalDays > 3 ? Math.floor(task._totalDays / 2) : '')}
                                             </Badge>
                                           )}
                                           {!isMultiDay && task.estimatedHours && (
                                             <IconClockHour4 size={12} style={{ marginRight: 2 }} color="#999" />
                                         )}
                                         <Text size="xs" lineClamp={1} style={{ flex: 1 }}>
-                                          {isMultiDay && !isMultiDay.isFirstDay ? '' : task.title}
+                                          {isMultiDay && !task._isFirstDay ? '' : task.title}
                                         </Text>
                                       </Group>
                                     </Card>
@@ -1198,7 +1192,7 @@ export function CalendarPage() {
               <Stack>
                 {/* Weekday Headers */}
                 <Grid columns={7}>
-                  {getDaysInWeek(date).map((day, index) => {
+                  {date && getDaysInWeek(date).map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     return (
                       <Grid.Col span={1} key={`weekday-${index}`}>
@@ -1233,7 +1227,7 @@ export function CalendarPage() {
 
                 {/* Tasks Section */}
                 <Grid columns={7}>
-                  {getDaysInWeek(date).map((day, index) => {
+                  {date && getDaysInWeek(date).map((day, index) => {
                     const dayTasks = getTasksForDate(day);
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
@@ -1373,7 +1367,7 @@ export function CalendarPage() {
                   }}
                 >
                   <Text fw={700} size="xl">
-                    {date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    {date ? date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}
                   </Text>
                 </Paper>
 
@@ -1385,7 +1379,7 @@ export function CalendarPage() {
                     </Paper>
                   </Grid.Col>
                   <Grid.Col span={10}>
-                    <Droppable droppableId={`day-${date.toISOString().split('T')[0]}`} type="task">
+                    <Droppable droppableId={`day-${date ? date.toISOString().split('T')[0] : 'unknown'}`} type="task">
                       {(provided) => (
                         <Paper
                           {...provided.droppableProps}
@@ -1398,7 +1392,7 @@ export function CalendarPage() {
                           }}
                         >
                           <Stack gap="xs">
-                            {getTasksForDate(date).map((task, index) => (
+                            {date && getTasksForDate(date).map((task, index) => (
                               <Draggable
                                 key={task.id}
                                 draggableId={task.id}
@@ -1466,7 +1460,7 @@ export function CalendarPage() {
                             leftSection={<IconPlus size={14} />}
                             variant="light"
                             mt="md"
-                            onClick={() => handleAddTaskForDay(date)}
+                            onClick={() => date && handleAddTaskForDay(date)}
                           >
                             Add Task
                           </Button>
@@ -1485,7 +1479,7 @@ export function CalendarPage() {
                         p="md"
                         style={{
                           height: '80px',
-                          backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
+                          backgroundColor: theme.colors.gray[0],
                           textAlign: 'center',
                           display: 'flex',
                           alignItems: 'center',
@@ -1507,7 +1501,7 @@ export function CalendarPage() {
                         }}
                         onClick={() => {
                           // Future: Add time-based task creation
-                          handleAddTaskForDay(date);
+                          date && handleAddTaskForDay(date);
                         }}
                       />
                     </Grid.Col>

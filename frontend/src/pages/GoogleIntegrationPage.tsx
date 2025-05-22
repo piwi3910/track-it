@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { useState } from 'react';
 import {
   Container,
@@ -120,8 +119,7 @@ export function GoogleIntegrationPage() {
           status: 'todo',
           priority: 'medium',
           dueDate: new Date(event.start).toISOString().split('T')[0],
-          tags: ['calendar', 'imported'],
-          source: 'google'
+          tags: ['calendar', 'imported']
         });
       }
       

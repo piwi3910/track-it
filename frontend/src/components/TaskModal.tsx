@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { useState, useEffect } from 'react';
 import {
   Modal,
@@ -19,7 +18,6 @@ import {
   Avatar,
   Switch,
   Badge,
-  Popover,
   Tooltip,
   Progress
 } from '@mantine/core';
@@ -37,8 +35,7 @@ import {
 } from '@tabler/icons-react';
 import { TaskChat } from './TaskChat';
 import { api } from '@/api';
-import { useApp } from '@/hooks/useApp';
-import type { Task, TaskStatus, TaskPriority, Subtask, RecurrencePattern, TaskRecurrence } from '@/types/task';
+import type { Task, TaskStatus, TaskPriority, Subtask, TaskRecurrence } from '@/types/task';
 
 interface TaskModalProps {
   opened: boolean;
@@ -47,12 +44,25 @@ interface TaskModalProps {
   task: Task | null;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl?: string;
+}
+
+interface TaskWithConversation extends Task {
+  openConversation?: boolean;
+}
+
 export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModalProps) {
   // Check if we should open the conversation tab directly
-  const initialTab = task && (task as any).openConversation ? 'conversation' : 'details';
+  const taskWithConversation = task as TaskWithConversation | null;
+  const initialTab = taskWithConversation?.openConversation ? 'conversation' : 'details';
   const [activeTab, setActiveTab] = useState<string | null>(initialTab);
   const [commentCount, setCommentCount] = useState(0);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -124,10 +134,11 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       }
 
       // Set the active tab based on the task object flag
-      if ((task as any).openConversation) {
+      const taskWithConv = task as TaskWithConversation;
+      if (taskWithConv.openConversation) {
         setActiveTab('conversation');
         // Reset the flag
-        (task as any).openConversation = false;
+        taskWithConv.openConversation = false;
       } else {
         setActiveTab('details');
       }
@@ -273,7 +284,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
   };
 
   // Handle recurrence change
-  const handleRecurrenceChange = (field: keyof TaskRecurrence, value: any) => {
+  const handleRecurrenceChange = (field: keyof TaskRecurrence, value: TaskRecurrence[keyof TaskRecurrence]) => {
     setFormData(prev => ({
       ...prev,
       recurrence: {
@@ -585,7 +596,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                 maxDropdownHeight={200}
                 nothingFoundMessage="No matching user found"
                 withinPortal
-                renderOption={({ option, checked }) => (
+                renderOption={({ option }) => (
                   <Group gap="xs">
                     <Avatar src={option.image} size="sm" radius="xl" />
                     <div>

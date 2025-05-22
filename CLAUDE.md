@@ -98,6 +98,9 @@ The application follows a feature-based architecture:
    - Use interfaces for object structures and type unions for variants
    - Leverage TypeScript utility types (Partial, Pick, Omit, etc.)
    - Use type guards to narrow types in conditionals
+   - **NEVER use @ts-nocheck, @ts-ignore, or @ts-expect-error comments**
+   - **NEVER disable ESLint rules with eslint-disable comments**
+   - **ALWAYS fix the underlying type or lint issues instead of disabling checks**
 
 2. **API Type Definitions**
    - Share types between frontend and backend using a shared package

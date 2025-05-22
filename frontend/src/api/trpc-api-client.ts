@@ -4,14 +4,8 @@
  * This file provides a type-safe API client for interacting with the backend.
  * It uses the trpc client and handles errors in a consistent way.
  */
-
-// @ts-nocheck - Temporarily disable type checking for this file
-/**
- * This file may have type issues, but it's functionally correct.
- * We're handling errors properly in the apiHandler function.
- */
 import { trpcClient, setAuthToken, clearAuthToken, apiHandler } from '@/utils/trpc';
-import type { RouterInputs } from '@track-it/shared';
+import type { RouterInputs } from '@track-it/shared/types/trpc';
 
 /**
  * Authentication service
@@ -79,7 +73,7 @@ export const auth = {
   },
   
   // Update user profile
-  updateProfile: async (data: RouterInputs['users']['updateProfile'][0]) => {
+  updateProfile: async (data: RouterInputs['users']['updateProfile']) => {
     return apiHandler(() =>
       trpcClient.users.updateProfile.mutate(data)
     );
@@ -122,14 +116,14 @@ export const tasks = {
   },
   
   // Create a new task
-  create: async (taskData: RouterInputs['tasks']['create'][0]) => {
+  create: async (taskData: RouterInputs['tasks']['create']) => {
     return apiHandler(() =>
       trpcClient.tasks.create.mutate(taskData)
     );
   },
   
   // Update a task
-  update: async (id: string, data: RouterInputs['tasks']['update'][0]['data']) => {
+  update: async (id: string, data: RouterInputs['tasks']['update']['data']) => {
     return apiHandler(() =>
       trpcClient.tasks.update.mutate({ id, data })
     );
@@ -185,7 +179,7 @@ export const tasks = {
   },
 
   // Create task from template
-  createFromTemplate: async (templateId: string, taskData: RouterInputs['tasks']['createFromTemplate'][0]['taskData']) => {
+  createFromTemplate: async (templateId: string, taskData: RouterInputs['tasks']['createFromTemplate']['taskData']) => {
     return apiHandler(() =>
       trpcClient.tasks.createFromTemplate.mutate({ templateId, taskData })
     );
@@ -225,14 +219,14 @@ export const templates = {
   },
   
   // Create a new template
-  create: async (templateData: RouterInputs['templates']['create'][0]) => {
+  create: async (templateData: RouterInputs['templates']['create']) => {
     return apiHandler(() =>
       trpcClient.templates.create.mutate(templateData)
     );
   },
   
   // Update a template
-  update: async (id: string, data: RouterInputs['templates']['update'][0]['data']) => {
+  update: async (id: string, data: RouterInputs['templates']['update']['data']) => {
     return apiHandler(() =>
       trpcClient.templates.update.mutate({ id, data })
     );
@@ -305,7 +299,7 @@ export const attachments = {
   },
   
   // Upload a file attachment
-  upload: async (taskId: string, file: RouterInputs['attachments']['upload'][0]['file']) => {
+  upload: async (taskId: string, file: RouterInputs['attachments']['upload']['file']) => {
     return apiHandler(() => 
       trpcClient.attachments.upload.mutate({ taskId, file })
     );
@@ -446,7 +440,7 @@ export const notifications = {
   },
   
   // Update notification preferences
-  updatePreferences: async (preferences: RouterInputs['notifications']['updatePreferences'][0]) => {
+  updatePreferences: async (preferences: RouterInputs['notifications']['updatePreferences']) => {
     return apiHandler(() => 
       trpcClient.notifications.updatePreferences.mutate(preferences)
     );

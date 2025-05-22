@@ -1,14 +1,11 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { api } from '@/api';
-import { RouterOutputs, RouterInputs } from '@track-it/shared';
+import type { RouterOutputs, RouterInputs } from '@track-it/shared';
 
 // Types
-// @ts-ignore - Ignore type errors for now
 type Task = RouterOutputs['tasks']['getAll'][0];
-// @ts-ignore - Ignore type errors for now
 type CreateTaskInput = RouterInputs['tasks']['create'][0];
-// @ts-ignore - Ignore type errors for now
 type UpdateTaskInput = RouterInputs['tasks']['update'][0]['data'];
 
 // Filter types

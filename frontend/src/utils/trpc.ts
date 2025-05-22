@@ -101,8 +101,8 @@ export const apiHandler = async <T>(
 };
 
 // Create a tRPC client for v11
-// @ts-ignore - The AppRouter type doesn't satisfy the constraint, but it works at runtime
-export const trpc = createTRPCReact<AppRouter>();
+// The AppRouter type doesn't satisfy the constraint, but it works at runtime
+export const trpc = createTRPCReact<AppRouter>() as ReturnType<typeof createTRPCReact<AppRouter>>;
 
 // Initialize tRPC react-query client
 export const trpcClient = trpc.createClient({

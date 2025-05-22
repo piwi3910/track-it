@@ -99,11 +99,19 @@ export async function getTaskById(id: string) {
  */
 export async function getTasksByStatus(status: string, userId: string) {
   try {
-    // Show all tasks with the specified status regardless of user relationship
-    // This allows users to see all work in the system for better collaboration
-    const whereClause = {
-      status: status.toUpperCase() as $Enums.TaskStatus
-    };
+    // For backlog status, show all tasks regardless of user relationship
+    // For other statuses, show only tasks where user is creator or assignee
+    const whereClause = status.toLowerCase() === 'backlog' 
+      ? {
+          status: status.toUpperCase() as $Enums.TaskStatus
+        }
+      : {
+          status: status.toUpperCase() as $Enums.TaskStatus,
+          OR: [
+            { creatorId: userId },
+            { assigneeId: userId }
+          ]
+        };
 
     return await prisma.task.findMany({
       where: whereClause,

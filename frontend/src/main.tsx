@@ -4,11 +4,11 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider, createTheme, ColorSchemeScript } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { ThemeProvider, ApiProvider, AuthProvider, AppProvider, NotificationProvider } from './components/providers';
+import { ThemeProvider, ApiProvider, AuthProvider, AppProvider, NotificationProvider, GoogleProvider } from './components/providers';
 import App from './App';
 
 // Import for query client configuration
-import { trpc, trpcClient, queryClient } from './utils/trpc-client';
+import { trpc, trpcClient, queryClient } from './utils/trpc';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 // Import all required styles
@@ -33,14 +33,16 @@ createRoot(document.getElementById('root')!).render(
           <ThemeProvider>
             <ApiProvider>
               <AuthProvider>
-                <NotificationProvider>
-                  <AppProvider>
-                    <Notifications position="top-right" />
-                    <BrowserRouter>
-                      <App />
-                    </BrowserRouter>
-                  </AppProvider>
-                </NotificationProvider>
+                <GoogleProvider>
+                  <NotificationProvider>
+                    <AppProvider>
+                      <Notifications position="top-right" />
+                      <BrowserRouter>
+                        <App />
+                      </BrowserRouter>
+                    </AppProvider>
+                  </NotificationProvider>
+                </GoogleProvider>
               </AuthProvider>
             </ApiProvider>
           </ThemeProvider>

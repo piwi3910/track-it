@@ -82,14 +82,21 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkGoogleAuth = async () => {
       try {
-        const response = await googleStore.getAccountStatus();
-        if (response && response.connected) {
-          setIsAuthenticated(true);
+        // Only check if googleStore exists and has the method
+        if (googleStore?.getAccountStatus) {
+          const response = await googleStore.getAccountStatus();
+          if (response && response.connected) {
+            setIsAuthenticated(true);
+          } else {
+            setIsAuthenticated(false);
+          }
         } else {
+          // Default to not authenticated if no store
           setIsAuthenticated(false);
         }
       } catch (error) {
         console.error('Error checking Google authentication status:', error);
+        setIsAuthenticated(false);
       }
     };
     
@@ -144,7 +151,10 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       if (googleStore?.syncCalendar) {
         await googleStore.syncCalendar();
       } else {
-        await api.googleIntegration.syncCalendar.mutate();
+        const result = await api.googleIntegration.syncCalendar();
+        if (result.error) {
+          throw new Error(result.error);
+        }
       }
       
       // Fetch calendar events from API

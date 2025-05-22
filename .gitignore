@@ -38,7 +38,31 @@ Thumbs.db
 # Logs
 **/logs/
 **/*.log
+
+# Test coverage reports
+**/coverage/
+**/lcov-report/
+**/.nyc_output/
+
+# Test artifacts
+**/*.lcov
+**/*.info
+**/junit.xml
+
 # Backup folders
 backup/
 backend-backup/
+
+# Temporary files and misc
+**/.tmp/
+**/tmp/
+**/*.tmp
+**/*.bak
+**/*.swp
+**/*.swo
+*~
+
+# Generated documentation
+**/docs/generated/
+**/api-docs/
 

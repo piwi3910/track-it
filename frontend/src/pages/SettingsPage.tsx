@@ -27,7 +27,7 @@ import { GoogleIntegrationPanel } from './settings/GoogleIntegrationPanel';
 import { ProfilePictureUpload } from '@/components/ProfilePictureUpload';
 import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
-import { trpc } from '@/utils/trpc';
+import { api } from '@/api';
 
 export function SettingsPage() {
   const { currentUser, userLoading } = useApp();
@@ -37,16 +37,17 @@ export function SettingsPage() {
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [defaultView, setDefaultView] = useState<string>('dashboard');
   
-  // Use the existing updateProfile mutation as a temporary workaround
-  const updateProfileMutation = trpc.users.updateProfile.useMutation();
-  
-  // Handle avatar update
+  // Handle avatar update using the existing API pattern
   const handleAvatarChange = async (avatarUrl: string | null) => {
     try {
-      // Use updateProfile endpoint temporarily since updateAvatar types aren't loading
-      await updateProfileMutation.mutateAsync({ 
+      // Use the existing API client's updateProfile method
+      const { data, error } = await api.auth.updateProfile({ 
         avatarUrl: avatarUrl || undefined // Convert null to undefined for the existing endpoint
       });
+      
+      if (error) {
+        throw new Error(error);
+      }
       
       // Trigger a refetch of user data to update the UI
       // This should be handled by the AppContext, but we might need to trigger it manually

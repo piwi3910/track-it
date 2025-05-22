@@ -13,6 +13,11 @@ import { USER_ROLE } from '../../utils/constants';
 export async function getAllUsers() {
   try {
     return await prisma.user.findMany({
+      where: {
+        NOT: {
+          email: 'deleted-user@system.placeholder'
+        }
+      },
       select: {
         id: true,
         name: true,
@@ -209,65 +214,49 @@ export async function updateUser(id: string, data: Prisma.UserUpdateInput) {
 
 /**
  * Delete a user and handle related data
- * This function performs a cascade deletion to handle foreign key constraints
+ * This function preserves tasks and comments by reassigning them to a placeholder user
  */
 export async function deleteUser(id: string) {
   try {
-    // Use a transaction to ensure all deletions happen atomically
+    // Use a transaction to ensure all operations happen atomically
     return await prisma.$transaction(async (tx) => {
-      // First, delete all notifications for this user
+      // Find or create a "Deleted User" placeholder
+      let deletedUserPlaceholder = await tx.user.findFirst({
+        where: { email: 'deleted-user@system.placeholder' }
+      });
+
+      if (!deletedUserPlaceholder) {
+        deletedUserPlaceholder = await tx.user.create({
+          data: {
+            name: '[Deleted User]',
+            email: 'deleted-user@system.placeholder',
+            passwordHash: null, // No password for placeholder
+            role: 'GUEST' // Minimal role
+          }
+        });
+      }
+
+      // Delete all notifications for this user (these are user-specific)
       await tx.notification.deleteMany({
         where: { userId: id }
       });
 
-      // Delete all comments made by this user
-      await tx.comment.deleteMany({
-        where: { authorId: id }
-      });
-
-      // Handle tasks created by this user
-      // Option 1: Delete all tasks created by this user (including their comments and attachments)
-      const userTasks = await tx.task.findMany({
+      // For tasks created by this user, reassign to placeholder user
+      await tx.task.updateMany({
         where: { creatorId: id },
-        include: {
-          comments: true,
-          attachments: true,
-          subtasks: true
-        }
+        data: { creatorId: deletedUserPlaceholder.id }
       });
 
-      // Delete attachments for each task
-      for (const task of userTasks) {
-        if (task.attachments.length > 0) {
-          await tx.attachment.deleteMany({
-            where: { taskId: task.id }
-          });
-        }
-        
-        // Delete comments for each task
-        if (task.comments.length > 0) {
-          await tx.comment.deleteMany({
-            where: { taskId: task.id }
-          });
-        }
-
-        // Delete subtasks
-        if (task.subtasks.length > 0) {
-          await tx.task.deleteMany({
-            where: { parentId: task.id }
-          });
-        }
-      }
-
-      // Delete all tasks created by this user
-      await tx.task.deleteMany({
-        where: { creatorId: id }
-      });
-
-      // For tasks assigned to this user, just remove the assignment (set assigneeId to null)
+      // For tasks assigned to this user, remove assignment (this field is nullable)
       await tx.task.updateMany({
         where: { assigneeId: id },
         data: { assigneeId: null }
+      });
+
+      // For comments made by this user, reassign to placeholder user
+      await tx.comment.updateMany({
+        where: { authorId: id },
+        data: { authorId: deletedUserPlaceholder.id }
       });
 
       // Finally, delete the user
@@ -320,11 +309,11 @@ export async function getUserDeletionStats(id: string) {
       },
       consequences: {
         willDelete: [
-          `${user._count.createdTasks} task(s) created by this user`,
-          `${user._count.comments} comment(s) made by this user`,
           `${user._count.notifications} notification(s) for this user`
         ],
         willUpdate: [
+          `${user._count.createdTasks} task(s) created by this user will be reassigned to [Deleted User]`,
+          `${user._count.comments} comment(s) made by this user will be reassigned to [Deleted User]`,
           `${user._count.assignedTasks} task(s) assigned to this user will be unassigned`
         ]
       }

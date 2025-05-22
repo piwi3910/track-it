@@ -21,16 +21,40 @@ const normalizeTaskData = (task: any) => {
   };
 };
 
-// Enum definitions for task properties using constants
-const taskStatusEnum = z.nativeEnum(TaskStatus);
-const taskPriorityEnum = z.nativeEnum(TaskPriority);
+// Frontend-compatible enum schemas that accept lowercase values and transform to backend format
+const frontendTaskStatusSchema = z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'in_review', 'done', 'archived'])
+  .transform((val) => {
+    // Map frontend values to backend enum values
+    const statusMap: Record<string, TaskStatus> = {
+      'backlog': TaskStatus.BACKLOG,
+      'todo': TaskStatus.TODO,
+      'in_progress': TaskStatus.IN_PROGRESS,
+      'blocked': TaskStatus.TODO, // Fallback since BLOCKED doesn't exist in schema
+      'in_review': TaskStatus.REVIEW,
+      'done': TaskStatus.DONE,
+      'archived': TaskStatus.ARCHIVED
+    };
+    return statusMap[val] || TaskStatus.TODO;
+  });
+
+const frontendTaskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent'])
+  .transform((val) => {
+    // Map frontend values to backend enum values
+    const priorityMap: Record<string, TaskPriority> = {
+      'low': TaskPriority.LOW,
+      'medium': TaskPriority.MEDIUM,
+      'high': TaskPriority.HIGH,
+      'urgent': TaskPriority.URGENT
+    };
+    return priorityMap[val] || TaskPriority.MEDIUM;
+  });
 
 // Input validation schemas
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  status: taskStatusEnum.default(TaskStatus.TODO),
-  priority: taskPriorityEnum,
+  status: frontendTaskStatusSchema.default('todo'),
+  priority: frontendTaskPrioritySchema,
   tags: z.array(z.string()).optional(),
   dueDate: z.string().nullable().optional(),
   assigneeId: z.string().nullable().optional(),
@@ -46,8 +70,8 @@ const updateTaskSchema = z.object({
   data: z.object({
     title: z.string().min(1).optional(),
     description: z.string().optional(),
-    status: taskStatusEnum.optional(),
-    priority: taskPriorityEnum.optional(),
+    status: frontendTaskStatusSchema.optional(),
+    priority: frontendTaskPrioritySchema.optional(),
     tags: z.array(z.string()).optional(),
     dueDate: z.string().nullable().optional(),
     assigneeId: z.string().nullable().optional(),

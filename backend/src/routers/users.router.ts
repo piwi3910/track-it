@@ -664,6 +664,14 @@ export const usersRouter = router({
           throw createNotFoundError('User', input.userId);
         }
 
+        // Prevent deleting the system placeholder user
+        if (user.email === 'deleted-user@system.placeholder') {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot delete the system placeholder user'
+          });
+        }
+
         await userService.deleteUser(input.userId);
         
         return {

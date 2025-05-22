@@ -33,8 +33,6 @@ import {
   IconCalendarEvent,
   IconCalendar,
   IconMessageCircle2,
-  IconTemplate,
-  IconDeviceFloppy,
   IconCopy
 } from '@tabler/icons-react';
 import { TaskChat } from './TaskChat';
@@ -50,16 +48,11 @@ interface TaskModalProps {
 }
 
 export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModalProps) {
-  const { saveTaskAsTemplate } = useApp();
-
   // Check if we should open the conversation tab directly
   const initialTab = task && (task as any).openConversation ? 'conversation' : 'details';
   const [activeTab, setActiveTab] = useState<string | null>(initialTab);
   const [commentCount, setCommentCount] = useState(0);
-
-  // Template saving state
-  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
-  const [templateName, setTemplateName] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -158,6 +151,24 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       setActiveTab('details');
     }
   }, [task, opened]);
+
+  // Fetch users for assignee dropdown
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await api.admin.getAllUsers();
+        if (data && !error) {
+          setUsers(data);
+        } else {
+          console.error('Failed to fetch users:', error);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,27 +311,14 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
     return summary;
   };
 
-  // Handle save as template
-  const handleSaveAsTemplate = async () => {
-    if (!task || !templateName.trim()) return;
-
-    try {
-      const savedTemplate = await saveTaskAsTemplate(task.id, templateName);
-      if (savedTemplate) {
-        setSaveAsTemplateOpen(false);
-        setTemplateName('');
-        alert(`Template "${savedTemplate.name}" created successfully!`);
-      }
-    } catch (error) {
-      console.error('Failed to save task as template:', error);
-      alert('Failed to save template. Please try again.');
-    }
-  };
 
   return (
     <Modal
       opened={opened}
       onClose={onClose}
+      zIndex={200}
+      overlayProps={{ backgroundOpacity: 0.3 }}
+      lockScroll={false}
       title={
         <Group gap={8}>
           <Text>{task ? 'Edit Task' : 'Create New Task'}</Text>
@@ -388,8 +386,8 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
           </Tabs.List>
         </Tabs>
 
-        {/* Template save button */}
-        {task && task.id && (
+        {/* Template save button - DISABLED */}
+        {/* {task && task.id && (
           <Popover
             opened={saveAsTemplateOpen}
             onChange={setSaveAsTemplateOpen}
@@ -438,7 +436,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
               </Stack>
             </Popover.Dropdown>
           </Popover>
-        )}
+        )} */}
       </Group>
 
       {(!task || !task.id || activeTab === 'details') && (
@@ -473,6 +471,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   { value: 'in_review', label: 'In Review' },
                   { value: 'done', label: 'Done' }
                 ]}
+                withinPortal
               />
 
               <Select
@@ -486,6 +485,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   { value: 'high', label: 'High' },
                   { value: 'urgent', label: 'Urgent' }
                 ]}
+                withinPortal
               />
             </Group>
 
@@ -509,6 +509,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   }}
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
+                  withinPortal
                 />
 
                 <div style={{ flex: 1 }}></div>
@@ -530,6 +531,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   }}
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
+                  withinPortal
                 />
 
                 <DatePickerInput
@@ -543,6 +545,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
                   minDate={formData.startDate ? new Date(formData.startDate) : undefined}
+                  withinPortal
                 />
               </Group>
             )}
@@ -553,17 +556,16 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                 placeholder="Select assignee"
                 value={formData.assignee}
                 onChange={(value) => handleChange('assignee', value)}
-                data={[
-                  { value: 'user1', label: 'John Doe (Admin)', image: 'https://i.pravatar.cc/150?u=user1' },
-                  { value: 'user2', label: 'Jane Smith (Manager)', image: 'https://i.pravatar.cc/150?u=user2' },
-                  { value: 'user3', label: 'Bob Johnson (Developer)', image: 'https://i.pravatar.cc/150?u=user3' },
-                  { value: 'user4', label: 'Alice Williams (Designer)', image: 'https://i.pravatar.cc/150?u=user4' },
-                  { value: 'user5', label: 'Charlie Brown (QA)', image: 'https://i.pravatar.cc/150?u=user5' }
-                ]}
+                data={users.map(user => ({
+                  value: user.id,
+                  label: `${user.name} (${user.role})`,
+                  image: user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`
+                }))}
                 clearable
                 searchable
                 maxDropdownHeight={200}
                 nothingFoundMessage="No matching user found"
+                withinPortal
                 renderOption={({ option, checked }) => (
                   <Group gap="xs">
                     <Avatar src={option.image} size="sm" radius="xl" />
@@ -581,6 +583,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
               placeholder="Enter tags"
               value={formData.tags}
               onChange={(tags) => handleChange('tags', tags)}
+              withinPortal
             />
 
             <Group justify="flex-end" mt="xl">
@@ -697,6 +700,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                       { value: 'yearly', label: 'Yearly' }
                     ]}
                     leftSection={<IconRepeat size={16} />}
+                    withinPortal
                   />
 
                   <NumberInput
@@ -758,6 +762,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                     }}
                     clearable
                     leftSection={<IconCalendar size={16} />}
+                    withinPortal
                   />
 
                   <Paper p="xs" withBorder bg="blue.0">

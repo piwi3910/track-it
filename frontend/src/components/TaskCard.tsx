@@ -43,22 +43,40 @@ import { useTheme } from '@/context/ThemeContext';
 import type { Task, TaskPriority, TaskRecurrence } from '@/types/task';
 import { api } from '@/api';
 
-// Mock user data for assignments
-const availableUsers = {
-  'user1': { name: 'John Doe', role: 'Admin', avatar: 'https://i.pravatar.cc/150?u=user1' },
-  'user2': { name: 'Jane Smith', role: 'Manager', avatar: 'https://i.pravatar.cc/150?u=user2' },
-  'user3': { name: 'Bob Johnson', role: 'Developer', avatar: 'https://i.pravatar.cc/150?u=user3' },
-  'user4': { name: 'Alice Williams', role: 'Designer', avatar: 'https://i.pravatar.cc/150?u=user4' },
-  'user5': { name: 'Charlie Brown', role: 'QA', avatar: 'https://i.pravatar.cc/150?u=user5' },
-};
+// Global users cache to avoid refetching in every component
+let globalUsersCache: any[] = [];
+let globalUsersCacheTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Helper functions for user data
 const getAssigneeName = (userId: string): string => {
-  return availableUsers[userId]?.name || 'Unknown User';
+  const user = globalUsersCache.find(u => u.id === userId);
+  return user?.name || 'Unknown User';
 };
 
 const getAssigneeAvatar = (userId: string): string => {
-  return availableUsers[userId]?.avatar || '';
+  const user = globalUsersCache.find(u => u.id === userId);
+  return user?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(getAssigneeName(userId))}&background=random`;
+};
+
+// Function to fetch and cache users
+const fetchUsersIfNeeded = async () => {
+  const now = Date.now();
+  if (globalUsersCache.length > 0 && (now - globalUsersCacheTime) < CACHE_DURATION) {
+    return; // Cache is still valid
+  }
+
+  try {
+    const { data, error } = await api.admin.getAllUsers();
+    if (data && !error) {
+      globalUsersCache = data;
+      globalUsersCacheTime = now;
+    } else {
+      console.error('Failed to fetch users for TaskCard:', error);
+    }
+  } catch (error) {
+    console.error('Error fetching users for TaskCard:', error);
+  }
 };
 
 // Get a human-readable description of the recurrence
@@ -169,6 +187,11 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
   const [timePopoverOpened, setTimePopoverOpened] = useState(false);
   const [assignmentPopoverOpened, setAssignmentPopoverOpened] = useState(false);
   const [isTimeTrackingActive, setIsTimeTrackingActive] = useState(!!task.timeTrackingActive);
+
+  // Fetch users when component mounts
+  useEffect(() => {
+    fetchUsersIfNeeded();
+  }, []);
   const [trackingTime, setTrackingTime] = useState(task.trackingTimeSeconds || 0); // in seconds
   const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null);
   const [commentCount, setCommentCount] = useState(0);
@@ -429,34 +452,34 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
             <Stack gap="xs">
               <Text fw={500}>Task Assignment</Text>
               <Divider />
-              {Object.entries(availableUsers).map(([userId, user]) => (
+              {globalUsersCache.map((user) => (
                 <Group
-                  key={userId}
+                  key={user.id}
                   justify="space-between"
                   style={{
                     padding: '6px 10px',
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    backgroundColor: localTask.assigneeId === userId ?
+                    backgroundColor: localTask.assigneeId === user.id ?
                       mantineTheme.colorScheme === 'dark' ? mantineTheme.colors.blue[9] : mantineTheme.colors.blue[0] :
                       'transparent'
                   }}
                   className="hover-highlight"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setLocalTask(prev => ({ ...prev, assigneeId: userId }));
-                    updateTask(localTask.id, { assigneeId: userId });
+                    setLocalTask(prev => ({ ...prev, assigneeId: user.id }));
+                    updateTask(localTask.id, { assigneeId: user.id });
                     setAssignmentPopoverOpened(false);
                   }}
                 >
                   <Group gap="sm">
-                    <Avatar size="sm" radius="xl" src={user.avatar} />
+                    <Avatar size="sm" radius="xl" src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} />
                     <div>
                       <Text size="sm">{user.name}</Text>
                       <Text size="xs" c="dimmed">{user.role}</Text>
                     </div>
                   </Group>
-                  {localTask.assigneeId === userId && (
+                  {localTask.assigneeId === user.id && (
                     <ActionIcon size="sm" color="blue" variant="light">
                       <IconCheck size={14} />
                     </ActionIcon>

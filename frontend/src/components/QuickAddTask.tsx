@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TextInput,
   Button,
@@ -22,16 +22,8 @@ import {
   IconFlag,
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
+import { api } from '@/api';
 import type { Task, TaskPriority, TaskStatus } from '@/types/task';
-
-// Mock user data for assignments (will replace with real data later)
-const availableUsers = [
-  { value: 'user1', label: 'John Doe' },
-  { value: 'user2', label: 'Jane Smith' },
-  { value: 'user3', label: 'Bob Johnson' },
-  { value: 'user4', label: 'Alice Williams' },
-  { value: 'user5', label: 'Charlie Brown' },
-];
 
 interface QuickAddTaskProps {
   defaultStatus?: TaskStatus;
@@ -55,6 +47,25 @@ export default function QuickAddTask({
   const [tags, setTags] = useState<string[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [estimatedHours, setEstimatedHours] = useState<number | undefined>(undefined);
+  const [users, setUsers] = useState<any[]>([]);
+
+  // Fetch users for assignee dropdown
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await api.admin.getAllUsers();
+        if (data && !error) {
+          setUsers(data);
+        } else {
+          console.error('Failed to fetch users:', error);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
@@ -178,6 +189,7 @@ export default function QuickAddTask({
                   onChange={(value) => setStatus(value as TaskStatus)}
                   leftSection={<IconCheck size={16} />}
                   allowDeselect={false}
+                  withinPortal
                 />
               )}
               <Select
@@ -187,6 +199,7 @@ export default function QuickAddTask({
                 onChange={(value) => setPriority(value as TaskPriority)}
                 leftSection={<IconFlag size={16} />}
                 allowDeselect={false}
+                withinPortal
               />
             </Group>
             
@@ -198,6 +211,7 @@ export default function QuickAddTask({
                 onChange={setDueDate}
                 leftSection={<IconCalendarEvent size={16} />}
                 clearable
+                withinPortal
               />
               <TextInput
                 label="Estimated Hours"
@@ -213,13 +227,17 @@ export default function QuickAddTask({
             
             <Group mb="xs" grow>
               <Select
-                data={availableUsers}
+                data={users.map(user => ({
+                  value: user.id,
+                  label: `${user.name} (${user.role})`
+                }))}
                 label="Assign To"
                 placeholder="Select user"
                 value={assigneeId}
                 onChange={setAssigneeId}
                 leftSection={<IconUser size={16} />}
                 clearable
+                withinPortal
               />
             </Group>
             
@@ -230,6 +248,7 @@ export default function QuickAddTask({
               value={tags}
               onChange={setTags}
               clearable
+              withinPortal
             />
           </Popover.Dropdown>
         </Popover>

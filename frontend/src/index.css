@@ -55,3 +55,23 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
+/* Force all Mantine dropdowns and popovers to appear above modals */
+[data-mantine-color-scheme] .mantine-Select-dropdown,
+[data-mantine-color-scheme] .mantine-DatePickerInput-dropdown,
+[data-mantine-color-scheme] .mantine-TagsInput-dropdown,
+[data-mantine-color-scheme] .mantine-Combobox-dropdown,
+[data-mantine-color-scheme] .mantine-Popover-dropdown,
+[data-mantine-color-scheme] .mantine-DatePicker-dropdown {
+  z-index: 99999 !important;
+}
+
+/* Also target any portal containers */
+[data-portal] .mantine-Select-dropdown,
+[data-portal] .mantine-DatePickerInput-dropdown,
+[data-portal] .mantine-TagsInput-dropdown,
+[data-portal] .mantine-Combobox-dropdown,
+[data-portal] .mantine-Popover-dropdown,
+[data-portal] .mantine-DatePicker-dropdown {
+  z-index: 99999 !important;
+}

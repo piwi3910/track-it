@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test": "jest",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:seed-admin": "node scripts/seed-admin-user.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",

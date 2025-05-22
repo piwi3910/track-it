@@ -4,7 +4,8 @@ import { createNotFoundError, createForbiddenError, handleError } from '../utils
 import { logger } from '../server';
 import * as taskService from '../db/services/task.service';
 import * as templateService from '../db/services/template.service';
-import { TASK_STATUS, TASK_PRIORITY, formatEnumForApi, formatEnumForDb } from '../utils/constants';
+import { TASK_STATUS, TASK_PRIORITY, formatEnumForApi } from '../utils/constants';
+import { TaskStatus, TaskPriority } from '../generated/prisma';
 
 // Define helper function to normalize task data for API response
 const normalizeTaskData = (task: any) => {
@@ -21,14 +22,14 @@ const normalizeTaskData = (task: any) => {
 };
 
 // Enum definitions for task properties using constants
-const taskStatusEnum = z.enum(Object.values(TASK_STATUS) as [string, ...string[]]);
-const taskPriorityEnum = z.enum(Object.values(TASK_PRIORITY) as [string, ...string[]]);
+const taskStatusEnum = z.nativeEnum(TaskStatus);
+const taskPriorityEnum = z.nativeEnum(TaskPriority);
 
 // Input validation schemas
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  status: taskStatusEnum.default('todo'),
+  status: taskStatusEnum.default(TaskStatus.TODO),
   priority: taskPriorityEnum,
   tags: z.array(z.string()).optional(),
   dueDate: z.string().nullable().optional(),
@@ -149,8 +150,8 @@ export const tasksRouter = router({
         const taskData = {
           title: input.title,
           description: input.description,
-          status: formatEnumForDb(input.status),
-          priority: formatEnumForDb(input.priority),
+          status: input.status,
+          priority: input.priority,
           tags: input.tags || [],
           dueDate: input.dueDate ? new Date(input.dueDate) : null,
           estimatedHours: input.estimatedHours,
@@ -195,8 +196,8 @@ export const tasksRouter = router({
         const updateData: any = {
           ...(input.data.title && { title: input.data.title }),
           ...(input.data.description !== undefined && { description: input.data.description }),
-          ...(input.data.status && { status: formatEnumForDb(input.data.status) }),
-          ...(input.data.priority && { priority: formatEnumForDb(input.data.priority) }),
+          ...(input.data.status && { status: input.data.status }),
+          ...(input.data.priority && { priority: input.data.priority }),
           ...(input.data.tags && { tags: input.data.tags }),
           ...(input.data.dueDate !== undefined && { dueDate: input.data.dueDate ? new Date(input.data.dueDate) : null }),
           ...(input.data.estimatedHours !== undefined && { estimatedHours: input.data.estimatedHours }),
@@ -344,8 +345,8 @@ export const tasksRouter = router({
         const taskData = {
           title: input.taskData?.title || template.name,
           description: input.taskData?.description || template.description,
-          status: formatEnumForDb(input.taskData?.status || TASK_STATUS.TODO),
-          priority: formatEnumForDb(input.taskData?.priority || template.priority),
+          status: (input.taskData?.status as TaskStatus) || TaskStatus.TODO,
+          priority: (input.taskData?.priority as TaskPriority) || template.priority,
           tags: template.tags,
           dueDate: input.taskData?.dueDate ? new Date(input.taskData.dueDate) : null,
           estimatedHours: template.estimatedHours,

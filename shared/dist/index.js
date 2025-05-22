@@ -16,3 +16,4 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // Re-export all types from the types directory
 __exportStar(require("./types/trpc"), exports);
+__exportStar(require("./types/errors"), exports);

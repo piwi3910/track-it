@@ -132,7 +132,10 @@ export function ProfilePictureUpload({
         title: 'Success',
         message: 'Profile picture updated successfully',
         color: 'green',
-        icon: <IconCheck size={16} />
+        icon: <IconCheck size={16} />,
+        autoClose: 4000,
+        withCloseButton: true,
+        style: { maxWidth: 350 }
       });
       
       setIsModalOpen(false);
@@ -143,7 +146,10 @@ export function ProfilePictureUpload({
         title: 'Error',
         message: 'Failed to update profile picture',
         color: 'red',
-        icon: <IconAlertCircle size={16} />
+        icon: <IconAlertCircle size={16} />,
+        autoClose: 5000,
+        withCloseButton: true,
+        style: { maxWidth: 350 }
       });
     } finally {
       setIsUploading(false);
@@ -156,16 +162,22 @@ export function ProfilePictureUpload({
       await onAvatarChange(null);
       notifications.show({
         title: 'Success',
-        message: 'Profile picture removed',
+        message: 'Profile picture removed successfully',
         color: 'green',
-        icon: <IconCheck size={16} />
+        icon: <IconCheck size={16} />,
+        autoClose: 4000,
+        withCloseButton: true,
+        style: { maxWidth: 350 }
       });
     } catch {
       notifications.show({
         title: 'Error',
         message: 'Failed to remove profile picture',
         color: 'red',
-        icon: <IconAlertCircle size={16} />
+        icon: <IconAlertCircle size={16} />,
+        autoClose: 5000,
+        withCloseButton: true,
+        style: { maxWidth: 350 }
       });
     }
   }, [onAvatarChange]);

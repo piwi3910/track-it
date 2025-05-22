@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
 import * as templateService from '../db/services/template.service';
-import { TASK_PRIORITY, formatEnumForApi, formatEnumForDb } from '../utils/constants';
+import { TASK_PRIORITY, formatEnumForApi } from '../utils/constants';
+import { TaskPriority } from '../generated/prisma';
 
 // Define helper function to normalize template data for API response
 const normalizeTemplateData = (template: any) => {
@@ -17,7 +18,7 @@ const normalizeTemplateData = (template: any) => {
 };
 
 // Enum definitions for template properties using constants
-const taskPriorityEnum = z.enum(Object.values(TASK_PRIORITY) as [string, ...string[]]);
+const taskPriorityEnum = z.nativeEnum(TaskPriority);
 
 // Schema definitions
 const getTemplateByIdSchema = z.object({
@@ -135,7 +136,7 @@ export const templatesRouter = router({
         const templateData = {
           name: input.name,
           description: input.description,
-          priority: formatEnumForDb(input.priority),
+          priority: input.priority,
           tags: input.tags || [],
           estimatedHours: input.estimatedHours,
           isPublic: input.isPublic ?? true,
@@ -175,7 +176,7 @@ export const templatesRouter = router({
         const updateData: any = {
           ...(input.data.name && { name: input.data.name }),
           ...(input.data.description !== undefined && { description: input.data.description }),
-          ...(input.data.priority && { priority: formatEnumForDb(input.data.priority) }),
+          ...(input.data.priority && { priority: input.data.priority }),
           ...(input.data.tags && { tags: input.data.tags }),
           ...(input.data.estimatedHours !== undefined && { estimatedHours: input.data.estimatedHours }),
           ...(input.data.isPublic !== undefined && { isPublic: input.data.isPublic }),

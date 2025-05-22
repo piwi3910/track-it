@@ -37,12 +37,11 @@ export function SettingsPage() {
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [defaultView, setDefaultView] = useState<string>('dashboard');
   
-  // Handle avatar update using the existing API pattern
+  // Handle avatar update using the correct API pattern
   const handleAvatarChange = async (avatarUrl: string | null) => {
     try {
-      // Use the existing API client's updateProfile method
       const { data, error } = await api.auth.updateProfile({ 
-        avatarUrl: avatarUrl || undefined // Convert null to undefined for the existing endpoint
+        avatarUrl: avatarUrl
       });
       
       if (error) {
@@ -50,11 +49,9 @@ export function SettingsPage() {
       }
       
       // Trigger a refetch of user data to update the UI
-      // This should be handled by the AppContext, but we might need to trigger it manually
-      window.location.reload(); // Simple approach for now - could be improved with proper state management
+      window.location.reload();
       
     } catch (error: any) {
-      // Re-throw the error so the component can handle it
       throw new Error(error.message || 'Failed to update avatar');
     }
   };

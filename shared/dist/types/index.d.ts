@@ -1,6 +1,7 @@
 /**
  * Shared types between frontend and backend
  */
+export * from './errors';
 export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'in_review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type UserRole = 'admin' | 'member' | 'guest';

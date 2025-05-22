@@ -105,11 +105,11 @@ export function handleError(error: unknown): never {
   // Type guard for AppError
   const isAppError = (err: any): err is AppError => {
     return (
-      err && 
-      typeof err === 'object' && 
-      err.name === 'AppError' && 
-      err.details && 
-      typeof err.details === 'object' && 
+      err &&
+      typeof err === 'object' &&
+      err.name === 'AppError' &&
+      err.details &&
+      typeof err.details === 'object' &&
       'code' in err.details
     );
   };
@@ -138,23 +138,23 @@ export function handleError(error: unknown): never {
     throw error;
   } else if (error instanceof Error) {
     // For standard JS errors, convert to TRPCError
-    if (error.message.includes('not found') || error.message.includes('does not exist')) {
+    if (error.message.toLowerCase().includes('not found') || error.message.toLowerCase().includes('does not exist')) {
       throw new TRPCError({
         code: 'NOT_FOUND',
         message: error.message,
         cause: error
       });
-    } else if (error.message.includes('permission') || 
-               error.message.includes('not allowed') || 
-               error.message.includes('forbidden')) {
+    } else if (error.message.toLowerCase().includes('permission denied') ||
+               error.message.toLowerCase().includes('not allowed') ||
+               error.message.toLowerCase().includes('forbidden')) {
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: error.message,
         cause: error
       });
-    } else if (error.message.includes('unauthorized') || 
-               error.message.includes('unauthenticated') || 
-               error.message.includes('authentication')) {
+    } else if (error.message.toLowerCase().includes('unauthorized') ||
+               error.message.toLowerCase().includes('unauthenticated') ||
+               error.message.toLowerCase().includes('authentication required')) {
       throw new TRPCError({
         code: 'UNAUTHORIZED',
         message: error.message,
@@ -170,8 +170,8 @@ export function handleError(error: unknown): never {
     }
   } else {
     // Handle non-Error objects (strings, numbers, etc.)
-    const message = typeof error === 'string' 
-      ? error 
+    const message = typeof error === 'string'
+      ? error
       : 'An unknown error occurred';
       
     throw new TRPCError({
@@ -266,56 +266,6 @@ export function createValidationError(message: string, field?: string): AppError
   });
 }
 
-/**
- * Creates a standardized error response format that complies with API specification
- * To be used for all error responses across the application
- */
-export function formatErrorResponse(error: AppError | Error | unknown): { 
-  message: string; 
-  code: string;
-} {
-  // For AppError, we can directly access the code and message
-  if (error instanceof AppError) {
-    return {
-      message: error.message,
-      code: error.details.code
-    };
-  }
-  
-  // For standard Error, we need to determine the appropriate code
-  if (error instanceof Error) {
-    let code = ErrorCode.UNKNOWN_ERROR;
-    
-    if (error.message.includes('not found') || error.message.includes('does not exist')) {
-      code = ErrorCode.NOT_FOUND;
-    } else if (error.message.includes('permission') || 
-               error.message.includes('not allowed') || 
-               error.message.includes('forbidden')) {
-      code = ErrorCode.FORBIDDEN;
-    } else if (error.message.includes('unauthorized') || 
-               error.message.includes('unauthenticated') || 
-               error.message.includes('authentication')) {
-      code = ErrorCode.UNAUTHORIZED;
-    } else if (error.message.includes('validation') || 
-               error.message.includes('invalid') || 
-               error.message.includes('required')) {
-      code = ErrorCode.VALIDATION_ERROR;
-    } else {
-      code = ErrorCode.INTERNAL_SERVER_ERROR;
-    }
-    
-    return {
-      message: error.message,
-      code
-    };
-  }
-  
-  // For other types, use a generic error
-  return {
-    message: typeof error === 'string' ? error : 'An unknown error occurred',
-    code: ErrorCode.UNKNOWN_ERROR
-  };
-}
 
 /**
  * Create a standardized AppError for unauthorized access

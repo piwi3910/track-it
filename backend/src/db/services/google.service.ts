@@ -75,7 +75,7 @@ export async function getCalendarEvents(userId: string) {
       taskId: event.taskId || undefined
     }));
   } catch (error) {
-    if (error.name === 'AppError') {
+    if (error instanceof Error && error.name === 'AppError') {
       throw error;
     }
     throw createExternalServiceError('Google Calendar', `Failed to get calendar events for user with ID ${userId}`, { error });
@@ -123,7 +123,7 @@ export async function createCalendarEvent(userId: string, eventData: any) {
       meetingLink: newEvent.meetingLink
     };
   } catch (error) {
-    if (error.name === 'AppError') {
+    if (error instanceof Error && error.name === 'AppError') {
       throw error;
     }
     throw createExternalServiceError('Google Calendar', `Failed to create calendar event for user with ID ${userId}`, { error });
@@ -185,7 +185,7 @@ export async function updateCalendarEvent(userId: string, eventId: string, event
       meetingLink: updatedEvent.meetingLink
     };
   } catch (error) {
-    if (error.name === 'AppError') {
+    if (error instanceof Error && error.name === 'AppError') {
       throw error;
     }
     throw createExternalServiceError('Google Calendar', `Failed to update calendar event with ID ${eventId}`, { error });
@@ -229,7 +229,7 @@ export async function deleteCalendarEvent(userId: string, eventId: string) {
     
     return { id: eventId, deleted: true };
   } catch (error) {
-    if (error.name === 'AppError') {
+    if (error instanceof Error && error.name === 'AppError') {
       throw error;
     }
     throw createExternalServiceError('Google Calendar', `Failed to delete calendar event with ID ${eventId}`, { error });
@@ -266,7 +266,7 @@ export async function syncCalendar(userId: string) {
       deleted: 0
     };
   } catch (error) {
-    if (error.name === 'AppError') {
+    if (error instanceof Error && error.name === 'AppError') {
       throw error;
     }
     throw createExternalServiceError('Google Calendar', `Failed to sync calendar for user with ID ${userId}`, { error });
@@ -326,7 +326,7 @@ export async function importGoogleTaskAsTask(userId: string, googleTaskId: strin
       }
     };
   } catch (error) {
-    if (error.name === 'AppError') {
+    if (error instanceof Error && error.name === 'AppError') {
       throw error;
     }
     throw createExternalServiceError('Google Tasks', `Failed to import Google Task with ID ${googleTaskId}`, { error });

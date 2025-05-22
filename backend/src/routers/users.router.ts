@@ -361,7 +361,7 @@ export const usersRouter = router({
   updateProfile: protectedProcedure
     .input(z.object({
       name: z.string().min(2).optional(),
-      avatarUrl: z.string().optional(), // Allow any string (URL or base64 data URL)
+      avatarUrl: z.string().nullable().optional(), // Allow any string (URL or base64 data URL) or null for deletion
       preferences: z.object({
         theme: z.enum(['light', 'dark', 'auto']).optional(),
         defaultView: z.enum(['dashboard', 'kanban', 'calendar', 'backlog']).optional(),

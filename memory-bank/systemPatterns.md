@@ -33,9 +33,14 @@ Track-It is designed as a client-server application.
 - **Component-Based Architecture:** Core to React, breaking down the UI into reusable components.
 - **Feature-Based Directory Structure:** As outlined in `CLAUDE.md` (`/src/features`, `/src/components`, etc.) to organize code by functionality.
 - **Hooks:** Custom React hooks (`/src/hooks`) to encapsulate and reuse stateful logic.
-- **Context API:** (`/src/context`) For managing global concerns like theming or authentication state if Zustand isn't sufficient for all cases.
-- **Provider Pattern:** Used with Mantine UI (ThemeProvider) and potentially for other global contexts.
-- **Container/Presentational Components (Implicit):** Though not strictly enforced, features and pages might act as containers, while components in `/src/components` are more presentational.
+- **Context API:** (`/src/context`) For managing global concerns like theming or authentication state alongside Zustand for more complex state management.
+- **Provider Pattern:** Implemented with multiple providers (ThemeProvider, ApiProvider, AuthProvider, AppProvider, NotificationProvider, GoogleProvider) to provide global functionality and state.
+- **Container/Presentational Components:** Pages act as containers, while components in `/src/components` are more presentational and reusable.
+- **Compound Components:** Complex UI elements like TaskModal use compound component patterns to organize related functionality.
+- **Render Props & Conditional Rendering:** Used extensively for dynamic UI based on state (e.g., task status, authentication state).
+- **Custom Hooks for API Integration:** Using hooks to encapsulate API calls and data fetching logic.
+- **Protected Routes Pattern:** Using higher-order components to protect routes that require authentication.
+- **Global Error Handling:** Implementing error boundaries and global error handlers for consistent error management.
 
 **Backend (Planned):**
 - **Service Layer:** (Anticipated) To separate business logic from API route handlers.
@@ -44,23 +49,26 @@ Track-It is designed as a client-server application.
 ## 4. Component Relationships & Critical Implementation Paths
 
 **Frontend:**
-- `main.tsx` is the entry point, rendering the root `App.tsx` component.
-- `App.tsx` likely sets up routing (React Router) and global providers (Mantine, Zustand, TanStack Query).
-- `AppLayout.tsx` will define the main structure of the application (e.g., header, sidebar, content area).
-- Page components (`/src/pages`) are rendered by the router and compose various feature components (`/src/features`) and shared components (`/src/components`).
-- Feature components encapsulate specific functionalities (e.g., `KanbanBoard.tsx`, `TaskForm.tsx`).
-- Data fetching logic will primarily reside within feature components or custom hooks using TanStack Query.
-- State management with Zustand will provide global state accessible by any component.
+- `main.tsx` is the entry point, rendering the root `App.tsx` component with all necessary providers.
+- `App.tsx` sets up routing (React Router) with protected and public routes.
+- `AppLayout.tsx` defines the main structure of the application with header, sidebar, and content area.
+- Page components (`/src/pages`) are rendered by the router and compose various feature components and shared components.
+- Components in `/src/components` provide reusable UI elements and functionality.
+- Data fetching logic resides within custom hooks and API client using TanStack Query.
+- State management with Zustand provides global state through multiple specialized stores.
+- Context providers wrap the application to provide global functionality and state.
 
 **Critical Paths:**
-1.  **Task Creation/Editing Flow:** Involves forms, state management, and API interaction (initially mock).
-2.  **Data Display in Different Views:** Rendering tasks correctly in the Dashboard, Kanban, Calendar, and Backlog views.
-3.  **State Synchronization:** Ensuring data consistency across different views and components.
-4.  **API Integration (Future):** Transitioning from mock APIs to a live tRPC backend.
+1.  **Authentication Flow:** Login, session management, and protected routes.
+2.  **Task Management Lifecycle:** Creation, editing, status updates, and deletion of tasks.
+3.  **Data Display in Different Views:** Rendering tasks correctly in the Dashboard, Kanban, Calendar, and Backlog views.
+4.  **State Synchronization:** Ensuring data consistency across different views and components.
+5.  **Error Handling:** Graceful handling of API errors, authentication issues, and unexpected exceptions.
+6.  **API Integration (Future):** Transitioning from mock APIs to a live tRPC backend.
 
 ## 5. Data Flow
 
-**Frontend (Current & Planned):**
+**Frontend (Current & Implemented):**
 1.  **User Interaction:** User interacts with UI elements (e.g., clicks a button, fills a form).
 2.  **Component Handler:** Event handlers in React components trigger actions.
 3.  **State Update (Zustand/Local State):** Local component state or global Zustand store is updated.
@@ -68,6 +76,8 @@ Track-It is designed as a client-server application.
     *   For reads: TanStack Query fetches data (from mock API or future tRPC endpoint), caches it, and provides it to components.
     *   For writes: TanStack Query sends mutations (to mock API or future tRPC endpoint) and handles cache invalidation/updates.
 5.  **UI Re-render:** React re-renders components based on state and prop changes.
+6.  **Error Handling:** Global error handlers catch and process any errors that occur during the flow.
+7.  **Notification:** User is notified of the result of their action through the notification system.
 
 **Backend (Planned):**
 1.  **API Request (tRPC):** Backend receives a request from the frontend.

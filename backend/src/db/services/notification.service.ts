@@ -1,10 +1,10 @@
 /**
  * Notification service for database operations on Notification model
  */
-import { Prisma } from '../../generated/prisma';
+import { Prisma, NotificationType as PrismaNotificationType } from '../../generated/prisma';
 import prisma from '../client';
 import { createDatabaseError } from '../../utils/error-handler';
-import { NOTIFICATION_TYPE, formatEnumForDb } from '../../utils/constants';
+import { NOTIFICATION_TYPE } from '../../utils/constants';
 
 /**
  * Get all notifications for a user
@@ -108,7 +108,7 @@ export async function createTaskAssignedNotification(taskId: string, taskTitle: 
   try {
     return await prisma.notification.create({
       data: {
-        type: formatEnumForDb(NOTIFICATION_TYPE.TASK_ASSIGNED),
+        type: PrismaNotificationType.TASK_ASSIGNED,
         title: 'New Task Assigned',
         message: `You have been assigned to "${taskTitle}"`,
         resourceType: 'task',
@@ -131,7 +131,7 @@ export async function createCommentMentionNotification(commentId: string, taskId
   try {
     return await prisma.notification.create({
       data: {
-        type: formatEnumForDb(NOTIFICATION_TYPE.MENTION),
+        type: PrismaNotificationType.MENTION,
         title: 'Mentioned in Comment',
         message: `${authorName} mentioned you in a comment on "${taskTitle}"`,
         resourceType: 'comment',
@@ -154,7 +154,7 @@ export async function createTaskUpdatedNotification(taskId: string, taskTitle: s
   try {
     return await prisma.notification.create({
       data: {
-        type: formatEnumForDb(NOTIFICATION_TYPE.TASK_UPDATED),
+        type: PrismaNotificationType.TASK_UPDATED,
         title: 'Task Updated',
         message: `${updaterName} updated "${taskTitle}"`,
         resourceType: 'task',
@@ -177,7 +177,7 @@ export async function createDueDateReminderNotification(taskId: string, taskTitl
   try {
     return await prisma.notification.create({
       data: {
-        type: formatEnumForDb(NOTIFICATION_TYPE.DUE_DATE_REMINDER),
+        type: PrismaNotificationType.DUE_DATE_REMINDER,
         title: 'Task Due Soon',
         message: `Task "${taskTitle}" is due in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`,
         resourceType: 'task',

@@ -1,39 +1,7 @@
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '../src/generated/prisma';
+import { PrismaClient, UserRole, TaskStatus, TaskPriority, NotificationType } from '../src/generated/prisma';
 
 const prisma = new PrismaClient();
-
-// Define enum values directly since they aren't exported properly
-const UserRole = {
-  ADMIN: 'ADMIN',
-  MEMBER: 'MEMBER',
-  GUEST: 'GUEST'
-};
-
-const TaskStatus = {
-  BACKLOG: 'BACKLOG',
-  TODO: 'TODO',
-  IN_PROGRESS: 'IN_PROGRESS',
-  REVIEW: 'REVIEW',
-  DONE: 'DONE',
-  ARCHIVED: 'ARCHIVED'
-};
-
-const TaskPriority = {
-  LOW: 'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH',
-  URGENT: 'URGENT'
-};
-
-const NotificationType = {
-  TASK_ASSIGNED: 'TASK_ASSIGNED',
-  TASK_UPDATED: 'TASK_UPDATED',
-  COMMENT_ADDED: 'COMMENT_ADDED',
-  DUE_DATE_REMINDER: 'DUE_DATE_REMINDER',
-  MENTION: 'MENTION',
-  SYSTEM: 'SYSTEM'
-};
 
 async function main() {
   console.log('Starting seed...');

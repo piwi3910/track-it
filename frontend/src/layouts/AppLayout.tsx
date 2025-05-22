@@ -22,7 +22,6 @@ import {
   IconSettings,
   IconMoon,
   IconSun,
-  IconUser,
   IconLogout,
   IconTemplate
 } from '@tabler/icons-react';
@@ -107,7 +106,6 @@ export function AppLayout() {
               </Menu.Target>
 
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconUser size={14} />}>Profile</Menu.Item>
                 <Menu.Item leftSection={<IconSettings size={14} />} component={NavLink} to="/settings">Settings</Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

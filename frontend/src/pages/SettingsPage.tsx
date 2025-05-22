@@ -29,20 +29,32 @@ import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
 
 export function SettingsPage() {
-  const { currentUser } = useApp();
+  const { currentUser, userLoading } = useApp();
   const { isDark, toggleColorScheme } = useTheme();
   const [activeTab, setActiveTab] = useState<string | null>('account');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [defaultView, setDefaultView] = useState<string>('dashboard');
   
-  // Mock profile data
-  const user = currentUser || {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatarUrl: 'https://i.pravatar.cc/150?u=john-doe',
-    role: 'admin'
-  };
+  // Show loading state if user data is not available
+  if (userLoading) {
+    return (
+      <Container size="xl">
+        <Title mb="xl">Settings</Title>
+        <Text>Loading user settings...</Text>
+      </Container>
+    );
+  }
+
+  // Show error state if no user data is available after loading
+  if (!currentUser) {
+    return (
+      <Container size="xl">
+        <Title mb="xl">Settings</Title>
+        <Text c="red">Unable to load user settings. Please try refreshing the page.</Text>
+      </Container>
+    );
+  }
 
   return (
     <Container size="xl">
@@ -72,22 +84,22 @@ export function SettingsPage() {
         {activeTab === 'account' && (
           <Paper withBorder p="xl">
             <Group align="flex-start" gap="xl">
-              <Avatar src={user.avatarUrl} size="xl" radius="xl" />
+              <Avatar src={currentUser.avatarUrl} size="xl" radius="xl" />
               
               <div style={{ flex: 1 }}>
                 <Stack>
                   <TextInput
                     label="Name"
-                    defaultValue={user.name}
+                    defaultValue={currentUser.name}
                   />
                   
                   <TextInput
                     label="Email"
-                    defaultValue={user.email}
+                    defaultValue={currentUser.email}
                   />
                   
                   <Group mt="md">
-                    <Badge color="blue">{user.role}</Badge>
+                    <Badge color="blue">{currentUser.role?.toUpperCase() || 'MEMBER'}</Badge>
                   </Group>
                   
                   <Divider my="md" />

@@ -3,12 +3,10 @@ import {
   AppShell,
   Burger,
   Group,
-  Title,
   UnstyledButton,
   Text,
   ThemeIcon,
   Stack,
-  Avatar,
   Menu,
   ActionIcon,
   rem
@@ -28,6 +26,7 @@ import {
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { NotificationMenu } from '@/components/NotificationMenu';
 import { ApiStatus } from '@/components/ApiStatus';
+import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useStore } from '@/hooks/useStore';
 // Optional: Import from your context if you've implemented it
 // import { useAppContext } from '@/context/useAppContext';
@@ -95,7 +94,12 @@ export function AppLayout() {
               <Menu.Target>
                 <UnstyledButton>
                   <Group gap="xs">
-                    <Avatar src={user.avatarUrl} radius="xl" size="sm" />
+                    <InitialsAvatar 
+                      name={user.name} 
+                      src={user.avatarUrl} 
+                      radius="xl" 
+                      size="sm" 
+                    />
                     <div style={{ flex: 1 }}>
                       <Text size="sm" fw={500} lineClamp={1}>
                         {user.name}

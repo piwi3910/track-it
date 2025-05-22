@@ -9,7 +9,6 @@ import {
   Divider,
   Switch,
   Select,
-  Avatar,
   TextInput,
   Button,
   Accordion,
@@ -25,6 +24,7 @@ import {
   IconMailFilled,
 } from '@tabler/icons-react';
 import { GoogleIntegrationPanel } from './settings/GoogleIntegrationPanel';
+import { ProfilePictureUpload } from '@/components/ProfilePictureUpload';
 import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -35,6 +35,22 @@ export function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [defaultView, setDefaultView] = useState<string>('dashboard');
+  
+  // Handle avatar update
+  const handleAvatarChange = async (avatarUrl: string | null) => {
+    // TODO: Implement actual API call to update user avatar
+    // For now, we'll just simulate the update
+    console.log('Avatar update requested:', avatarUrl);
+    
+    // In a real implementation, you would call something like:
+    // await api.users.updateProfile({ avatarUrl });
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // You would then refresh the user data or update it in context
+    throw new Error('Avatar update not implemented yet - backend API needed');
+  };
   
   // Show loading state if user data is not available
   if (userLoading) {
@@ -84,7 +100,12 @@ export function SettingsPage() {
         {activeTab === 'account' && (
           <Paper withBorder p="xl">
             <Group align="flex-start" gap="xl">
-              <Avatar src={currentUser.avatarUrl} size="xl" radius="xl" />
+              <ProfilePictureUpload
+                currentAvatarUrl={currentUser.avatarUrl}
+                userName={currentUser.name}
+                onAvatarChange={handleAvatarChange}
+                size="xl"
+              />
               
               <div style={{ flex: 1 }}>
                 <Stack>

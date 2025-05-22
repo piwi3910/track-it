@@ -229,7 +229,7 @@ export async function updateUserRole(id: string, role: string) {
     return await prisma.user.update({
       where: { id },
       data: {
-        role: role.toUpperCase() as Prisma.Enumerable<Prisma.UserRoleFieldUpdateOperationsInput>
+        role: role.toUpperCase() as Prisma.EnumUserRoleFieldUpdateOperationsInput
       },
       select: {
         id: true,
@@ -312,7 +312,7 @@ export async function disconnectGoogleAccount(id: string) {
         googleId: null,
         googleToken: null,
         googleRefreshToken: null,
-        googleProfile: null
+        googleProfile: Prisma.DbNull
       },
       select: {
         id: true,
@@ -356,5 +356,62 @@ export async function updateUserPreferences(id: string, preferences: any) {
     });
   } catch (error) {
     throw createDatabaseError(`Failed to update preferences for user with ID ${id}`, { error });
+  }
+}
+
+/**
+ * Update user avatar
+ */
+export async function updateUserAvatar(id: string, avatarUrl: string | null) {
+  try {
+    // Validate base64 data URL if provided
+    if (avatarUrl) {
+      // Check if it's a data URL (base64 encoded image)
+      if (avatarUrl.startsWith('data:image/')) {
+        // Validate it's a supported image format
+        const supportedFormats = ['data:image/jpeg;base64,', 'data:image/png;base64,', 'data:image/gif;base64,'];
+        const isValidFormat = supportedFormats.some(format => avatarUrl.startsWith(format));
+        
+        if (!isValidFormat) {
+          throw new Error('Unsupported image format. Please use JPEG, PNG, or GIF.');
+        }
+
+        // Check approximate file size (base64 is ~4/3 of original size)
+        const base64Data = avatarUrl.split(',')[1];
+        const approximateSize = (base64Data.length * 3) / 4;
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        
+        if (approximateSize > maxSize) {
+          throw new Error('Image size too large. Please use an image smaller than 5MB.');
+        }
+      }
+      // If it's not a data URL, assume it's a regular URL (for external avatars)
+    }
+
+    return await prisma.user.update({
+      where: { id },
+      data: {
+        avatarUrl
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatarUrl: true,
+        lastLogin: true,
+        createdAt: true,
+        updatedAt: true,
+        preferences: true,
+        googleId: true
+      }
+    });
+  } catch (error: any) {
+    // Handle specific validation errors
+    if (error.message?.includes('Unsupported image format') || error.message?.includes('Image size too large')) {
+      throw error; // Re-throw validation errors as-is
+    }
+    
+    throw createDatabaseError(`Failed to update avatar for user with ID ${id}`, { error });
   }
 }

@@ -123,12 +123,12 @@ export const usersRouter = router({
         
         // Generate JWT token
         const token = jwt.sign(
-          { 
+          {
             id: user.id,
             role: formatEnumForApi(user.role)
           },
-          config.jwtSecret,
-          { expiresIn: config.jwtExpiresIn }
+          config.jwtSecret as string, // Ensure jwtSecret is a string
+          { expiresIn: String(config.jwtExpiresIn) } // Ensure expiresIn is a string or number
         );
         
         // Log successful login
@@ -173,9 +173,9 @@ export const usersRouter = router({
         if (user) {
           // Update Google information
           await userService.connectGoogleAccount(
-            user.id, 
-            payload.sub, 
-            input.idToken, 
+            user.id,
+            payload.sub,
+            input.idToken,
             undefined, // Refresh token would be handled in a full implementation
             payload // Store the full profile
           );
@@ -188,21 +188,24 @@ export const usersRouter = router({
             name: payload.name,
             email: payload.email,
             avatarUrl: payload.picture,
-            role: formatEnumForDb(USER_ROLE.MEMBER),
+            role: USER_ROLE.MEMBER, // Use USER_ROLE directly
             googleId: payload.sub,
             googleToken: input.idToken,
-            googleProfile: payload
+            googleProfile: payload,
+            preferences: { theme: 'light', defaultView: 'dashboard' }, // Add missing properties
+            googleRefreshToken: null, // Add missing properties
+            lastLogin: null, // Add missing properties
           });
         }
         
         // Generate JWT token
         const token = jwt.sign(
-          { 
+          {
             id: user.id,
             role: formatEnumForApi(user.role)
           },
-          config.jwtSecret,
-          { expiresIn: config.jwtExpiresIn }
+          config.jwtSecret as string, // Ensure jwtSecret is a string
+          { expiresIn: String(config.jwtExpiresIn) } // Ensure expiresIn is a string or number
         );
         
         return {
@@ -413,6 +416,56 @@ export const usersRouter = router({
           googleEmail: normalized.googleId ? normalized.email : null
         };
       } catch (error) {
+        return handleError(error);
+      }
+    })),
+
+  // Update user avatar with base64 data support
+  updateAvatar: protectedProcedure
+    .input(z.object({
+      avatarUrl: z.string().nullable() // Can be base64 data URL, regular URL, or null to remove
+    }))
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      try {
+        const user = await userService.getUserById(ctx.user.id);
+        
+        if (!user) {
+          throw createNotFoundError('User', ctx.user.id);
+        }
+        
+        // Update avatar using the specialized service function
+        const updatedUser = await userService.updateUserAvatar(ctx.user.id, input.avatarUrl);
+        
+        const normalized = normalizeUserData(updatedUser);
+        
+        // Return exact structure as specified in API specification
+        return {
+          id: normalized.id,
+          name: normalized.name,
+          email: normalized.email,
+          role: normalized.role,
+          avatarUrl: normalized.avatarUrl,
+          preferences: {
+            theme: normalized.preferences?.theme || 'light',
+            defaultView: normalized.preferences?.defaultView || 'dashboard',
+            notifications: {
+              email: normalized.preferences?.notifications?.email ?? true,
+              inApp: normalized.preferences?.notifications?.inApp ?? true
+            }
+          },
+          googleConnected: !!normalized.googleId,
+          googleEmail: normalized.googleId ? normalized.email : null
+        };
+      } catch (error: any) {
+        // Handle validation errors specifically
+        if (error.message?.includes('Unsupported image format') || 
+            error.message?.includes('Image size too large')) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message
+          });
+        }
+        
         return handleError(error);
       }
     })),

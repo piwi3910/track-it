@@ -27,6 +27,7 @@ import { GoogleIntegrationPanel } from './settings/GoogleIntegrationPanel';
 import { ProfilePictureUpload } from '@/components/ProfilePictureUpload';
 import { useApp } from '@/hooks/useApp';
 import { useTheme } from '@/context/ThemeContext';
+import { trpc } from '@/utils/trpc';
 
 export function SettingsPage() {
   const { currentUser, userLoading } = useApp();
@@ -36,20 +37,22 @@ export function SettingsPage() {
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [defaultView, setDefaultView] = useState<string>('dashboard');
   
+  // Get the update avatar mutation
+  const updateAvatarMutation = trpc.users.updateAvatar.useMutation();
+  
   // Handle avatar update
   const handleAvatarChange = async (avatarUrl: string | null) => {
-    // TODO: Implement actual API call to update user avatar
-    // For now, we'll just simulate the update
-    console.log('Avatar update requested:', avatarUrl);
-    
-    // In a real implementation, you would call something like:
-    // await api.users.updateProfile({ avatarUrl });
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // You would then refresh the user data or update it in context
-    throw new Error('Avatar update not implemented yet - backend API needed');
+    try {
+      await updateAvatarMutation.mutateAsync({ avatarUrl });
+      
+      // Trigger a refetch of user data to update the UI
+      // This should be handled by the AppContext, but we might need to trigger it manually
+      window.location.reload(); // Simple approach for now - could be improved with proper state management
+      
+    } catch (error: any) {
+      // Re-throw the error so the component can handle it
+      throw new Error(error.message || 'Failed to update avatar');
+    }
   };
   
   // Show loading state if user data is not available

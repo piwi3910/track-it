@@ -255,6 +255,25 @@ export async function verifyPassword(providedPassword: string, passwordHash: str
 }
 
 /**
+ * Update user password
+ */
+export async function updateUserPassword(id: string, newPassword: string) {
+  try {
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+    
+    return await prisma.user.update({
+      where: { id },
+      data: {
+        passwordHash
+      }
+    });
+  } catch (error) {
+    throw createDatabaseError(`Failed to update password for user with ID ${id}`, { error });
+  }
+}
+
+/**
  * Update user login timestamp
  */
 export async function updateLoginTimestamp(id: string) {

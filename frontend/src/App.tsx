@@ -6,6 +6,7 @@ import { CalendarPage } from '@/pages/CalendarPage';
 import { BacklogPage } from '@/pages/BacklogPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
+import { AdminPage } from '@/pages/AdminPage';
 import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
@@ -43,6 +44,7 @@ function App() {
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="backlog" element={<BacklogPage />} />
           <Route path="templates" element={<TemplatesPage />} />
+          <Route path="admin" element={<AdminPage />} />
           <Route path="settings" element={<SettingsPage />} />
           {/* Catch all for unknown routes */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -9,6 +9,7 @@ import {
   Stack,
   Menu,
   ActionIcon,
+  Divider,
   rem
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -21,29 +22,31 @@ import {
   IconMoon,
   IconSun,
   IconLogout,
-  IconTemplate
+  IconTemplate,
+  IconUsers
 } from '@tabler/icons-react';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { NotificationMenu } from '@/components/NotificationMenu';
 import { ApiStatus } from '@/components/ApiStatus';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useStore } from '@/hooks/useStore';
-// Optional: Import from your context if you've implemented it
-// import { useAppContext } from '@/context/useAppContext';
-
-// Get user from AppContext now instead of mock
-// This will be replaced by the real user data from the context
+import { useApp } from '@/hooks/useApp';
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
   const { theme, auth } = useStore();
+  const { currentUser } = useApp();
 
-  // Fallback user data while loading
-  const user = auth.user || {
+  // Use current user from AppContext, with fallback
+  const user = currentUser || auth.user || {
     name: 'John Doe',
     email: 'john.doe@example.com',
-    avatarUrl: 'https://i.pravatar.cc/150?u=john-doe'
+    avatarUrl: 'https://i.pravatar.cc/150?u=john-doe',
+    role: 'member'
   };
+
+  // Check if user is admin
+  const isAdmin = user.role === 'admin';
 
   // Navigation items
   const navItems = [
@@ -53,6 +56,11 @@ export function AppLayout() {
     { icon: <IconList size={16} />, label: 'Backlog', to: '/backlog' },
     { icon: <IconTemplate size={16} />, label: 'Templates', to: '/templates', disabled: true },
   ];
+
+  // Admin navigation items (only visible to admin users)
+  const adminNavItems = isAdmin ? [
+    { icon: <IconUsers size={16} />, label: 'Admin', to: '/admin' },
+  ] : [];
 
   return (
     <AppShell
@@ -168,6 +176,33 @@ export function AppLayout() {
                 </NavLink>
               )
             ))}
+
+            {/* Admin section - only visible to admin users */}
+            {isAdmin && adminNavItems.length > 0 && (
+              <>
+                <Divider my="sm" />
+                {adminNavItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => isActive ? 'active-nav-link' : 'nav-link'}
+                    style={{
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <UnstyledButton className="nav-item-button">
+                      <Group gap="xs">
+                        <ThemeIcon variant="light" size="sm" className="nav-icon" color="orange">
+                          {item.icon}
+                        </ThemeIcon>
+                        <Text className="nav-text" c="orange.6">{item.label}</Text>
+                      </Group>
+                    </UnstyledButton>
+                  </NavLink>
+                ))}
+              </>
+            )}
           </Stack>
 
           {/* Footer navigation items */}

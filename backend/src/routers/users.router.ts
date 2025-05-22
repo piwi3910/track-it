@@ -550,6 +550,146 @@ export const usersRouter = router({
       }
     })),
 
+  // Admin: Create user
+  createUser: adminProcedure
+    .input(z.object({
+      name: z.string().min(2),
+      email: z.string().email(),
+      password: z.string().min(6),
+      role: z.enum(Object.values(USER_ROLE) as [string, ...string[]]).default('MEMBER')
+    }))
+    .mutation(({ input }) => safeProcedure(async () => {
+      try {
+        // Check if user already exists
+        const existingUser = await userService.getUserByEmail(input.email);
+        if (existingUser) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'User with this email already exists'
+          });
+        }
+
+        // Create user
+        const userData = {
+          name: input.name,
+          email: input.email,
+          password: input.password,
+          role: input.role
+        };
+
+        const newUser = await userService.createUser(userData);
+        return normalizeUserData(newUser);
+      } catch (error: any) {
+        if (error.message?.includes('already exists')) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+        }
+        return handleError(error);
+      }
+    })),
+
+  // Admin: Update user
+  updateUser: adminProcedure
+    .input(z.object({
+      userId: z.string(),
+      name: z.string().min(2).optional(),
+      email: z.string().email().optional(),
+      role: z.enum(Object.values(USER_ROLE) as [string, ...string[]]).optional()
+    }))
+    .mutation(({ input }) => safeProcedure(async () => {
+      try {
+        const user = await userService.getUserById(input.userId);
+        
+        if (!user) {
+          throw createNotFoundError('User', input.userId);
+        }
+
+        // Check if email is being changed and if it already exists
+        if (input.email && input.email !== user.email) {
+          const existingUser = await userService.getUserByEmail(input.email);
+          if (existingUser) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'User with this email already exists'
+            });
+          }
+        }
+
+        // Prepare update data
+        const updateData: any = {};
+        if (input.name) updateData.name = input.name;
+        if (input.email) updateData.email = input.email;
+        if (input.role) updateData.role = input.role;
+
+        const updatedUser = await userService.updateUser(input.userId, updateData);
+        return normalizeUserData(updatedUser);
+      } catch (error: any) {
+        if (error.message?.includes('already exists')) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+        }
+        return handleError(error);
+      }
+    })),
+
+  // Admin: Delete user
+  deleteUser: adminProcedure
+    .input(z.object({
+      userId: z.string()
+    }))
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
+      try {
+        // Prevent admin from deleting themselves
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'You cannot delete your own account'
+          });
+        }
+
+        const user = await userService.getUserById(input.userId);
+        
+        if (!user) {
+          throw createNotFoundError('User', input.userId);
+        }
+
+        await userService.deleteUser(input.userId);
+        
+        return {
+          id: input.userId,
+          deleted: true
+        };
+      } catch (error: any) {
+        if (error.message?.includes('cannot delete')) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+        }
+        return handleError(error);
+      }
+    })),
+
+  // Admin: Reset user password
+  resetUserPassword: adminProcedure
+    .input(z.object({
+      userId: z.string(),
+      newPassword: z.string().min(6)
+    }))
+    .mutation(({ input }) => safeProcedure(async () => {
+      try {
+        const user = await userService.getUserById(input.userId);
+        
+        if (!user) {
+          throw createNotFoundError('User', input.userId);
+        }
+
+        await userService.updateUserPassword(input.userId, input.newPassword);
+        
+        return {
+          id: input.userId,
+          message: 'Password updated successfully'
+        };
+      } catch (error) {
+        return handleError(error);
+      }
+    })),
+
   // Update Google integration settings
   updateGoogleIntegration: protectedProcedure
     .input(z.object({

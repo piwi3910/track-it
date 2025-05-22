@@ -782,6 +782,64 @@ export type AppRouter = {
         };
       };
     };
+    // Admin endpoints
+    createUser: {
+      _def: {
+        input: [{
+          name: string;
+          email: string;
+          password: string;
+          role?: 'admin' | 'member' | 'guest';
+        }];
+        mutation: () => {
+          id: string;
+          name: string;
+          email: string;
+          role: string;
+          avatarUrl?: string | null;
+        };
+      };
+    };
+    updateUser: {
+      _def: {
+        input: [{
+          userId: string;
+          name?: string;
+          email?: string;
+          role?: 'admin' | 'member' | 'guest';
+        }];
+        mutation: () => {
+          id: string;
+          name: string;
+          email: string;
+          role: string;
+          avatarUrl?: string | null;
+        };
+      };
+    };
+    deleteUser: {
+      _def: {
+        input: [{
+          userId: string;
+        }];
+        mutation: () => {
+          id: string;
+          deleted: boolean;
+        };
+      };
+    };
+    resetUserPassword: {
+      _def: {
+        input: [{
+          userId: string;
+          newPassword: string;
+        }];
+        mutation: () => {
+          id: string;
+          message: string;
+        };
+      };
+    };
   };
   
   // Comments

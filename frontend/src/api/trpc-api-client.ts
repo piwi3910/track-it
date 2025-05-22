@@ -454,6 +454,53 @@ export const notifications = {
 };
 
 /**
+ * User administration service (admin only)
+ */
+export const admin = {
+  // Get all users
+  getAllUsers: async () => {
+    return apiHandler(() => 
+      trpcClient.users.getAllUsers.query()
+    );
+  },
+
+  // Create a new user
+  createUser: async (userData: { name: string; email: string; password: string; role?: 'admin' | 'member' | 'guest' }) => {
+    return apiHandler(() => 
+      trpcClient.users.createUser.mutate(userData)
+    );
+  },
+
+  // Update user
+  updateUser: async (userId: string, userData: { name?: string; email?: string; role?: 'admin' | 'member' | 'guest' }) => {
+    return apiHandler(() => 
+      trpcClient.users.updateUser.mutate({ userId, ...userData })
+    );
+  },
+
+  // Delete user
+  deleteUser: async (userId: string) => {
+    return apiHandler(() => 
+      trpcClient.users.deleteUser.mutate({ userId })
+    );
+  },
+
+  // Reset user password
+  resetUserPassword: async (userId: string, newPassword: string) => {
+    return apiHandler(() => 
+      trpcClient.users.resetUserPassword.mutate({ userId, newPassword })
+    );
+  },
+
+  // Update user role
+  updateUserRole: async (userId: string, role: 'admin' | 'member' | 'guest') => {
+    return apiHandler(() => 
+      trpcClient.users.updateUserRole.mutate({ userId, role })
+    );
+  }
+};
+
+/**
  * Cache administration service (admin only)
  */
 export const cacheAdmin = {

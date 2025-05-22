@@ -47,88 +47,9 @@ import { useTheme } from '@/context/ThemeContext';
 import { useApp } from '@/hooks/useApp';
 import { useGoogle } from '@/context/GoogleContext';
 
-// Generate additional mock data for current month
-const generateCurrentMonthTasks = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-
-  // Generate dates for current month
-  const tasks = [];
-
-  // Weekly team meeting (every Monday)
-  for (let i = 1; i <= 31; i++) {
-    const date = new Date(year, month, i);
-    if (date.getDay() === 1 && date <= today) { // Mondays only and not in the future
-      tasks.push({
-        id: `meeting-${i}`,
-        title: 'Weekly Team Meeting',
-        description: 'Discuss progress and blockers',
-        status: 'todo',
-        priority: 'medium',
-        tags: ['meeting', 'recurring'],
-        dueDate: date.toISOString().split('T')[0],
-        source: 'google'
-      });
-    }
-  }
-
-  // Sprint planning (1st and 15th of month)
-  [1, 15].forEach(day => {
-    const date = new Date(year, month, day);
-    if (date <= today) {
-      tasks.push({
-        id: `sprint-${day}`,
-        title: 'Sprint Planning',
-        description: 'Plan the next two weeks of work',
-        status: 'todo',
-        priority: 'high',
-        tags: ['planning', 'sprint'],
-        dueDate: date.toISOString().split('T')[0],
-        source: 'google'
-      });
-    }
-  });
-
-  // Project deadline
-  const deadlineDate = new Date(year, month, 25);
-  if (deadlineDate > today) {
-    tasks.push({
-      id: 'project-deadline',
-      title: 'Project Deadline',
-      description: 'Final deliverables due',
-      status: 'todo',
-      priority: 'urgent',
-      tags: ['deadline', 'important'],
-      dueDate: deadlineDate.toISOString().split('T')[0]
-    });
-  }
-
-  // Random one-off tasks
-  const randomDays = [3, 8, 12, 17, 22, 28];
-  randomDays.forEach((day, index) => {
-    const date = new Date(year, month, day);
-    if (date.getTime() > today.getTime() - (86400000 * 2) && date.getTime() < today.getTime() + (86400000 * 14)) {
-      tasks.push({
-        id: `task-${index}`,
-        title: [
-          'Client Meeting',
-          'Review Pull Requests',
-          'Update Documentation',
-          'Stakeholder Demo',
-          'Bug Fixing Session',
-          'Deployment Planning'
-        ][index],
-        description: 'Task for ' + date.toLocaleDateString(),
-        status: date < today ? 'done' : 'todo',
-        priority: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)],
-        tags: ['work', index % 2 === 0 ? 'meeting' : 'task'],
-        dueDate: date.toISOString().split('T')[0]
-      });
-    }
-  });
-
-  return tasks;
+// Helper function to get tasks that have due dates for calendar display
+const getTasksWithDueDates = (tasks: Task[]) => {
+  return tasks.filter(task => task.dueDate);
 };
 
 // Map to get tasks by date
@@ -749,7 +670,7 @@ export function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [tasksByDateMap, setTasksByDateMap] = useState<Record<string, Task[]>>({});
 
-  // Combine app tasks, Google calendar events, and generated mock tasks
+  // Combine app tasks and Google calendar events
   useEffect(() => {
     // Create tasks from Google Calendar events
     const calendarTasks: Task[] = calendarEvents.map(event => ({
@@ -764,11 +685,8 @@ export function CalendarPage() {
       createdAt: new Date().toISOString(),
     } as Task));
 
-    // Generate additional mock tasks
-    const generatedTasks = generateCurrentMonthTasks();
-
-    // Combine all task sources
-    const combinedTasks = [...appTasks, ...calendarTasks, ...generatedTasks];
+    // Combine real task sources only (no more mock data)
+    const combinedTasks = [...appTasks, ...calendarTasks];
     setAllTasks(combinedTasks);
     
     // Also create a map of tasks by date for easy access

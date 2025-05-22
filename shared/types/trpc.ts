@@ -783,6 +783,30 @@ export type AppRouter = {
       };
     };
     // Admin endpoints
+    getUserDeletionStats: {
+      _def: {
+        input: [{
+          userId: string;
+        }];
+        query: () => {
+          user: {
+            id: string;
+            name: string;
+            email: string;
+          };
+          stats: {
+            createdTasks: number;
+            assignedTasks: number;
+            comments: number;
+            notifications: number;
+          };
+          consequences: {
+            willDelete: string[];
+            willUpdate: string[];
+          };
+        };
+      };
+    };
     createUser: {
       _def: {
         input: [{

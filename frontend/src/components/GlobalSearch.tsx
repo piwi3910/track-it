@@ -84,22 +84,7 @@ export function GlobalSearch() {
 
     setLoading(true);
     try {
-      // Check if the query might be a direct task ID search (if it starts with "task-" or contains a specific format)
-      const isIdSearch = /^\d+$/.test(searchQuery);
-
-      if (isIdSearch) {
-        // Try to find by task number first in local cache
-        const taskNumber = parseInt(searchQuery);
-        const localMatch = tasks.find(task => task.taskNumber === taskNumber);
-        
-        if (localMatch) {
-          setResults([localMatch]);
-          return;
-        }
-        // If not found in local cache, fall through to regular search
-      }
-
-      // Fall back to API search
+      // Use API search for all queries - it handles task ID, title, description, and tags
       const searchResults = await searchTasks(searchQuery);
       setResults(Array.isArray(searchResults) ? searchResults : []);
     } catch (error) {
@@ -108,7 +93,7 @@ export function GlobalSearch() {
     } finally {
       setLoading(false);
     }
-  }, [searchTasks, getTaskById, tasks]);
+  }, [searchTasks]);
   
   // Use Mantine's built-in debounce hook
   const [debouncedQuery] = useDebouncedValue(query, 300);
@@ -160,7 +145,7 @@ export function GlobalSearch() {
       <Popover.Target>
         <TextInput
           ref={inputRef}
-          placeholder="Search tasks or enter task ID... (Ctrl+K)"
+          placeholder="Search tasks by ID, title, or tags... (Ctrl+K)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={open}

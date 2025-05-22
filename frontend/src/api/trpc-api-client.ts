@@ -10,8 +10,7 @@
  * This file may have type issues, but it's functionally correct.
  * We're handling errors properly in the apiHandler function.
  */
-import { trpcClient, setAuthToken, clearAuthToken } from '@/utils/trpc';
-import { apiHandler } from '@/utils/trpc-client';
+import { trpcClient, setAuthToken, clearAuthToken, apiHandler } from '@/utils/trpc';
 import type { RouterInputs } from '@track-it/shared';
 
 /**
@@ -104,21 +103,21 @@ export const tasks = {
   // Get all tasks
   getAll: async () => {
     return apiHandler(() => 
-      trpcClient.cachedTasks.getAll.query()
+      trpcClient.tasks.getAll.query()
     );
   },
   
   // Get task by ID
   getById: async (id: string) => {
     return apiHandler(() => 
-      trpcClient.cachedTasks.getById.query({ id })
+      trpcClient.tasks.getById.query({ id })
     );
   },
   
   // Get tasks by status
   getByStatus: async (status: string) => {
     return apiHandler(() =>
-      trpcClient.cachedTasks.getByStatus.query({ status })
+      trpcClient.tasks.getByStatus.query({ status })
     );
   },
   
@@ -146,35 +145,35 @@ export const tasks = {
   // Search tasks
   search: async (query: string) => {
     return apiHandler(() => 
-      trpcClient.cachedTasks.search.query({ query })
+      trpcClient.tasks.search.query({ query })
     );
   },
   
   // Update task status
   updateStatus: async (id: string, status: string) => {
     return apiHandler(() =>
-      trpcClient.tasks.updateStatus.mutate({ id, status })
+      trpcClient.tasks.update.mutate({ id, data: { status } })
     );
   },
   
   // Update task assignee
   updateAssignee: async (id: string, assigneeId: string | null) => {
     return apiHandler(() =>
-      trpcClient.tasks.updateAssignee.mutate({ id, assigneeId })
+      trpcClient.tasks.update.mutate({ id, data: { assigneeId } })
     );
   },
   
   // Start time tracking
   startTimeTracking: async (id: string) => {
     return apiHandler(() =>
-      trpcClient.tasks.startTimeTracking.mutate({ id })
+      trpcClient.tasks.update.mutate({ id, data: { timeTrackingActive: true } })
     );
   },
   
   // Stop time tracking
   stopTimeTracking: async (id: string) => {
     return apiHandler(() =>
-      trpcClient.tasks.stopTimeTracking.mutate({ id })
+      trpcClient.tasks.update.mutate({ id, data: { timeTrackingActive: false } })
     );
   },
   

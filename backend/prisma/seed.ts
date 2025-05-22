@@ -1,6 +1,39 @@
-import { PrismaClient, UserRole, TaskStatus, TaskPriority, NotificationType } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import { PrismaClient } from '../src/generated/prisma';
 
 const prisma = new PrismaClient();
+
+// Define enum values directly since they aren't exported properly
+const UserRole = {
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+  GUEST: 'GUEST'
+};
+
+const TaskStatus = {
+  BACKLOG: 'BACKLOG',
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  REVIEW: 'REVIEW',
+  DONE: 'DONE',
+  ARCHIVED: 'ARCHIVED'
+};
+
+const TaskPriority = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT'
+};
+
+const NotificationType = {
+  TASK_ASSIGNED: 'TASK_ASSIGNED',
+  TASK_UPDATED: 'TASK_UPDATED',
+  COMMENT_ADDED: 'COMMENT_ADDED',
+  DUE_DATE_REMINDER: 'DUE_DATE_REMINDER',
+  MENTION: 'MENTION',
+  SYSTEM: 'SYSTEM'
+};
 
 async function main() {
   console.log('Starting seed...');
@@ -19,11 +52,29 @@ async function main() {
 
   // Create users
   console.log('Creating users...');
+  // Hash passwords using bcrypt
+  const passwordHash = await bcrypt.hash('password123', 10);
+  
+  // Create demo user for testing
+  const demo = await prisma.user.create({
+    data: {
+      email: 'demo@example.com',
+      name: 'Demo User',
+      passwordHash,
+      role: UserRole.MEMBER,
+      avatarUrl: 'https://i.pravatar.cc/150?u=demo',
+      preferences: {
+        theme: 'light',
+        defaultView: 'dashboard'
+      }
+    }
+  });
+  
   const admin = await prisma.user.create({
     data: {
       email: 'admin@example.com',
       name: 'Admin User',
-      passwordHash: 'hashed_password123', // In real app, use bcrypt
+      passwordHash,
       role: UserRole.ADMIN,
       avatarUrl: 'https://i.pravatar.cc/150?u=admin',
       preferences: {
@@ -37,7 +88,7 @@ async function main() {
     data: {
       email: 'john.doe@example.com',
       name: 'John Doe',
-      passwordHash: 'hashed_password123',
+      passwordHash,
       role: UserRole.MEMBER,
       avatarUrl: 'https://i.pravatar.cc/150?u=john',
       preferences: {
@@ -51,7 +102,7 @@ async function main() {
     data: {
       email: 'jane.smith@example.com',
       name: 'Jane Smith',
-      passwordHash: 'hashed_password123',
+      passwordHash,
       role: UserRole.MEMBER,
       avatarUrl: 'https://i.pravatar.cc/150?u=jane',
       preferences: {
@@ -136,6 +187,49 @@ async function main() {
       estimatedHours: 6,
       tags: ['frontend', 'dashboard', 'widgets'],
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days from now
+    }
+  });
+
+  // Create backlog tasks for testing
+  const backlogTask1 = await prisma.task.create({
+    data: {
+      title: 'Implement search functionality',
+      description: 'Add advanced search capabilities to the task management system.',
+      status: TaskStatus.BACKLOG,
+      priority: TaskPriority.HIGH,
+      creatorId: admin.id,
+      assigneeId: demo.id,
+      estimatedHours: 8,
+      tags: ['search', 'backend', 'elasticsearch'],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+    }
+  });
+
+  const backlogTask2 = await prisma.task.create({
+    data: {
+      title: 'Add email notifications',
+      description: 'Implement email notifications for task assignments and updates.',
+      status: TaskStatus.BACKLOG,
+      priority: TaskPriority.MEDIUM,
+      creatorId: admin.id,
+      assigneeId: user1.id,
+      estimatedHours: 4,
+      tags: ['notifications', 'email', 'backend'],
+      dueDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000) // 21 days from now
+    }
+  });
+
+  const backlogTask3 = await prisma.task.create({
+    data: {
+      title: 'Mobile app development',
+      description: 'Create a mobile version of the task management application.',
+      status: TaskStatus.BACKLOG,
+      priority: TaskPriority.LOW,
+      creatorId: admin.id,
+      assigneeId: user2.id,
+      estimatedHours: 40,
+      tags: ['mobile', 'react-native', 'ios', 'android'],
+      dueDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days from now
     }
   });
 

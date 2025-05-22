@@ -370,7 +370,15 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
   const renderCardContent = () => (
     <div className="task-card-content">
       {/* Menu and assigned profile in the top-right corner */}
-      <div className="task-card-corner-top-right">
+      <div className="task-card-corner-top-right" style={{
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        zIndex: 25
+      }}>
         {/* Assignment popover for both assigned and unassigned tasks */}
         <Popover 
           opened={assignmentPopoverOpened}
@@ -384,7 +392,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               <Tooltip label={`Assigned to ${getAssigneeName(localTask.assigneeId)} - Click to reassign`} position="bottom">
                 <span style={{ display: 'inline-block' }}>
                   <Avatar
-                    size="sm"
+                    size={32}
                     radius="xl"
                     src={getAssigneeAvatar(localTask.assigneeId)}
                     style={{ cursor: 'pointer' }}
@@ -398,7 +406,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
             ) : (
               <Tooltip label="Click to assign task" position="bottom">
                 <ActionIcon
-                  size="sm"
+                  size={32}
                   radius="xl"
                   variant="outline"
                   color="gray"
@@ -412,7 +420,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                     setAssignmentPopoverOpened(true);
                   }}
                 >
-                  <IconPlus size={10} />
+                  <IconPlus size={12} />
                 </ActionIcon>
               </Tooltip>
             )}
@@ -573,15 +581,28 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
       </div>
 
       {/* Task number in the top-left corner */}
-      <div className="task-card-corner-top-left">
+      <div className="task-card-corner-top-left" style={{
+        position: 'absolute',
+        top: '8px',
+        left: '8px',
+        zIndex: 25
+      }}>
         <Tooltip label={`Task #${localTask.taskNumber} - Click to copy`} position="top">
-          <ActionIcon
-            size="sm"
-            variant="filled"
-            color="blue"
-            radius="xl"
+          <div
             style={{
-              cursor: 'pointer'
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--mantine-color-blue-6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'white',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+              transition: 'all 0.2s ease'
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -592,16 +613,22 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 e.currentTarget.style.opacity = '1';
               }, 150);
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.12)';
+            }}
           >
-            <Text size="xs" fw={600} c="white">
-              {localTask.taskNumber}
-            </Text>
-          </ActionIcon>
+            {localTask.taskNumber}
+          </div>
         </Tooltip>
       </div>
 
       {/* Task Content */}
-      <div style={{ paddingTop: 28 }}>
+      <div style={{ paddingTop: 48 }}>
         {/* Recurrence indicator */}
         {localTask.recurrence && (
           <Group gap={8} mb="xs" data-no-propagation="true" justify="flex-start">

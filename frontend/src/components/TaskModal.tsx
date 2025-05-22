@@ -602,7 +602,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
               placeholder="Enter tags"
               value={formData.tags}
               onChange={(tags) => handleChange('tags', tags)}
-              withinPortal
             />
 
             <Group justify="flex-end" mt="xl">

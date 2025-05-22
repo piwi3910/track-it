@@ -361,7 +361,7 @@ export const usersRouter = router({
   updateProfile: protectedProcedure
     .input(z.object({
       name: z.string().min(2).optional(),
-      avatarUrl: z.string().url().optional(),
+      avatarUrl: z.string().optional(), // Allow any string (URL or base64 data URL)
       preferences: z.object({
         theme: z.enum(['light', 'dark', 'auto']).optional(),
         defaultView: z.enum(['dashboard', 'kanban', 'calendar', 'backlog']).optional(),
@@ -383,10 +383,21 @@ export const usersRouter = router({
         const updateData: any = {};
         
         if (input.name) updateData.name = input.name;
-        if (input.avatarUrl) updateData.avatarUrl = input.avatarUrl;
         
-        // Update user record
-        const updatedUser = await userService.updateUser(ctx.user.id, updateData);
+        // Handle avatar update with validation if provided
+        let updatedUser;
+        if (input.avatarUrl !== undefined) {
+          // Use the specialized avatar update service for validation
+          updatedUser = await userService.updateUserAvatar(ctx.user.id, input.avatarUrl);
+        } else {
+          // Update other fields only
+          if (Object.keys(updateData).length > 0) {
+            updatedUser = await userService.updateUser(ctx.user.id, updateData);
+          } else {
+            // No updates needed, just get current user
+            updatedUser = await userService.getUserById(ctx.user.id);
+          }
+        }
         
         // If preferences provided, update them separately
         if (input.preferences) {
@@ -415,7 +426,16 @@ export const usersRouter = router({
           googleConnected: !!normalized.googleId,
           googleEmail: normalized.googleId ? normalized.email : null
         };
-      } catch (error) {
+      } catch (error: any) {
+        // Handle validation errors specifically for avatar updates
+        if (error.message?.includes('Unsupported image format') || 
+            error.message?.includes('Image size too large')) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message
+          });
+        }
+        
         return handleError(error);
       }
     })),

@@ -37,13 +37,16 @@ export function SettingsPage() {
   const [inAppNotifications, setInAppNotifications] = useState(true);
   const [defaultView, setDefaultView] = useState<string>('dashboard');
   
-  // Get the update avatar mutation
-  const updateAvatarMutation = trpc.users.updateAvatar.useMutation();
+  // Use the existing updateProfile mutation as a temporary workaround
+  const updateProfileMutation = trpc.users.updateProfile.useMutation();
   
   // Handle avatar update
   const handleAvatarChange = async (avatarUrl: string | null) => {
     try {
-      await updateAvatarMutation.mutateAsync({ avatarUrl });
+      // Use updateProfile endpoint temporarily since updateAvatar types aren't loading
+      await updateProfileMutation.mutateAsync({ 
+        avatarUrl: avatarUrl || undefined // Convert null to undefined for the existing endpoint
+      });
       
       // Trigger a refetch of user data to update the UI
       // This should be handled by the AppContext, but we might need to trigger it manually

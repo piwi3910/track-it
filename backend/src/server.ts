@@ -9,6 +9,7 @@ import { config } from './config';
 import { appRouter } from './trpc/router';
 import { createContext } from './trpc/context';
 import { RedisClient } from './cache/redis';
+import { connectToDatabase, disconnectFromDatabase, healthCheck } from './db';
 
 // Export type definition of API for client usage
 export type AppRouter = typeof appRouter;
@@ -54,12 +55,18 @@ app.use(cors({
 app.use(express.json());
 
 // Health check route
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
+  const dbStatus = await healthCheck();
+  
   res.json({ 
-    status: 'ok', 
+    status: dbStatus.connected ? 'ok' : 'degraded', 
     timestamp: new Date().toISOString(),
     api: 'track-it-backend',
-    version: '1.0.0'
+    version: '1.0.0',
+    services: {
+      database: dbStatus,
+      redis: RedisClient.isConnected() ? 'connected' : 'disconnected'
+    }
   });
 });
 
@@ -124,6 +131,20 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 // Start the server
 const startServer = async () => {
   try {
+    // Connect to database
+    const dbConnected = await connectToDatabase();
+    if (!dbConnected) {
+      logger.warn('Failed to connect to database, starting server anyway');
+    }
+    
+    // Connect to Redis
+    try {
+      await RedisClient.connect();
+      logger.info('Connected to Redis');
+    } catch (err) {
+      logger.warn({ err }, 'Failed to connect to Redis, some features may be degraded');
+    }
+    
     // Start listening for requests
     app.listen(config.port, config.host, () => {
       logger.info(`Server is running on http://${config.host}:${config.port}`);
@@ -145,7 +166,9 @@ process.on('SIGTERM', async () => {
     await RedisClient.disconnect();
     logger.info('Redis disconnected');
 
-    // Add any other cleanup here
+    // Disconnect from database
+    await disconnectFromDatabase();
+    logger.info('Database disconnected');
     
     process.exit(0);
   } catch (err) {

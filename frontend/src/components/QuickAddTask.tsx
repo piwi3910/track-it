@@ -1,4 +1,3 @@
-// @ts-nocheck - Temporarily disable type checking in this file
 import { useState } from 'react';
 import {
   TextInput,
@@ -11,6 +10,7 @@ import {
   TagsInput,
   Tooltip,
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { DatePickerInput } from '@mantine/dates';
 import {
   IconPlus,
@@ -36,7 +36,7 @@ const availableUsers = [
 interface QuickAddTaskProps {
   defaultStatus?: TaskStatus;
   defaultDueDate?: Date | null;
-  onTaskAdded?: () => void;
+  onTaskAdded?: (task?: Task) => void;
   hideStatus?: boolean;
 }
 
@@ -46,7 +46,7 @@ export default function QuickAddTask({
   onTaskAdded,
   hideStatus = false,
 }: QuickAddTaskProps) {
-  const { addTask } = useApp();
+  const { createTask } = useApp();
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<TaskStatus>(defaultStatus);
   const [dueDate, setDueDate] = useState<Date | null>(defaultDueDate);
@@ -56,11 +56,10 @@ export default function QuickAddTask({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [estimatedHours, setEstimatedHours] = useState<number | undefined>(undefined);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim()) return;
 
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
+    const taskData: Omit<Task, 'id'> = {
       title: title.trim(),
       status,
       priority,
@@ -69,24 +68,51 @@ export default function QuickAddTask({
     };
 
     // Add optional fields if they exist
-    if (dueDate) newTask.dueDate = dueDate.toISOString();
-    if (assigneeId) newTask.assigneeId = assigneeId;
-    if (tags.length > 0) newTask.tags = tags;
-    if (estimatedHours !== undefined) newTask.estimatedHours = estimatedHours;
+    if (dueDate) taskData.dueDate = dueDate.toISOString();
+    if (assigneeId) taskData.assigneeId = assigneeId;
+    if (tags.length > 0) taskData.tags = tags;
+    if (estimatedHours !== undefined) taskData.estimatedHours = estimatedHours;
 
-    addTask(newTask);
-    
-    // Reset form
-    setTitle('');
-    setDueDate(defaultDueDate);
-    setPriority('medium');
-    setAssigneeId(null);
-    setTags([]);
-    setEstimatedHours(undefined);
-    setDetailsOpen(false);
-    
-    // Callback
-    if (onTaskAdded) onTaskAdded();
+    try {
+      const newTask = await createTask(taskData);
+      
+      if (newTask) {
+        // Show success notification
+        notifications.show({
+          title: 'Task Created',
+          message: `"${title.trim()}" has been added to ${status}.`,
+          color: 'green',
+          position: 'top-right',
+        });
+        
+        // Reset form only on success
+        setTitle('');
+        setDueDate(defaultDueDate);
+        setPriority('medium');
+        setAssigneeId(null);
+        setTags([]);
+        setEstimatedHours(undefined);
+        setDetailsOpen(false);
+        
+        // Callback with the created task
+        if (onTaskAdded) onTaskAdded(newTask);
+      } else {
+        notifications.show({
+          title: 'Failed to Create Task',
+          message: 'There was an error creating the task. Please try again.',
+          color: 'red',
+          position: 'top-right',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      notifications.show({
+        title: 'Error',
+        message: 'An unexpected error occurred while creating the task.',
+        color: 'red',
+        position: 'top-right',
+      });
+    }
   };
 
   const statusOptions = [

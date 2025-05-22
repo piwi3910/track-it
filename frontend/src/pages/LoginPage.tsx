@@ -19,9 +19,10 @@ import {
 import { IconBrandGoogle, IconAlertCircle, IconLogin, IconAt, IconLock } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import { authService } from '@/services/auth.service';
+import { useStore } from '@/hooks/useStore';
 
 export default function LoginPage() {
+  const { auth } = useStore();
   const { currentUser, userLoading } = useApp();
   const { login: googleLogin, renderButton, isGoogleLoaded, loading: googleLoading, error: googleError } = useGoogleAuth();
   const navigate = useNavigate();
@@ -92,28 +93,23 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      const { data, error } = await authService.login(email, password);
+      const result = await auth.login(email, password);
       
-      if (error) {
-        throw new Error(error);
+      if (!result.success) {
+        throw new Error(result.error || 'Login failed');
       }
       
-      if (!data || !data.token) {
-        throw new Error('Invalid login response');
-      }
+      // Wait for the auth state to be updated
+      await auth.loadUser();
       
-      // Force a refresh of the current user
-      window.dispatchEvent(new CustomEvent('auth_state_change', {
-        detail: { isAuthenticated: true }
-      }));
-      
-      // Manually redirect after successful login
-      navigate(from, { replace: true });
+      // Small delay to ensure state propagation
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
       
     } catch (err) {
       console.error('Login failed:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -124,19 +120,13 @@ export default function LoginPage() {
   return (
     <Container size="xs" p="xl">
       <Paper radius="md" p="xl" withBorder>
-        <Stack align="center" mb="md">
-          <Title mb="lg">Track-It</Title>
+        <Stack align="center" mb="lg">
           <Image
-            src="/vite.svg" // Replace with your app logo
+            src="/logo.png"
             alt="Track-It Logo"
-            width={rem(100)}
-            height={rem(100)}
+            className="login-logo"
           />
         </Stack>
-
-        <Text size="lg" fw={500} ta="center" mb="xl">
-          Sign in to your account
-        </Text>
 
         {isRedirected && !error && (
           <Alert 
@@ -165,7 +155,11 @@ export default function LoginPage() {
             <Tabs.Tab value="password" leftSection={<IconLogin size="0.8rem" />}>
               Password
             </Tabs.Tab>
-            <Tabs.Tab value="google" leftSection={<IconBrandGoogle size="0.8rem" />}>
+            <Tabs.Tab 
+              value="google" 
+              leftSection={<IconBrandGoogle size="0.8rem" />}
+              className="disabled coming-soon"
+            >
               Google
             </Tabs.Tab>
           </Tabs.List>

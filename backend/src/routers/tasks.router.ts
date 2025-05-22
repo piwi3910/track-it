@@ -1,80 +1,28 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createForbiddenError } from '../utils/error-handler';
+import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
 import { logger } from '../server';
+import * as taskService from '../db/services/task.service';
+import * as templateService from '../db/services/template.service';
+import { TASK_STATUS, TASK_PRIORITY, formatEnumForApi, formatEnumForDb } from '../utils/constants';
 
-// Mock task database
-const mockTasks = [
-  {
-    id: 'task1',
-    title: 'Complete API Implementation',
-    description: 'Implement all API endpoints and test with Postman',
-    status: 'in_progress',
-    priority: 'high',
-    tags: ['backend', 'api'],
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdById: 'user1',
-    assigneeId: 'user1',
-    estimatedHours: 8,
-    actualHours: 4,
-    timeTrackingActive: false,
-    trackingTimeSeconds: 0,
-    subtasks: [
-      { id: 'subtask1', title: 'Define API routes', completed: true },
-      { id: 'subtask2', title: 'Implement auth endpoints', completed: true },
-      { id: 'subtask3', title: 'Implement task endpoints', completed: false },
-      { id: 'subtask4', title: 'Write tests', completed: false }
-    ]
-  },
-  {
-    id: 'task2',
-    title: 'Add Dark Mode',
-    description: 'Implement dark mode theme for the app',
-    status: 'todo',
-    priority: 'medium',
-    tags: ['frontend', 'ui'],
-    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdById: 'user1',
-    assigneeId: 'user2',
-    estimatedHours: 4,
-    actualHours: 0,
-    timeTrackingActive: false,
-    trackingTimeSeconds: 0,
-    subtasks: [
-      { id: 'subtask5', title: 'Create theme switcher', completed: false },
-      { id: 'subtask6', title: 'Implement dark styles', completed: false }
-    ]
-  },
-  {
-    id: 'task3',
-    title: 'Fix Login Issues',
-    description: 'Debug and fix login issues reported by users',
-    status: 'done',
-    priority: 'high',
-    tags: ['bug', 'auth'],
-    dueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    createdById: 'user1',
-    assigneeId: 'user3',
-    estimatedHours: 2,
-    actualHours: 3,
-    timeTrackingActive: false,
-    trackingTimeSeconds: 0,
-    subtasks: []
-  }
-];
+// Define helper function to normalize task data for API response
+const normalizeTaskData = (task: any) => {
+  // Ensure consistent casing of status and priority
+  return {
+    ...task,
+    status: formatEnumForApi(task.status),
+    priority: formatEnumForApi(task.priority),
+    // Format dates as ISO strings if they exist as Date objects
+    createdAt: task.createdAt instanceof Date ? task.createdAt.toISOString() : task.createdAt,
+    updatedAt: task.updatedAt instanceof Date ? task.updatedAt.toISOString() : task.updatedAt,
+    dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString() : task.dueDate
+  };
+};
 
-// Mock template for saving tasks as templates
-const mockTemplates = [];
-
-// Enum definitions for task properties
-const taskStatusEnum = z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'in_review', 'done']);
-const taskPriorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
+// Enum definitions for task properties using constants
+const taskStatusEnum = z.enum(Object.values(TASK_STATUS) as [string, ...string[]]);
+const taskPriorityEnum = z.enum(Object.values(TASK_PRIORITY) as [string, ...string[]]);
 
 // Input validation schemas
 const createTaskSchema = z.object({
@@ -151,246 +99,277 @@ const createFromTemplateSchema = z.object({
 export const tasksRouter = router({
   getAll: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
-      // In a real app, you would query the database here
-      const userTasks = mockTasks.filter(task => 
-        // Show tasks created by the user or assigned to them
-        task.createdById === ctx.user?.id || 
-        task.assigneeId === ctx.user?.id
-      );
-      
-      return userTasks;
+      try {
+        const tasks = await taskService.getAllTasks(ctx.user.id);
+        return tasks.map(normalizeTaskData);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   getById: protectedProcedure
     .input(getTaskByIdSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
-      const task = mockTasks.find(task => task.id === input.id);
-      
-      if (!task) {
-        throw createNotFoundError('Task', input.id);
-      }
-      
-      // Check if user is allowed to view this task
-      if (task.createdById !== ctx.user?.id && task.assigneeId !== ctx.user?.id) {
-        if (ctx.user?.role !== 'admin') {
-          throw createForbiddenError('You do not have permission to view this task');
+      try {
+        const task = await taskService.getTaskById(input.id);
+        
+        if (!task) {
+          throw createNotFoundError('Task', input.id);
         }
+        
+        // Check if user is allowed to view this task
+        if (task.creatorId !== ctx.user?.id && task.assigneeId !== ctx.user?.id) {
+          if (ctx.user?.role !== 'admin') {
+            throw createForbiddenError('You do not have permission to view this task');
+          }
+        }
+        
+        return normalizeTaskData(task);
+      } catch (error) {
+        return handleError(error);
       }
-      
-      return task;
     })),
     
   getByStatus: protectedProcedure
     .input(getTasksByStatusSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
-      // Filter tasks by status
-      const userTasks = mockTasks.filter(task => 
-        task.status === input.status && 
-        (task.createdById === ctx.user?.id || task.assigneeId === ctx.user?.id)
-      );
-      
-      return userTasks;
+      try {
+        const tasks = await taskService.getTasksByStatus(input.status, ctx.user.id);
+        return tasks.map(normalizeTaskData);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   create: protectedProcedure
     .input(createTaskSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      // Generate unique ID
-      const taskId = `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
-      // Create subtasks with IDs
-      const subtasks = input.subtasks?.map(subtask => ({
-        id: `subtask-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        title: subtask.title,
-        completed: subtask.completed || false
-      })) || [];
-      
-      // Create new task
-      const newTask = {
-        id: taskId,
-        ...input,
-        subtasks,
-        createdById: ctx.user.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        timeTrackingActive: false,
-        trackingTimeSeconds: 0,
-        actualHours: 0
-      };
-      
-      mockTasks.push(newTask);
-      
-      return newTask;
+      try {
+        // Format data for database
+        const taskData = {
+          title: input.title,
+          description: input.description,
+          status: formatEnumForDb(input.status),
+          priority: formatEnumForDb(input.priority),
+          tags: input.tags || [],
+          dueDate: input.dueDate ? new Date(input.dueDate) : null,
+          estimatedHours: input.estimatedHours,
+          creator: { connect: { id: ctx.user.id } },
+          assignee: input.assigneeId ? { connect: { id: input.assigneeId } } : undefined,
+          // Handle subtasks if present
+          subtasks: input.subtasks ? {
+            create: input.subtasks.map(subtask => ({
+              title: subtask.title,
+              completed: subtask.completed || false,
+              creator: { connect: { id: ctx.user.id } }
+            }))
+          } : undefined
+        };
+
+        const newTask = await taskService.createTask(taskData);
+        return normalizeTaskData(newTask);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   update: protectedProcedure
     .input(updateTaskSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const taskIndex = mockTasks.findIndex(task => task.id === input.id);
-      
-      if (taskIndex === -1) {
-        throw createNotFoundError('Task', input.id);
-      }
-      
-      // Check permissions (only creator, assignee or admin can update)
-      const task = mockTasks[taskIndex];
-      if (task.createdById !== ctx.user?.id && task.assigneeId !== ctx.user?.id) {
-        if (ctx.user?.role !== 'admin') {
-          throw createForbiddenError('You do not have permission to update this task');
+      try {
+        // First get the task to check permissions
+        const task = await taskService.getTaskById(input.id);
+        
+        if (!task) {
+          throw createNotFoundError('Task', input.id);
         }
-      }
-      
-      // Process subtasks: preserve existing IDs, generate new ones for new subtasks
-      let subtasks = task.subtasks;
-      if (input.data.subtasks) {
-        subtasks = input.data.subtasks.map(subtask => {
-          if (subtask.id) {
-            return subtask;
-          } else {
-            return {
-              id: `subtask-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-              title: subtask.title,
-              completed: subtask.completed
-            };
+        
+        // Check permissions (only creator, assignee or admin can update)
+        if (task.creatorId !== ctx.user?.id && task.assigneeId !== ctx.user?.id) {
+          if (ctx.user?.role !== 'admin') {
+            throw createForbiddenError('You do not have permission to update this task');
           }
-        });
+        }
+        
+        // Prepare update data
+        const updateData: any = {
+          ...(input.data.title && { title: input.data.title }),
+          ...(input.data.description !== undefined && { description: input.data.description }),
+          ...(input.data.status && { status: formatEnumForDb(input.data.status) }),
+          ...(input.data.priority && { priority: formatEnumForDb(input.data.priority) }),
+          ...(input.data.tags && { tags: input.data.tags }),
+          ...(input.data.dueDate !== undefined && { dueDate: input.data.dueDate ? new Date(input.data.dueDate) : null }),
+          ...(input.data.estimatedHours !== undefined && { estimatedHours: input.data.estimatedHours }),
+          ...(input.data.actualHours !== undefined && { actualHours: input.data.actualHours }),
+          ...(input.data.timeTrackingActive !== undefined && { timeTrackingActive: input.data.timeTrackingActive }),
+          ...(input.data.trackingTimeSeconds !== undefined && { trackingTimeSeconds: input.data.trackingTimeSeconds }),
+          ...(input.data.assigneeId !== undefined && { 
+            assignee: input.data.assigneeId 
+              ? { connect: { id: input.data.assigneeId } } 
+              : { disconnect: true } 
+          })
+        };
+        
+        // Handle subtask updates if present
+        if (input.data.subtasks) {
+          // Note: This is a simplified approach. In a real app, you would need to
+          // handle creation, updates, and deletion of subtasks more carefully.
+          // For simplicity, we're deleting all existing subtasks and creating new ones.
+          updateData.subtasks = {
+            deleteMany: {},
+            create: input.data.subtasks.map(subtask => ({
+              title: subtask.title,
+              completed: subtask.completed,
+              creator: { connect: { id: ctx.user.id } }
+            }))
+          };
+        }
+        
+        // Update the task
+        const updatedTask = await taskService.updateTask(input.id, updateData);
+        return normalizeTaskData(updatedTask);
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Update task
-      mockTasks[taskIndex] = {
-        ...mockTasks[taskIndex],
-        ...input.data,
-        subtasks,
-        updatedAt: new Date().toISOString()
-      };
-      
-      return mockTasks[taskIndex];
     })),
     
   delete: protectedProcedure
     .input(deleteTaskSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const taskIndex = mockTasks.findIndex(task => task.id === input.id);
-      
-      if (taskIndex === -1) {
-        throw createNotFoundError('Task', input.id);
+      try {
+        // First get the task to check permissions
+        const task = await taskService.getTaskById(input.id);
+        
+        if (!task) {
+          throw createNotFoundError('Task', input.id);
+        }
+        
+        // Check permissions (only creator or admin can delete)
+        if (task.creatorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
+          throw createForbiddenError('You do not have permission to delete this task');
+        }
+        
+        // Delete the task
+        await taskService.deleteTask(input.id);
+        
+        return { id: input.id, deleted: true };
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Check permissions (only creator or admin can delete)
-      const task = mockTasks[taskIndex];
-      if (task.createdById !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw createForbiddenError('You do not have permission to delete this task');
-      }
-      
-      // Remove task
-      mockTasks.splice(taskIndex, 1);
-      
-      return { id: input.id, deleted: true };
     })),
     
   search: protectedProcedure
     .input(searchTasksSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
-      const query = input.query.toLowerCase();
-      
-      // Search tasks by title, description, or tags
-      const userTasks = mockTasks.filter(task => 
-        (task.createdById === ctx.user?.id || task.assigneeId === ctx.user?.id) && 
-        (
-          task.title.toLowerCase().includes(query) || 
-          (task.description && task.description.toLowerCase().includes(query)) ||
-          task.tags?.some(tag => tag.toLowerCase().includes(query))
-        )
-      );
-      
-      return userTasks;
+      try {
+        const tasks = await taskService.searchTasks(input.query, ctx.user.id);
+        return tasks.map(normalizeTaskData);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   saveAsTemplate: protectedProcedure
     .input(saveTemplateSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const task = mockTasks.find(task => task.id === input.taskId);
-      
-      if (!task) {
-        throw createNotFoundError('Task', input.taskId);
+      try {
+        // First get the task to check permissions
+        const task = await taskService.getTaskById(input.taskId);
+        
+        if (!task) {
+          throw createNotFoundError('Task', input.taskId);
+        }
+        
+        // Check if user can create template from this task
+        if (task.creatorId !== ctx.user?.id && ctx.user?.role !== 'admin') {
+          throw createForbiddenError('You do not have permission to create a template from this task');
+        }
+        
+        // Extract subtasks data for template
+        const subtasksData = task.subtasks.map(subtask => ({
+          title: subtask.title,
+          completed: false // Always set to false in templates
+        }));
+        
+        // Create template data
+        const templateData = {
+          name: input.templateName,
+          description: task.description,
+          priority: task.priority,
+          tags: task.tags,
+          estimatedHours: task.estimatedHours,
+          isPublic: input.isPublic,
+          category: task.tags?.length ? task.tags[0] : 'uncategorized',
+          createdBy: { connect: { id: ctx.user.id } },
+          // Store subtasks as JSON to be used when creating tasks from this template
+          templateData: { subtasks: subtasksData }
+        };
+        
+        // Create the template
+        const newTemplate = await templateService.createTemplate(templateData);
+        
+        // Mark the task as saved as template
+        await taskService.updateTask(input.taskId, { savedAsTemplate: true });
+        
+        return {
+          id: newTemplate.id,
+          name: newTemplate.name,
+          taskId: input.taskId
+        };
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Check if user can create template from this task
-      if (task.createdById !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw createForbiddenError('You do not have permission to create a template from this task');
-      }
-      
-      // Create template
-      const templateId = `template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
-      const newTemplate = {
-        id: templateId,
-        name: input.templateName,
-        description: task.description,
-        priority: task.priority,
-        tags: task.tags,
-        estimatedHours: task.estimatedHours,
-        subtasks: task.subtasks,
-        isPublic: input.isPublic,
-        createdById: ctx.user.id,
-        createdAt: new Date().toISOString(),
-        category: task.tags?.length ? task.tags[0] : 'uncategorized'
-      };
-      
-      mockTemplates.push(newTemplate);
-      
-      return {
-        id: templateId,
-        name: input.templateName,
-        taskId: input.taskId
-      };
     })),
     
   createFromTemplate: protectedProcedure
     .input(createFromTemplateSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const template = mockTemplates.find(template => template.id === input.templateId);
-      
-      if (!template) {
-        throw createNotFoundError('Template', input.templateId);
+      try {
+        // First get the template to check permissions
+        const template = await templateService.getTemplateById(input.templateId);
+        
+        if (!template) {
+          throw createNotFoundError('Template', input.templateId);
+        }
+        
+        // Check if user can use this template (for now, only check if template is public since createdById doesn't exist)
+        if (!template.isPublic && ctx.user?.role !== 'admin') {
+          throw createForbiddenError('You do not have permission to use this template');
+        }
+        
+        // Extract subtasks from template data
+        const templateData = template.templateData as { subtasks: Array<{ title: string, completed: boolean }> };
+        
+        // Create task from template
+        const taskData = {
+          title: input.taskData?.title || template.name,
+          description: input.taskData?.description || template.description,
+          status: formatEnumForDb(input.taskData?.status || TASK_STATUS.TODO),
+          priority: formatEnumForDb(input.taskData?.priority || template.priority),
+          tags: template.tags,
+          dueDate: input.taskData?.dueDate ? new Date(input.taskData.dueDate) : null,
+          estimatedHours: template.estimatedHours,
+          creator: { connect: { id: ctx.user.id } },
+          assignee: { connect: { id: input.taskData?.assigneeId || ctx.user.id } },
+          // Create subtasks from template
+          subtasks: {
+            create: templateData.subtasks.map(subtask => ({
+              title: subtask.title,
+              completed: false, // Always start with uncompleted subtasks
+              creator: { connect: { id: ctx.user.id } }
+            }))
+          }
+        };
+        
+        // Create the task
+        const newTask = await taskService.createTask(taskData);
+        
+        // Increment template usage count
+        await templateService.incrementTemplateUsage(input.templateId);
+        
+        return normalizeTaskData(newTask);
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Check if user can use this template
-      if (!template.isPublic && template.createdById !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw createForbiddenError('You do not have permission to use this template');
-      }
-      
-      // Create task from template
-      const taskId = `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
-      // Generate new IDs for subtasks
-      const subtasks = template.subtasks.map(subtask => ({
-        id: `subtask-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        title: subtask.title,
-        completed: false // Always start with uncompleted subtasks
-      }));
-      
-      const newTask = {
-        id: taskId,
-        title: input.taskData?.title || template.name,
-        description: input.taskData?.description || template.description,
-        status: input.taskData?.status || 'todo',
-        priority: input.taskData?.priority || template.priority,
-        tags: template.tags,
-        dueDate: input.taskData?.dueDate || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdById: ctx.user.id,
-        assigneeId: input.taskData?.assigneeId || ctx.user.id,
-        estimatedHours: template.estimatedHours,
-        actualHours: 0,
-        timeTrackingActive: false,
-        trackingTimeSeconds: 0,
-        subtasks
-      };
-      
-      mockTasks.push(newTask);
-      
-      return newTask;
     }))
 });

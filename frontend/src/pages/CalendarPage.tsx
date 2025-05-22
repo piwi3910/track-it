@@ -90,7 +90,8 @@ const getTasksByDate = (tasks: Task[]) => {
       }
     } else if (task.dueDate) {
       // For regular tasks, just add to the due date
-      const date = task.dueDate;
+      // Extract just the date part (YYYY-MM-DD) from the ISO string
+      const date = task.dueDate.split('T')[0];
       if (!taskMap[date]) {
         taskMap[date] = [];
       }

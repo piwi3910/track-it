@@ -85,31 +85,18 @@ export function GlobalSearch() {
     setLoading(true);
     try {
       // Check if the query might be a direct task ID search (if it starts with "task-" or contains a specific format)
-      const isIdSearch = searchQuery.startsWith('task-') || /^[a-z0-9]{8}$/i.test(searchQuery);
+      const isIdSearch = /^\d+$/.test(searchQuery);
 
       if (isIdSearch) {
-        // Try to find by exact ID first in local cache
-        const localMatch = tasks.find(task => 
-          task.id.toLowerCase() === searchQuery.toLowerCase() ||
-          task.id.toLowerCase().startsWith(searchQuery.toLowerCase())
-        );
+        // Try to find by task number first in local cache
+        const taskNumber = parseInt(searchQuery);
+        const localMatch = tasks.find(task => task.taskNumber === taskNumber);
         
         if (localMatch) {
           setResults([localMatch]);
           return;
         }
-        
-        try {
-          // Not in local cache, try API call
-          const task = await getTaskById(searchQuery);
-          if (task) {
-            setResults([task]);
-            return;
-          }
-        } catch (error) {
-          console.error('Error fetching task by ID:', error);
-          // Continue with search if task not found by ID
-        }
+        // If not found in local cache, fall through to regular search
       }
 
       // Fall back to API search
@@ -139,9 +126,9 @@ export function GlobalSearch() {
     
     // Navigate to the appropriate page based on task status
     if (task.status === 'backlog') {
-      navigate(`/backlog?task=${task.id}`);
+      navigate(`/backlog?task=${task.taskNumber}`);
     } else {
-      navigate(`/kanban?task=${task.id}`);
+      navigate(`/kanban?task=${task.taskNumber}`);
     }
     
     close();
@@ -232,10 +219,10 @@ export function GlobalSearch() {
                   </Group>
 
                   <Group gap="xs" mt="xs">
-                    <Badge size="xs" variant="filled" color="gray">
+                    <Badge size="xs" variant="filled" color="blue">
                       <Group gap={4}>
                         <IconHash size={10} />
-                        <span>{task.id.substring(0, 8)}</span>
+                        <span>{task.taskNumber}</span>
                       </Group>
                     </Badge>
 

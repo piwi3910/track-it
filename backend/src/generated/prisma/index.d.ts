@@ -2892,12 +2892,14 @@ export namespace Prisma {
   }
 
   export type TaskAvgAggregateOutputType = {
+    taskNumber: number | null
     estimatedHours: number | null
     actualHours: number | null
     trackingTimeSeconds: number | null
   }
 
   export type TaskSumAggregateOutputType = {
+    taskNumber: number | null
     estimatedHours: number | null
     actualHours: number | null
     trackingTimeSeconds: number | null
@@ -2905,6 +2907,7 @@ export namespace Prisma {
 
   export type TaskMinAggregateOutputType = {
     id: string | null
+    taskNumber: number | null
     title: string | null
     description: string | null
     status: $Enums.TaskStatus | null
@@ -2926,6 +2929,7 @@ export namespace Prisma {
 
   export type TaskMaxAggregateOutputType = {
     id: string | null
+    taskNumber: number | null
     title: string | null
     description: string | null
     status: $Enums.TaskStatus | null
@@ -2947,6 +2951,7 @@ export namespace Prisma {
 
   export type TaskCountAggregateOutputType = {
     id: number
+    taskNumber: number
     title: number
     description: number
     status: number
@@ -2970,12 +2975,14 @@ export namespace Prisma {
 
 
   export type TaskAvgAggregateInputType = {
+    taskNumber?: true
     estimatedHours?: true
     actualHours?: true
     trackingTimeSeconds?: true
   }
 
   export type TaskSumAggregateInputType = {
+    taskNumber?: true
     estimatedHours?: true
     actualHours?: true
     trackingTimeSeconds?: true
@@ -2983,6 +2990,7 @@ export namespace Prisma {
 
   export type TaskMinAggregateInputType = {
     id?: true
+    taskNumber?: true
     title?: true
     description?: true
     status?: true
@@ -3004,6 +3012,7 @@ export namespace Prisma {
 
   export type TaskMaxAggregateInputType = {
     id?: true
+    taskNumber?: true
     title?: true
     description?: true
     status?: true
@@ -3025,6 +3034,7 @@ export namespace Prisma {
 
   export type TaskCountAggregateInputType = {
     id?: true
+    taskNumber?: true
     title?: true
     description?: true
     status?: true
@@ -3134,6 +3144,7 @@ export namespace Prisma {
 
   export type TaskGroupByOutputType = {
     id: string
+    taskNumber: number
     title: string
     description: string | null
     status: $Enums.TaskStatus
@@ -3175,6 +3186,7 @@ export namespace Prisma {
 
   export type TaskSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    taskNumber?: boolean
     title?: boolean
     description?: boolean
     status?: boolean
@@ -3204,6 +3216,7 @@ export namespace Prisma {
 
   export type TaskSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    taskNumber?: boolean
     title?: boolean
     description?: boolean
     status?: boolean
@@ -3229,6 +3242,7 @@ export namespace Prisma {
 
   export type TaskSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    taskNumber?: boolean
     title?: boolean
     description?: boolean
     status?: boolean
@@ -3254,6 +3268,7 @@ export namespace Prisma {
 
   export type TaskSelectScalar = {
     id?: boolean
+    taskNumber?: boolean
     title?: boolean
     description?: boolean
     status?: boolean
@@ -3274,7 +3289,7 @@ export namespace Prisma {
     archived?: boolean
   }
 
-  export type TaskOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "status" | "priority" | "createdAt" | "updatedAt" | "dueDate" | "estimatedHours" | "actualHours" | "tags" | "creatorId" | "assigneeId" | "parentId" | "timeTrackingActive" | "trackingStartTime" | "trackingTimeSeconds" | "savedAsTemplate" | "archived", ExtArgs["result"]["task"]>
+  export type TaskOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "taskNumber" | "title" | "description" | "status" | "priority" | "createdAt" | "updatedAt" | "dueDate" | "estimatedHours" | "actualHours" | "tags" | "creatorId" | "assigneeId" | "parentId" | "timeTrackingActive" | "trackingStartTime" | "trackingTimeSeconds" | "savedAsTemplate" | "archived", ExtArgs["result"]["task"]>
   export type TaskInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     creator?: boolean | UserDefaultArgs<ExtArgs>
     assignee?: boolean | Task$assigneeArgs<ExtArgs>
@@ -3307,6 +3322,7 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
+      taskNumber: number
       title: string
       description: string | null
       status: $Enums.TaskStatus
@@ -3755,6 +3771,7 @@ export namespace Prisma {
    */
   interface TaskFieldRefs {
     readonly id: FieldRef<"Task", 'String'>
+    readonly taskNumber: FieldRef<"Task", 'Int'>
     readonly title: FieldRef<"Task", 'String'>
     readonly description: FieldRef<"Task", 'String'>
     readonly status: FieldRef<"Task", 'TaskStatus'>
@@ -9925,6 +9942,7 @@ export namespace Prisma {
 
   export const TaskScalarFieldEnum: {
     id: 'id',
+    taskNumber: 'taskNumber',
     title: 'title',
     description: 'description',
     status: 'status',
@@ -10136,6 +10154,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Int'
+   */
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+  /**
+   * Reference to a field of type 'Int[]'
+   */
+  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
    * Reference to a field of type 'TaskStatus'
    */
   export type EnumTaskStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TaskStatus'>
@@ -10181,20 +10213,6 @@ export namespace Prisma {
    * Reference to a field of type 'Boolean'
    */
   export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-  /**
-   * Reference to a field of type 'Int'
-   */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-  /**
-   * Reference to a field of type 'Int[]'
-   */
-  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -10329,6 +10347,7 @@ export namespace Prisma {
     OR?: TaskWhereInput[]
     NOT?: TaskWhereInput | TaskWhereInput[]
     id?: StringFilter<"Task"> | string
+    taskNumber?: IntFilter<"Task"> | number
     title?: StringFilter<"Task"> | string
     description?: StringNullableFilter<"Task"> | string | null
     status?: EnumTaskStatusFilter<"Task"> | $Enums.TaskStatus
@@ -10357,6 +10376,7 @@ export namespace Prisma {
 
   export type TaskOrderByWithRelationInput = {
     id?: SortOrder
+    taskNumber?: SortOrder
     title?: SortOrder
     description?: SortOrderInput | SortOrder
     status?: SortOrder
@@ -10385,6 +10405,7 @@ export namespace Prisma {
 
   export type TaskWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    taskNumber?: number
     AND?: TaskWhereInput | TaskWhereInput[]
     OR?: TaskWhereInput[]
     NOT?: TaskWhereInput | TaskWhereInput[]
@@ -10412,10 +10433,11 @@ export namespace Prisma {
     subtasks?: TaskListRelationFilter
     comments?: CommentListRelationFilter
     attachments?: AttachmentListRelationFilter
-  }, "id">
+  }, "id" | "taskNumber">
 
   export type TaskOrderByWithAggregationInput = {
     id?: SortOrder
+    taskNumber?: SortOrder
     title?: SortOrder
     description?: SortOrderInput | SortOrder
     status?: SortOrder
@@ -10446,6 +10468,7 @@ export namespace Prisma {
     OR?: TaskScalarWhereWithAggregatesInput[]
     NOT?: TaskScalarWhereWithAggregatesInput | TaskScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Task"> | string
+    taskNumber?: IntWithAggregatesFilter<"Task"> | number
     title?: StringWithAggregatesFilter<"Task"> | string
     description?: StringNullableWithAggregatesFilter<"Task"> | string | null
     status?: EnumTaskStatusWithAggregatesFilter<"Task"> | $Enums.TaskStatus
@@ -11000,6 +11023,7 @@ export namespace Prisma {
 
   export type TaskCreateInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -11025,6 +11049,7 @@ export namespace Prisma {
 
   export type TaskUncheckedCreateInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -11075,6 +11100,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -11100,6 +11126,7 @@ export namespace Prisma {
 
   export type TaskCreateManyInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -11141,6 +11168,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -11865,6 +11893,17 @@ export namespace Prisma {
     _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
   export type EnumTaskStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.TaskStatus | EnumTaskStatusFieldRefInput<$PrismaModel>
     in?: $Enums.TaskStatus[] | ListEnumTaskStatusFieldRefInput<$PrismaModel>
@@ -11903,17 +11942,6 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
   export type UserScalarRelationFilter = {
     is?: UserWhereInput
     isNot?: UserWhereInput
@@ -11941,6 +11969,7 @@ export namespace Prisma {
 
   export type TaskCountOrderByAggregateInput = {
     id?: SortOrder
+    taskNumber?: SortOrder
     title?: SortOrder
     description?: SortOrder
     status?: SortOrder
@@ -11962,6 +11991,7 @@ export namespace Prisma {
   }
 
   export type TaskAvgOrderByAggregateInput = {
+    taskNumber?: SortOrder
     estimatedHours?: SortOrder
     actualHours?: SortOrder
     trackingTimeSeconds?: SortOrder
@@ -11969,6 +11999,7 @@ export namespace Prisma {
 
   export type TaskMaxOrderByAggregateInput = {
     id?: SortOrder
+    taskNumber?: SortOrder
     title?: SortOrder
     description?: SortOrder
     status?: SortOrder
@@ -11990,6 +12021,7 @@ export namespace Prisma {
 
   export type TaskMinOrderByAggregateInput = {
     id?: SortOrder
+    taskNumber?: SortOrder
     title?: SortOrder
     description?: SortOrder
     status?: SortOrder
@@ -12010,9 +12042,26 @@ export namespace Prisma {
   }
 
   export type TaskSumOrderByAggregateInput = {
+    taskNumber?: SortOrder
     estimatedHours?: SortOrder
     actualHours?: SortOrder
     trackingTimeSeconds?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type EnumTaskStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -12057,22 +12106,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
   }
   export type JsonFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -13082,6 +13115,33 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
+  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
   export type NestedEnumTaskStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.TaskStatus | EnumTaskStatusFieldRefInput<$PrismaModel>
     in?: $Enums.TaskStatus[] | ListEnumTaskStatusFieldRefInput<$PrismaModel>
@@ -13124,33 +13184,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
-  }
-
-  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type NestedFloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
   }
   export type NestedJsonFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -13195,6 +13228,7 @@ export namespace Prisma {
 
   export type TaskCreateWithoutCreatorInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13219,6 +13253,7 @@ export namespace Prisma {
 
   export type TaskUncheckedCreateWithoutCreatorInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13253,6 +13288,7 @@ export namespace Prisma {
 
   export type TaskCreateWithoutAssigneeInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13277,6 +13313,7 @@ export namespace Prisma {
 
   export type TaskUncheckedCreateWithoutAssigneeInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13392,6 +13429,7 @@ export namespace Prisma {
     OR?: TaskScalarWhereInput[]
     NOT?: TaskScalarWhereInput | TaskScalarWhereInput[]
     id?: StringFilter<"Task"> | string
+    taskNumber?: IntFilter<"Task"> | number
     title?: StringFilter<"Task"> | string
     description?: StringNullableFilter<"Task"> | string | null
     status?: EnumTaskStatusFilter<"Task"> | $Enums.TaskStatus
@@ -13580,6 +13618,7 @@ export namespace Prisma {
 
   export type TaskCreateWithoutSubtasksInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13604,6 +13643,7 @@ export namespace Prisma {
 
   export type TaskUncheckedCreateWithoutSubtasksInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13633,6 +13673,7 @@ export namespace Prisma {
 
   export type TaskCreateWithoutParentInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13657,6 +13698,7 @@ export namespace Prisma {
 
   export type TaskUncheckedCreateWithoutParentInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -13890,6 +13932,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateWithoutSubtasksInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -13977,6 +14020,7 @@ export namespace Prisma {
 
   export type TaskCreateWithoutCommentsInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -14001,6 +14045,7 @@ export namespace Prisma {
 
   export type TaskUncheckedCreateWithoutCommentsInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -14165,6 +14210,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateWithoutCommentsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -14287,6 +14333,7 @@ export namespace Prisma {
 
   export type TaskCreateWithoutAttachmentsInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -14311,6 +14358,7 @@ export namespace Prisma {
 
   export type TaskUncheckedCreateWithoutAttachmentsInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -14375,6 +14423,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateWithoutAttachmentsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -14495,6 +14544,7 @@ export namespace Prisma {
 
   export type TaskCreateManyCreatorInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -14516,6 +14566,7 @@ export namespace Prisma {
 
   export type TaskCreateManyAssigneeInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -14581,6 +14632,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateWithoutCreatorInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -14605,6 +14657,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateManyWithoutCreatorInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -14650,6 +14703,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateWithoutAssigneeInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -14674,6 +14728,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -14757,6 +14812,7 @@ export namespace Prisma {
 
   export type TaskCreateManyParentInput = {
     id?: string
+    taskNumber?: number
     title: string
     description?: string | null
     status?: $Enums.TaskStatus
@@ -14822,6 +14878,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateWithoutParentInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus
@@ -14846,6 +14903,7 @@ export namespace Prisma {
 
   export type TaskUncheckedUpdateManyWithoutParentInput = {
     id?: StringFieldUpdateOperationsInput | string
+    taskNumber?: IntFieldUpdateOperationsInput | number
     title?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumTaskStatusFieldUpdateOperationsInput | $Enums.TaskStatus

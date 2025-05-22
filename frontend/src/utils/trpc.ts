@@ -1,5 +1,5 @@
 import { createTRPCReact } from '@trpc/react-query';
-import { httpLink } from '@trpc/client';
+import { httpLink, TRPCClientError } from '@trpc/client';
 import type { AppRouter } from '@track-it/shared';
 import { QueryClient } from '@tanstack/react-query';
 
@@ -17,6 +17,88 @@ export function setAuthToken(token: string): void {
 export function clearAuthToken(): void {
   localStorage.removeItem('token');
 }
+
+// Error handler helper for API calls
+export const apiHandler = async <T>(
+  apiCall: () => Promise<T>
+): Promise<{ data: T | null; error: string | null }> => {
+  try {
+    const data = await apiCall();
+    return { data, error: null };
+  } catch (error) {
+    console.error('API Error:', error);
+    let errorMessage = 'Unknown error occurred';
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    // Create a more robust error response
+    if (error instanceof TRPCClientError) {
+      // Handle batch size or input too large errors
+      if (error.message.includes('Input is too big for a single dispatch') || 
+          error.message.includes('too big')) {
+        errorMessage = 'Request data is too large. Try with a smaller batch size.';
+        errorCode = 'INPUT_TOO_LARGE';
+      }
+      // Handle transformation errors as connection issues
+      else if (error.message.includes('transform') || 
+          error.message.includes('Unable to transform response')) {
+        errorMessage = 'Connection issue. The API response could not be processed.';
+        errorCode = 'TRANSFORM_ERROR';
+      }
+      // Handle connection errors
+      else if (error.message.includes('fetch') ||
+               error.message.includes('Failed to fetch') ||
+               error.message.includes('network')) {
+        errorMessage = 'Cannot connect to the server. Please ensure the backend is running.';
+        errorCode = 'CONNECTION_ERROR';
+      }
+      // Handle authorization errors
+      else if (error.message === 'UNAUTHORIZED' || 
+               error.data?.code === 'UNAUTHORIZED' ||
+               error.data?.httpStatus === 401 ||
+               error.message.includes('unauthorized')) {
+        errorMessage = 'Authentication error. Please try logging in again.';
+        errorCode = 'AUTH_ERROR';
+        // Clear token if it's an auth error
+        clearAuthToken();
+        
+        // Dispatch auth error event for global handling
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth_error'));
+        }
+      }
+      // Handle not found errors
+      else if (error.message.includes('No procedure found') || 
+               error.data?.httpStatus === 404) {
+        errorMessage = `API endpoint not found: ${error.message}`;
+        errorCode = 'NOT_FOUND';
+      }
+      // Handle other tRPC errors
+      else {
+        errorMessage = error.message;
+        errorCode = error.data?.code || 'TRPC_ERROR';
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+      errorCode = 'JS_ERROR';
+    }
+    
+    // Log detailed error for debugging
+    console.error(`API Error (${errorCode}):`, errorMessage);
+    
+    // For connection issues, try to use mock data when possible
+    if (errorCode === 'CONNECTION_ERROR' || errorCode === 'TRANSFORM_ERROR') {
+      // Try to switch to mock mode automatically for better user experience
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('api_connection_error'));
+      }
+    }
+    
+    return { 
+      data: null, 
+      error: errorMessage 
+    };
+  }
+};
 
 // Create a tRPC client for v11
 // @ts-ignore - The AppRouter type doesn't satisfy the constraint, but it works at runtime

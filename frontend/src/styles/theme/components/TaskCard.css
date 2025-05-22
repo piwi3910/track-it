@@ -7,6 +7,24 @@
   z-index: 10;
 }
 
+/* Corner positioning for task card elements */
+.task-card-corner-top-left {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: var(--spacing-xs);
+  z-index: 20;
+}
+
+.task-card-corner-top-right {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
 .task-card-clickable-overlay {
   position: absolute;
   top: 0;
@@ -134,6 +152,8 @@
 
 /* Special styling for blocked tasks */
 .kanban-board [data-blocked="true"] {
+  background-color: rgba(220, 53, 69, 0.1) !important;
+  border-color: var(--color-status-blocked) !important;
   box-shadow: 0 1px 5px var(--color-status-blocked, rgba(220, 53, 69, 0.3)) !important;
   position: relative !important;
 }
@@ -155,6 +175,8 @@
 
 /* Special styling for completed tasks */
 .kanban-board [data-done="true"] {
+  background-color: rgba(25, 135, 84, 0.1) !important;
+  border-color: var(--color-status-done) !important;
   position: relative !important;
 }
 

@@ -55,6 +55,11 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true
           });
           
+          // Dispatch auth state change event
+          window.dispatchEvent(new CustomEvent('auth_state_change', {
+            detail: { isAuthenticated: true }
+          }));
+          
           return { success: true };
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'Login failed';

@@ -59,7 +59,11 @@ export function SettingsPage() {
           <Tabs.Tab value="appearance" leftSection={<IconPalette size={16} />}>
             Appearance
           </Tabs.Tab>
-          <Tabs.Tab value="integrations" leftSection={<IconBrandGoogle size={16} />}>
+          <Tabs.Tab 
+            value="integrations" 
+            leftSection={<IconBrandGoogle size={16} />}
+            className="disabled coming-soon"
+          >
             Integrations
           </Tabs.Tab>
         </Tabs.List>

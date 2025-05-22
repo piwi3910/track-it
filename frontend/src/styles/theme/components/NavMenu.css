@@ -2,6 +2,13 @@
  * Navigation Menu Styling
  */
 
+/* App logo styling */
+.app-logo {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+}
+
 /* Navbar link styling */
 .nav-link {
   color: inherit;

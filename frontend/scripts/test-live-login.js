@@ -184,7 +184,7 @@ const runTests = async () => {
 const checkBackendStatus = async () => {
   try {
     console.log('Checking if backend server is running...');
-    const response = await fetch('http://localhost:3001/healthcheck');
+    const response = await fetch('http://localhost:3001/');
     
     if (response.ok) {
       console.log('Backend server is running. Starting tests...\n');

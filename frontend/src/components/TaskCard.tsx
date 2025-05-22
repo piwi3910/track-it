@@ -167,6 +167,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
   const [priorityPopoverOpened, setPriorityPopoverOpened] = useState(false);
   const [weightPopoverOpened, setWeightPopoverOpened] = useState(false);
   const [timePopoverOpened, setTimePopoverOpened] = useState(false);
+  const [assignmentPopoverOpened, setAssignmentPopoverOpened] = useState(false);
   const [isTimeTrackingActive, setIsTimeTrackingActive] = useState(!!task.timeTrackingActive);
   const [trackingTime, setTrackingTime] = useState(task.trackingTimeSeconds || 0); // in seconds
   const [trackingInterval, setTrackingInterval] = useState<NodeJS.Timeout | null>(null);
@@ -367,9 +368,121 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
   }, [trackingInterval, isTimeTrackingActive, trackingTime, localTask.id]);
 
   const renderCardContent = () => (
-    <div style={{ position: 'relative' }}>
-      {/* Menu in the top-right corner */}
-      <div style={{ position: 'absolute', top: 2, right: 5, paddingBottom: 3, zIndex: 20 }}>
+    <div className="task-card-content">
+      {/* Menu and assigned profile in the top-right corner */}
+      <div className="task-card-corner-top-right">
+        {/* Assignment popover for both assigned and unassigned tasks */}
+        <Popover 
+          opened={assignmentPopoverOpened}
+          onChange={setAssignmentPopoverOpened}
+          position="bottom" 
+          withArrow 
+          shadow="md"
+        >
+          <Popover.Target>
+            {localTask.assigneeId ? (
+              <Tooltip label={`Assigned to ${getAssigneeName(localTask.assigneeId)} - Click to reassign`} position="bottom">
+                <span style={{ display: 'inline-block' }}>
+                  <Avatar
+                    size="sm"
+                    radius="xl"
+                    src={getAssigneeAvatar(localTask.assigneeId)}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAssignmentPopoverOpened(true);
+                    }}
+                  />
+                </span>
+              </Tooltip>
+            ) : (
+              <Tooltip label="Click to assign task" position="bottom">
+                <ActionIcon
+                  size="sm"
+                  radius="xl"
+                  variant="outline"
+                  color="gray"
+                  style={{ 
+                    cursor: 'pointer',
+                    borderStyle: 'dashed',
+                    borderWidth: '1px'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAssignmentPopoverOpened(true);
+                  }}
+                >
+                  <IconPlus size={10} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </Popover.Target>
+          <Popover.Dropdown>
+            <Stack gap="xs">
+              <Text fw={500}>Task Assignment</Text>
+              <Divider />
+              {Object.entries(availableUsers).map(([userId, user]) => (
+                <Group
+                  key={userId}
+                  justify="space-between"
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    backgroundColor: localTask.assigneeId === userId ?
+                      mantineTheme.colorScheme === 'dark' ? mantineTheme.colors.blue[9] : mantineTheme.colors.blue[0] :
+                      'transparent'
+                  }}
+                  className="hover-highlight"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLocalTask(prev => ({ ...prev, assigneeId: userId }));
+                    updateTask(localTask.id, { assigneeId: userId });
+                    setAssignmentPopoverOpened(false);
+                  }}
+                >
+                  <Group gap="sm">
+                    <Avatar size="sm" radius="xl" src={user.avatar} />
+                    <div>
+                      <Text size="sm">{user.name}</Text>
+                      <Text size="xs" c="dimmed">{user.role}</Text>
+                    </div>
+                  </Group>
+                  {localTask.assigneeId === userId && (
+                    <ActionIcon size="sm" color="blue" variant="light">
+                      <IconCheck size={14} />
+                    </ActionIcon>
+                  )}
+                </Group>
+              ))}
+
+              {/* Option to unassign */}
+              {localTask.assigneeId && (
+                <>
+                  <Divider />
+                  <Group
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                    className="hover-highlight"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLocalTask(prev => ({ ...prev, assigneeId: null }));
+                      updateTask(localTask.id, { assigneeId: null });
+                      setAssignmentPopoverOpened(false);
+                    }}
+                  >
+                    <Text size="sm" c="red">Unassign</Text>
+                  </Group>
+                </>
+              )}
+            </Stack>
+          </Popover.Dropdown>
+        </Popover>
+        
+        {/* Menu */}
         <Menu withinPortal position="bottom-end">
           <Menu.Target>
             <ActionIcon variant="subtle" size="sm" onClick={(e) => e.stopPropagation()}>
@@ -459,31 +572,31 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         </Menu>
       </div>
 
-      {/* Task ID in the top-left corner */}
-      <div style={{ position: 'absolute', top: -2, left: 2, zIndex: 20 }}>
-        <Tooltip label="Click to copy ID" position="top">
-          <span style={{ display: 'inline-block' }}>
-            <Badge
-              size="xs"
-              variant="filled"
-              color="dark"
-              className="task-id-badge"
-              style={{
-                cursor: 'pointer'
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(localTask.id);
-                // Apply temporary visual feedback
-                e.currentTarget.style.opacity = '0.6';
-                setTimeout(() => {
-                  e.currentTarget.style.opacity = '1';
-                }, 150);
-              }}
-            >
-              {localTask.id.replace('task', '')}
-            </Badge>
-          </span>
+      {/* Task number in the top-left corner */}
+      <div className="task-card-corner-top-left">
+        <Tooltip label={`Task #${localTask.taskNumber} - Click to copy`} position="top">
+          <ActionIcon
+            size="sm"
+            variant="filled"
+            color="blue"
+            radius="xl"
+            style={{
+              cursor: 'pointer'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(localTask.taskNumber.toString());
+              // Apply temporary visual feedback
+              e.currentTarget.style.opacity = '0.6';
+              setTimeout(() => {
+                e.currentTarget.style.opacity = '1';
+              }, 150);
+            }}
+          >
+            <Text size="xs" fw={600} c="white">
+              {localTask.taskNumber}
+            </Text>
+          </ActionIcon>
         </Tooltip>
       </div>
 
@@ -739,107 +852,6 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         </Group>
       )}
 
-      {/* Assignee section */}
-      <Group justify="flex-end" mt="sm" data-no-propagation="true">
-        <Popover position="bottom" withArrow shadow="md">
-          <Popover.Target>
-            {localTask.assigneeId ? (
-              <Tooltip label={`Assigned to ${getAssigneeName(localTask.assigneeId)}`} position="bottom">
-                <span style={{ display: 'inline-block' }}>
-                  <Avatar
-                    size="sm"
-                    radius="xl"
-                    src={getAssigneeAvatar(localTask.assigneeId)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                </span>
-              </Tooltip>
-            ) : (
-              <Button
-                compact
-                size="xs"
-                variant="subtle"
-                leftSection={<IconPlus size={12} />}
-                style={{ 
-                  opacity: 0.7,
-                  padding: '2px 6px',
-                  height: 'auto',
-                  minHeight: '20px'
-                }}
-                styles={{
-                  inner: { 
-                    fontSize: '0.65rem',
-                    fontWeight: 'normal'
-                  }
-                }}
-              >
-                Assign
-              </Button>
-            )}
-          </Popover.Target>
-          <Popover.Dropdown>
-            <Stack gap="xs">
-              <Text fw={500}>Task Assignment</Text>
-              <Divider />
-              {Object.entries(availableUsers).map(([userId, user]) => (
-                <Group
-                  key={userId}
-                  justify="space-between"
-                  style={{
-                    padding: '6px 10px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    backgroundColor: localTask.assigneeId === userId ?
-                      mantineTheme.colorScheme === 'dark' ? mantineTheme.colors.blue[9] : mantineTheme.colors.blue[0] :
-                      'transparent'
-                  }}
-                  className="hover-highlight"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLocalTask(prev => ({ ...prev, assigneeId: userId }));
-                    updateTask(localTask.id, { assigneeId: userId });
-                  }}
-                >
-                  <Group gap="sm">
-                    <Avatar size="sm" radius="xl" src={user.avatar} />
-                    <div>
-                      <Text size="sm">{user.name}</Text>
-                      <Text size="xs" c="dimmed">{user.role}</Text>
-                    </div>
-                  </Group>
-                  {localTask.assigneeId === userId && (
-                    <ActionIcon size="sm" color="blue" variant="light">
-                      <IconCheck size={14} />
-                    </ActionIcon>
-                  )}
-                </Group>
-              ))}
-
-              {/* Option to unassign */}
-              {localTask.assigneeId && (
-                <>
-                  <Divider />
-                  <Group
-                    style={{
-                      padding: '6px 10px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                    }}
-                    className="hover-highlight"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setLocalTask(prev => ({ ...prev, assigneeId: null }));
-                      updateTask(localTask.id, { assigneeId: null });
-                    }}
-                  >
-                    <Text size="sm" c="red">Unassign</Text>
-                  </Group>
-                </>
-              )}
-            </Stack>
-          </Popover.Dropdown>
-        </Popover>
-      </Group>
 
       {/* Tags */}
       {localTask.tags && localTask.tags.length > 0 && (
@@ -861,20 +873,10 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
     </div>
   );
 
-  // Set background color based on task status
+  // Set background color based on task status - now handled by CSS
   const getCardBackgroundColor = () => {
-    const isDark = mantineTheme.colorScheme === 'dark';
-    
-    if (localTask.status === 'blocked') {
-      return isDark
-        ? `${colors.statusBlocked}33` // Dark mode blocked background with opacity
-        : `${colors.statusBlocked}15`; // Light mode blocked background with opacity
-    } else if (localTask.status === 'done') {
-      return isDark
-        ? `${colors.statusDone}33` // Dark mode done background with opacity
-        : `${colors.statusDone}15`; // Light mode done background with opacity
-    }
-    return 'transparent'; // Default background
+    // Let CSS handle the background colors via data attributes
+    return 'transparent';
   };
 
   // Create data attributes for CSS targeting

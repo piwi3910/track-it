@@ -56,6 +56,13 @@
   --spacing-xl: 32px;
   
   /* 
+   * KANBAN DIMENSIONS
+   */
+  --kanban-card-drag-width: 280px;
+  --kanban-column-min-width: 250px;
+  --kanban-card-max-width: 100%;
+  
+  /* 
    * BORDER RADIUS
    */
   --radius-xs: 2px;

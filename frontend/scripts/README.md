@@ -1,77 +1,116 @@
-# Test Scripts
+# Track-It Test Scripts
 
-This directory contains various test scripts for testing the application.
+This directory contains test scripts for the Track-It application.
 
-## Available Scripts
+## Frontend-Backend Integration Tests
 
-### `test-login.js`
+These scripts test the integration between the frontend and backend components using live tRPC calls.
 
-Tests the login functionality with mock data.
+### Running the Complete Test Suite
 
-```bash
-node scripts/test-login.js
-```
-
-### `test-live-login.js`
-
-Tests the login functionality with the live backend server using tRPC.
+To run all tests together:
 
 ```bash
-# First ensure the backend server is running
-cd ../backend && npm run dev
-
-# In another terminal, run the test script
-cd ../frontend && node scripts/test-live-login.js
+node scripts/test-suite.js
 ```
 
-### `test-live-registration.js`
+This will execute all test scripts in sequence and provide a summary of the results.
 
-Tests the user registration functionality with the live backend server using tRPC.
+### Individual Test Scripts
 
-```bash
-# First ensure the backend server is running
-cd ../backend && npm run dev
+You can also run individual test scripts:
 
-# In another terminal, run the test script
-cd ../frontend && node scripts/test-live-registration.js
-```
+#### Authentication Tests
 
-### `test-api-availability.js`
+- **Login Flow**: `node scripts/test-live-login.js`
+  - Tests login with valid and invalid credentials
+  - Tests token retrieval and storage
+  - Tests authenticated API calls
+  - Tests logout functionality
 
-Tests the API availability.
+- **Registration Flow**: `node scripts/test-live-registration.js`
+  - Tests user registration with new credentials
+  - Tests login with newly registered user
+  - Tests for duplicate email validation
+  - Tests profile access after authentication
 
-```bash
-node scripts/test-api-availability.js
-```
+#### User Profile Tests
 
-### `test-mock-api-switch.js`
+- **User Profile Management**: `node scripts/test-live-user-profile.js`
+  - Tests fetching the current user profile
+  - Tests updating profile information (name, avatar)
+  - Tests updating user preferences (theme, default view)
+  - Tests Google integration settings
 
-Tests the mock API switch functionality.
+#### Task Management Tests
 
-```bash
-node scripts/test-mock-api-switch.js
-```
+- **Task Management**: `node scripts/test-live-tasks.js`
+  - Tests task creation
+  - Tests retrieving tasks by ID
+  - Tests updating task properties
+  - Tests retrieving all tasks
+  - Tests filtering tasks by status
+  - Tests task deletion
 
-## Running Tests
+#### Comment Management Tests
 
-To run these scripts, ensure you have Node.js installed and have installed the project dependencies:
+- **Comment Management**: `node scripts/test-live-comments.js`
+  - Tests adding comments to tasks
+  - Tests retrieving task comments
+  - Tests adding replies to comments
+  - Tests updating comments
+  - Tests deleting comments and replies
 
-```bash
-npm install
-```
+### Mock API Tests
 
-Then you can run any of the test scripts:
+- **API Availability**: `node scripts/test-api-availability.js`
+  - Tests the API health endpoint
+  - Verifies backend server connectivity
 
-```bash
-node scripts/<script-name>.js
-```
+- **Mock API Switch**: `node scripts/test-mock-api-switch.js`
+  - Tests switching between mock and live API
+  - Verifies that the API context is working correctly
+
+- **Login (Mock)**: `node scripts/test-login.js`
+  - Tests the login functionality with mock data
+  - Useful for frontend-only testing
+
+## Prerequisites
+
+Before running these tests:
+
+1. Make sure the backend server is running:
+   ```bash
+   cd ../backend
+   npm run dev
+   ```
+
+2. Make sure the database services are running:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. Make sure you have the test dependencies installed:
+   ```bash
+   npm install
+   ```
 
 ## Troubleshooting
 
-If you encounter any issues when running the test scripts, please check the following:
+- **Backend Connection Issues**: The tests automatically check for backend availability before starting. Make sure the backend is running on http://localhost:3001.
 
-1. Make sure the backend server is running (for live tests)
-2. Make sure you've installed the dependencies
-3. Check the console logs for any error messages
+- **Authentication Failures**: The test scripts use default credentials (`demo@example.com` / `password123`). Make sure the database is properly seeded with this user.
+
+- **Database Errors**: Check the database connection and schema. Run `npx prisma migrate reset` in the backend directory if needed.
+
+- **Test Failures**: The test scripts will log detailed error information to help diagnose issues.
 
 If you're still having issues, please open an issue in the GitHub repository.
+
+## Extending Tests
+
+To add new tests:
+
+1. Create a new test script file in the scripts directory
+2. Follow the pattern of existing scripts
+3. Add the script name to the `tests` array in `test-suite.js`

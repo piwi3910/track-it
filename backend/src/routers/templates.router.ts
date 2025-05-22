@@ -1,68 +1,23 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createForbiddenError } from '../utils/error-handler';
+import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
+import * as templateService from '../db/services/template.service';
+import { TASK_PRIORITY, formatEnumForApi, formatEnumForDb } from '../utils/constants';
 
-// Mock templates data
-const mockTemplates = [
-  {
-    id: 'template1',
-    name: 'Bug Report',
-    description: 'Template for reporting bugs',
-    priority: 'high',
-    tags: ['bug', 'issue'],
-    estimatedHours: 3,
-    subtasks: [
-      { id: 'subtask1', title: 'Reproduce issue', completed: false },
-      { id: 'subtask2', title: 'Identify root cause', completed: false },
-      { id: 'subtask3', title: 'Fix issue', completed: false },
-      { id: 'subtask4', title: 'Write tests', completed: false }
-    ],
-    category: 'bug',
-    isPublic: true,
-    createdById: 'user1',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'template2',
-    name: 'Feature Implementation',
-    description: 'Template for implementing new features',
-    priority: 'medium',
-    tags: ['feature', 'enhancement'],
-    estimatedHours: 8,
-    subtasks: [
-      { id: 'subtask5', title: 'Design feature', completed: false },
-      { id: 'subtask6', title: 'Implement backend', completed: false },
-      { id: 'subtask7', title: 'Implement frontend', completed: false },
-      { id: 'subtask8', title: 'Write tests', completed: false },
-      { id: 'subtask9', title: 'Document feature', completed: false }
-    ],
-    category: 'feature',
-    isPublic: true,
-    createdById: 'user1',
-    createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'template3',
-    name: 'Documentation Task',
-    description: 'Template for documentation tasks',
-    priority: 'low',
-    tags: ['documentation'],
-    estimatedHours: 4,
-    subtasks: [
-      { id: 'subtask10', title: 'Gather requirements', completed: false },
-      { id: 'subtask11', title: 'Write documentation', completed: false },
-      { id: 'subtask12', title: 'Review with team', completed: false },
-      { id: 'subtask13', title: 'Publish documentation', completed: false }
-    ],
-    category: 'documentation',
-    isPublic: true,
-    createdById: 'user2',
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
-  }
-];
+// Define helper function to normalize template data for API response
+const normalizeTemplateData = (template: any) => {
+  // Ensure consistent casing of priority
+  return {
+    ...template,
+    priority: formatEnumForApi(template.priority),
+    // Format dates as ISO strings if they exist as Date objects
+    createdAt: template.createdAt instanceof Date ? template.createdAt.toISOString() : template.createdAt,
+    updatedAt: template.updatedAt instanceof Date ? template.updatedAt.toISOString() : template.updatedAt
+  };
+};
 
-// Enum definitions for template properties
-const taskPriorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
+// Enum definitions for template properties using constants
+const taskPriorityEnum = z.enum(Object.values(TASK_PRIORITY) as [string, ...string[]]);
 
 // Schema definitions
 const getTemplateByIdSchema = z.object({
@@ -116,150 +71,171 @@ const searchTemplatesSchema = z.object({
 export const templatesRouter = router({
   getAll: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
-      // Return all public templates and private templates created by the user
-      return mockTemplates.filter(template => 
-        template.isPublic || template.createdById === ctx.user?.id
-      );
+      try {
+        const templates = await templateService.getAllTemplates(ctx.user.id);
+        return templates.map(normalizeTemplateData);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   getById: protectedProcedure
     .input(getTemplateByIdSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
-      const template = mockTemplates.find(template => template.id === input.id);
-      
-      if (!template) {
-        throw createNotFoundError('Template', input.id);
+      try {
+        const template = await templateService.getTemplateById(input.id);
+        
+        if (!template) {
+          throw createNotFoundError('Template', input.id);
+        }
+        
+        // Check permissions for private templates (simplified since createdById doesn't exist)
+        if (!template.isPublic && ctx.user?.role !== 'admin') {
+          throw createForbiddenError('You do not have permission to view this template');
+        }
+        
+        return normalizeTemplateData(template);
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Check permissions for private templates
-      if (!template.isPublic && template.createdById !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw createForbiddenError('You do not have permission to view this template');
-      }
-      
-      return template;
     })),
     
   getByCategory: protectedProcedure
     .input(getByCategorySchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
-      // Filter templates by category
-      return mockTemplates.filter(template => 
-        template.category === input.category && 
-        (template.isPublic || template.createdById === ctx.user?.id)
-      );
+      try {
+        const templates = await templateService.getTemplatesByCategory(input.category, ctx.user.id);
+        return templates.map(normalizeTemplateData);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   getCategories: protectedProcedure
     .query(() => safeProcedure(async () => {
-      // Get unique categories
-      const categories = [...new Set(mockTemplates.map(template => template.category))];
-      return categories;
+      try {
+        const categories = await templateService.getTemplateCategories();
+        return categories;
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   create: protectedProcedure
     .input(createTemplateSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      // Generate unique ID
-      const templateId = `template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
-      // Create subtasks with IDs
-      const subtasks = input.subtasks?.map(subtask => ({
-        id: `subtask-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        title: subtask.title,
-        completed: subtask.completed || false
-      })) || [];
-      
-      // Create new template
-      const newTemplate = {
-        id: templateId,
-        ...input,
-        subtasks,
-        createdById: ctx.user.id,
-        createdAt: new Date().toISOString(),
-        category: input.category || (input.tags?.length ? input.tags[0] : 'uncategorized')
-      };
-      
-      mockTemplates.push(newTemplate);
-      
-      return newTemplate;
+      try {
+        // Process subtasks for template data
+        const subtasks = input.subtasks?.map(subtask => ({
+          title: subtask.title,
+          completed: subtask.completed || false
+        })) || [];
+        
+        // Create template data
+        const templateData = {
+          name: input.name,
+          description: input.description,
+          priority: formatEnumForDb(input.priority),
+          tags: input.tags || [],
+          estimatedHours: input.estimatedHours,
+          isPublic: input.isPublic ?? true,
+          category: input.category || (input.tags?.length ? input.tags[0] : 'uncategorized'),
+          // Note: createdBy relation is commented out in schema, so we skip it for now
+          // Store subtasks and other template data as JSON
+          templateData: { subtasks }
+        };
+        
+        const newTemplate = await templateService.createTemplate(templateData);
+        return normalizeTemplateData(newTemplate);
+      } catch (error) {
+        return handleError(error);
+      }
     })),
     
   update: protectedProcedure
     .input(updateTemplateSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const templateIndex = mockTemplates.findIndex(template => template.id === input.id);
-      
-      if (templateIndex === -1) {
-        throw createNotFoundError('Template', input.id);
+      try {
+        // First get the template to check permissions
+        const template = await templateService.getTemplateById(input.id);
+        
+        if (!template) {
+          throw createNotFoundError('Template', input.id);
+        }
+        
+        // Check permissions (simplified since createdById doesn't exist in schema)
+        if (!template.isPublic && ctx.user?.role !== 'admin') {
+          throw createForbiddenError('You do not have permission to update this template');
+        }
+        
+        // Extract current template data from JSON
+        const currentTemplateData = template.templateData as { subtasks: Array<{ title: string, completed: boolean }> };
+        
+        // Prepare update data
+        const updateData: any = {
+          ...(input.data.name && { name: input.data.name }),
+          ...(input.data.description !== undefined && { description: input.data.description }),
+          ...(input.data.priority && { priority: formatEnumForDb(input.data.priority) }),
+          ...(input.data.tags && { tags: input.data.tags }),
+          ...(input.data.estimatedHours !== undefined && { estimatedHours: input.data.estimatedHours }),
+          ...(input.data.isPublic !== undefined && { isPublic: input.data.isPublic }),
+          ...(input.data.category && { category: input.data.category })
+        };
+        
+        // Process subtasks if provided
+        if (input.data.subtasks) {
+          const subtasks = input.data.subtasks.map(subtask => ({
+            title: subtask.title,
+            completed: subtask.completed
+          }));
+          
+          updateData.templateData = { 
+            ...currentTemplateData,
+            subtasks 
+          };
+        }
+        
+        // Update the template
+        const updatedTemplate = await templateService.updateTemplate(input.id, updateData);
+        return normalizeTemplateData(updatedTemplate);
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Check permissions (only creator or admin can update)
-      const template = mockTemplates[templateIndex];
-      if (template.createdById !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw createForbiddenError('You do not have permission to update this template');
-      }
-      
-      // Process subtasks: preserve existing IDs, generate new ones for new subtasks
-      let subtasks = template.subtasks;
-      if (input.data.subtasks) {
-        subtasks = input.data.subtasks.map(subtask => {
-          if (subtask.id) {
-            return subtask;
-          } else {
-            return {
-              id: `subtask-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-              title: subtask.title,
-              completed: subtask.completed
-            };
-          }
-        });
-      }
-      
-      // Update template
-      mockTemplates[templateIndex] = {
-        ...mockTemplates[templateIndex],
-        ...input.data,
-        subtasks
-      };
-      
-      return mockTemplates[templateIndex];
     })),
     
   delete: protectedProcedure
     .input(deleteTemplateSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
-      const templateIndex = mockTemplates.findIndex(template => template.id === input.id);
-      
-      if (templateIndex === -1) {
-        throw createNotFoundError('Template', input.id);
+      try {
+        // First get the template to check permissions
+        const template = await templateService.getTemplateById(input.id);
+        
+        if (!template) {
+          throw createNotFoundError('Template', input.id);
+        }
+        
+        // Check permissions (simplified since createdById doesn't exist in schema)
+        if (!template.isPublic && ctx.user?.role !== 'admin') {
+          throw createForbiddenError('You do not have permission to delete this template');
+        }
+        
+        // Delete the template
+        await templateService.deleteTemplate(input.id);
+        
+        return { success: true, id: input.id };
+      } catch (error) {
+        return handleError(error);
       }
-      
-      // Check permissions (only creator or admin can delete)
-      const template = mockTemplates[templateIndex];
-      if (template.createdById !== ctx.user?.id && ctx.user?.role !== 'admin') {
-        throw createForbiddenError('You do not have permission to delete this template');
-      }
-      
-      // Remove template
-      mockTemplates.splice(templateIndex, 1);
-      
-      return { success: true };
     })),
     
   search: protectedProcedure
     .input(searchTemplatesSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
-      const query = input.query.toLowerCase();
-      
-      // Search templates by name, description, or tags
-      return mockTemplates.filter(template => 
-        (template.isPublic || template.createdById === ctx.user?.id) && 
-        (
-          template.name.toLowerCase().includes(query) || 
-          (template.description && template.description.toLowerCase().includes(query)) ||
-          template.tags?.some(tag => tag.toLowerCase().includes(query)) ||
-          template.category.toLowerCase().includes(query)
-        )
-      );
+      try {
+        const templates = await templateService.searchTemplates(input.query, ctx.user.id);
+        return templates.map(normalizeTemplateData);
+      } catch (error) {
+        return handleError(error);
+      }
     }))
 });

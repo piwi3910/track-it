@@ -16,6 +16,7 @@ import {
   Box,
   Loader,
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import {
   IconPlus,
   IconSearch,
@@ -95,7 +96,8 @@ export function BacklogPage() {
       task.status === 'backlog' &&
       (searchQuery === '' || 
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+        (task.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        task.taskNumber.toString().includes(searchQuery)
       ) &&
       (priorityFilter === null || task.priority === priorityFilter)
     )
@@ -139,13 +141,41 @@ export function BacklogPage() {
     try {
       const { error } = await api.tasks.delete(taskId);
       if (error) {
-        throw new Error(error);
+        // Check if it's a permission error
+        if (error.includes('permission') || error.includes('forbidden') || error.includes('403')) {
+          notifications.show({
+            title: 'Permission Denied',
+            message: 'You can only delete tasks that you created. Contact an admin to delete this task.',
+            color: 'orange',
+            position: 'top-right',
+          });
+        } else {
+          notifications.show({
+            title: 'Delete Failed',
+            message: `Failed to delete task: ${error}`,
+            color: 'red',
+            position: 'top-right',
+          });
+        }
+        return;
       }
-      // On success, update the local state
+      
+      // On success, update the local state and show success message
       setTasks(prev => prev.filter(task => task.id !== taskId));
+      notifications.show({
+        title: 'Task Deleted',
+        message: 'Task has been successfully deleted.',
+        color: 'green',
+        position: 'top-right',
+      });
     } catch (err) {
       console.error('Failed to delete task:', err);
-      // Show error to user (you could add a toast notification here)
+      notifications.show({
+        title: 'Error',
+        message: 'An unexpected error occurred while deleting the task.',
+        color: 'red',
+        position: 'top-right',
+      });
     }
   };
   
@@ -153,13 +183,41 @@ export function BacklogPage() {
     try {
       const { error } = await api.tasks.updateStatus(taskId, 'todo');
       if (error) {
-        throw new Error(error);
+        // Check if it's a permission error
+        if (error.includes('permission') || error.includes('forbidden') || error.includes('403')) {
+          notifications.show({
+            title: 'Permission Denied',
+            message: 'You do not have permission to move this task.',
+            color: 'orange',
+            position: 'top-right',
+          });
+        } else {
+          notifications.show({
+            title: 'Move Failed',
+            message: `Failed to move task: ${error}`,
+            color: 'red',
+            position: 'top-right',
+          });
+        }
+        return;
       }
-      // On success, update the local state
+      
+      // On success, update the local state and show success message
       setTasks(prev => prev.filter(task => task.id !== taskId));
+      notifications.show({
+        title: 'Task Moved',
+        message: 'Task has been moved to Todo.',
+        color: 'green',
+        position: 'top-right',
+      });
     } catch (err) {
       console.error('Failed to move task to todo:', err);
-      // Show error to user
+      notifications.show({
+        title: 'Error',
+        message: 'An unexpected error occurred while moving the task.',
+        color: 'red',
+        position: 'top-right',
+      });
     }
   };
   
@@ -328,7 +386,12 @@ export function BacklogPage() {
                 <Table.Tr key={task.id}>
                   <Table.Td>
                     <Stack gap={5}>
-                      <Text fw={500}>{task.title}</Text>
+                      <Group gap={8}>
+                        <Badge size="xs" variant="filled" color="blue" style={{ borderRadius: '50%', minWidth: '18px' }}>
+                          {task.taskNumber}
+                        </Badge>
+                        <Text fw={500}>{task.title}</Text>
+                      </Group>
                       {task.description && (
                         <Text size="xs" c="dimmed" lineClamp={1}>
                           {task.description}

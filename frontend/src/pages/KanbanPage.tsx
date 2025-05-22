@@ -35,7 +35,7 @@ const columns: { id: TaskStatus; title: string }[] = [
 
 export function KanbanPage() {
   const { colors } = useTheme();
-  const { tasks, updateTask, addTask, deleteTask } = useApp();
+  const { tasks, updateTask, createTask, deleteTask } = useApp();
   const [selectedColumn, setSelectedColumn] = useState<TaskStatus | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -71,13 +71,13 @@ export function KanbanPage() {
     deleteTask(taskId);
   };
   
-  const handleTaskSubmit = (taskData: any) => {
+  const handleTaskSubmit = async (taskData: any) => {
     if (taskData.id) {
       // Update existing task using AppContext
       updateTask(taskData.id, taskData);
     } else {
       // Create new task (AppContext will handle ID generation)
-      addTask(taskData);
+      await createTask(taskData);
     }
     setTaskModalOpen(false);
   };

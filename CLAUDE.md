@@ -277,6 +277,52 @@ The application follows a feature-based architecture:
 3. Always maintain the established architecture and design patterns unless explicitly instructed otherwise.
 4. Do not attempt to modify React Query and tRPC versions independently - they must remain compatible.
 5. ALL git commits, pull requests, and merge requests MUST be authored by Pascal Watteel (pascal@watteel.com).
+6. NEVER use inline styles or hardcoded values in React components - ALWAYS use the centralized CSS theme system with CSS variables, utility classes, and component-specific CSS files. This includes dimensions, colors, spacing, and positioning.
+
+## Development Workflow
+
+1. **Planning & Architecture**
+   - Define MVP feature set and prioritize requirements
+   - Create entity relationship diagrams with tools like dbdiagram.io
+   - Design API contract using tRPC router structure
+   - Map user journeys and workflows
+   - Document technical decisions and architecture
+
+2. **Contract-First Development**
+   - Implement Zod schemas as single source of truth
+   - Share validation logic between frontend and backend
+   - Generate TypeScript types from schemas
+   - Create contract test suites before implementation
+
+3. **Frontend Development**
+   - Build UI components with Mantine following design system
+   - Implement frontend logic with mocked API responses
+   - Use MSW or similar tools to simulate backend during development
+   - Focus on component isolation and proper state management
+
+4. **Backend Implementation**
+   - Structure tRPC routers according to domain boundaries
+   - Implement database layer with Prisma models
+   - Build service layer between routers and data access
+   - Apply validation using shared Zod schemas
+
+5. **Integration & Testing**
+   - Connect frontend to live backend incrementally
+   - Implement comprehensive testing strategy
+   - Validate contracts work correctly across boundaries
+   - Log and debug request/response cycles
+
+6. **Refinement & Deployment**
+   - Containerize application with Docker
+   - Set up CI/CD pipeline for automated testing
+   - Implement deployment strategy for production
+   - Monitor and optimize performance
+
+7. **AI-Assisted Development**
+   - Provide existing schemas and types when requesting code
+   - Keep AI focused on project conventions and patterns
+   - Request complete implementations rather than fragments
+   - Validate AI-generated code with tests
 
 ## Additional Resources
 

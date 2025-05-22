@@ -42,6 +42,7 @@ model User {
 // Task model for task management
 model Task {
   id               String           @id @default(uuid())
+  taskNumber       Int              @unique @default(autoincrement())
   title            String
   description      String?
   status           TaskStatus       @default(TODO)

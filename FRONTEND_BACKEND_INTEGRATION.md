@@ -1,115 +1,64 @@
-# Frontend-Backend Integration Testing
+# Frontend-Backend Integration Plan
 
-This document outlines how to test the integration between the frontend and backend components of the Track-It application.
+This document outlines the strategy for ensuring smooth integration between the frontend and backend of the Track-It application.
 
-## Overview
+## Current Status
 
-The application consists of a React frontend and a Fastify backend server with tRPC integration for type-safe API calls. This document explains how to test if the integration is working correctly.
+The project has a comprehensive API specification defined in `API_SPECIFICATION.md` and integration tests that verify the backend implementation matches this specification. Recent work has identified and fixed several misalignments between the API specification and the backend implementation.
 
-## Prerequisites
+## Remaining Issues
 
-Before testing, ensure you have the following:
+Based on test failures and code review, the following issues still need to be addressed:
 
-1. Node.js installed (v18+ recommended)
-2. Backend dependencies installed: `cd backend && npm install`
-3. Frontend dependencies installed: `cd frontend && npm install`
-4. Database properly set up (PostgreSQL running via Docker)
-5. Redis running (via Docker)
+### 1. Authentication Issues
 
-## Starting the Services
+The login flow is not working correctly. Specifically:
 
-1. Start the Docker services:
-   ```bash
-   docker-compose up -d
-   ```
+- **Login Request Format**: The frontend tests expect a login endpoint that accepts email and password, but the backend implementation might not be handling the request format correctly.
+- **Registration Duplicate Check**: The backend does not properly reject registration attempts with duplicate emails.
+- **Authentication Token Format**: The JWT token format or validation might be inconsistent between frontend and backend.
 
-2. Start the backend server:
-   ```bash
-   cd backend
-   npm run dev
-   ```
+### 2. API Ping Endpoint
 
-3. Start the frontend development server:
-   ```bash
-   cd frontend
-   npm run dev
-   ```
+- The integration tests attempt to use a `users.ping` endpoint to verify backend connectivity, but this endpoint doesn't exist in the backend implementation.
 
-## Testing Scripts
+### 3. Error Response Format Standardization
 
-Several scripts have been created to test the integration between frontend and backend:
+- Error responses need to be standardized across all endpoints to follow the format specified in the API documentation.
 
-### Login Flow Testing
+## Implementation Plan
 
-Test the login functionality with the backend server:
+### 1. Fix Authentication Flow
 
-```bash
-cd frontend
-node scripts/test-live-login.js
-```
+1. Update `users.router.ts` to implement proper email uniqueness validation during registration
+2. Ensure the login endpoint correctly validates credentials and returns JWT tokens in the expected format
+3. Standardize user authentication formats between backend and frontend
 
-This script tests:
-- Login with valid credentials
-- Get current user with valid token
-- Logout
-- Get current user after logout (should fail)
-- Login with invalid credentials
+### 2. Add Missing Endpoints
 
-### Registration Flow Testing
+1. Implement the `users.ping` procedure for connectivity testing
+2. Ensure all response formats match the API specification exactly
 
-Test the user registration functionality with the backend server:
+### 3. Testing Strategy
 
-```bash
-cd frontend
-node scripts/test-live-registration.js
-```
+1. Use the existing integration tests to validate the fixes
+2. Expand test coverage for edge cases in authentication flows
+3. Add specific tests for error cases to ensure consistent error handling
 
-This script tests:
-- Register a new user with random credentials
-- Login with the newly registered user
-- Get current user with valid token
-- Attempt to register with an email that already exists (should fail)
-- Logout
+## Benefits of Integration Testing
 
-## Manual Testing
+The comprehensive API tests provide several benefits:
 
-You can also manually test the integration by:
-
-1. Start both backend and frontend servers
-2. Open the application in a browser at `http://localhost:3000`
-3. Try to log in with the default credentials:
-   - Email: `demo@example.com`
-   - Password: `password123`
-4. After logging in, check if you can see the dashboard and tasks
-
-## Troubleshooting
-
-If you encounter issues with the frontend-backend integration:
-
-1. Check the browser console for any errors
-2. Verify the backend server is running and accessible at `http://localhost:3001`
-3. Check the backend server logs for any errors
-4. Verify the database connection is working properly
-5. Try running the test scripts to narrow down where the issue might be
-6. Check for any CORS issues in the backend server configuration
-7. Verify that the tRPC client in the frontend is configured correctly
-
-## Common Issues
-
-- **CORS errors**: Make sure the backend allows requests from the frontend origin
-- **Authentication errors**: Check token handling and JWT secret configuration
-- **Database connection issues**: Verify database credentials and connection string
-- **tRPC version mismatch**: Ensure the same version is used in both frontend and backend
-- **API endpoint mismatch**: Verify the API URL in the frontend matches the backend server address
+1. **Contract Enforcement**: They ensure the backend adheres to the agreed-upon API specification
+2. **Regression Prevention**: They catch when changes to the backend break the expected API contract
+3. **Documentation Verification**: They validate that the API documentation remains accurate
 
 ## Next Steps
 
-Once basic authentication flows are working, you can move on to testing other features like:
+1. Fix the authentication issues as highest priority
+2. Implement the missing ping endpoint
+3. Run the integration test suite to verify fixes
+4. Update any remaining endpoints that don't match the specification
+5. Ensure error handling is consistent across all endpoints
 
-1. Task management (create, read, update, delete)
-2. Comment management
-3. User profile updates
-4. Template management
-5. Analytics features
-
-Each feature should be tested to ensure proper communication between frontend and backend.
+By addressing these issues, we'll ensure a smooth integration between the frontend and backend components of the Track-It application and maintain a reliable API contract.

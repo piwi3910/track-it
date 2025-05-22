@@ -124,21 +124,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const fetchTasks = useCallback(async () => {
     setTasksLoading(true);
     try {
-      // Handle both mock API and real tRPC API patterns
-      if (typeof api.tasks.getAll === 'function') {
-        // Mock API style
-        const result = await api.tasks.getAll();
-        if (Array.isArray(result)) {
-          setTasks(result);
-        }
-      } else if (api.tasks.getAll && typeof api.tasks.getAll.query === 'function') {
-        // Real tRPC API style
-        const { data, error } = await api.tasks.getAll.query();
-        if (data && !error) {
-          setTasks(data);
-        }
-      } else {
-        console.error('Tasks API not available');
+      // Use real tRPC API
+      const { data, error } = await api.tasks.getAll();
+      if (error) {
+        console.error('Failed to fetch tasks:', error);
+      } else if (data) {
+        setTasks(data);
       }
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
@@ -146,11 +137,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setTasksLoading(false);
     }
   }, []);
-  
-  // Fetch tasks on mount
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
 
   // Fetch templates
   const fetchTemplates = useCallback(async () => {
@@ -183,6 +169,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchTemplates();
   }, [fetchTemplates]);
+
+  // Fetch tasks on mount
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // Listen for auth state changes - separate effect after functions are defined
+  useEffect(() => {
+    const handleAuthStateChange = (event: Event) => {
+      if (event instanceof CustomEvent && event.detail?.isAuthenticated) {
+        // User just logged in, refetch data
+        fetchTasks();
+        fetchTemplates();
+      } else if (event instanceof CustomEvent && event.detail?.isAuthenticated === false) {
+        // User logged out, clear data
+        setTasks([]);
+        setTemplates([]);
+      }
+    };
+
+    window.addEventListener('auth_state_change', handleAuthStateChange);
+
+    return () => {
+      window.removeEventListener('auth_state_change', handleAuthStateChange);
+    };
+  }, [fetchTasks, fetchTemplates]);
   
   // Get task by ID
   const getTaskById = useCallback(async (id: string) => {
@@ -192,19 +204,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (localTask) return localTask;
       
       // Otherwise fetch from API
-      // Handle both mock API and real tRPC API patterns
-      if (typeof api.tasks.getById === 'function') {
-        // Mock API style
-        return await api.tasks.getById(id);
-      } else if (api.tasks.getById && typeof api.tasks.getById.query === 'function') {
-        // Real tRPC API style
-        const { data, error } = await api.tasks.getById.query(id);
-        if (error) return null;
-        return data;
-      } else {
-        console.warn('getById API not available');
+      const { data, error } = await api.tasks.getById(id);
+      if (error) {
+        console.error('Failed to get task by ID:', error);
         return null;
       }
+      return data;
     } catch (error) {
       console.error('Failed to get task:', error);
       return null;
@@ -214,27 +219,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Create a new task
   const createTask = useCallback(async (task: Omit<Task, 'id'>) => {
     try {
-      // Handle both mock API and real tRPC API patterns
-      let newTask = null;
-      
-      if (typeof api.tasks.create === 'function') {
-        // Mock API style
-        newTask = await api.tasks.create(task);
-      } else if (api.tasks.create && typeof api.tasks.create.mutate === 'function') {
-        // Real tRPC API style
-        const { data, error } = await api.tasks.create.mutate(task);
-        if (error) throw new Error(typeof error === 'string' ? error : error.message);
-        newTask = data;
-      } else {
-        console.error('Create task API not available');
+      const { data, error } = await api.tasks.create(task);
+      if (error) {
+        console.error('Failed to create task:', error);
         return null;
       }
 
       // Update local tasks state
-      if (newTask) {
-        setTasks(prev => [...prev, newTask]);
+      if (data) {
+        setTasks(prev => [...prev, data]);
       }
-      return newTask;
+      return data;
     } catch (error) {
       console.error('Failed to create task:', error);
       return null;
@@ -244,32 +239,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update an existing task
   const updateTask = useCallback(async (id: string, task: Partial<Task>) => {
     try {
-      // Handle both mock API and real tRPC API patterns
-      let updatedTask = null;
-      
-      if (typeof api.tasks.update === 'function') {
-        // Mock API style
-        updatedTask = await api.tasks.update(id, task);
-      } else if (api.tasks.update && typeof api.tasks.update.mutate === 'function') {
-        // Real tRPC API style
-        const { data, error } = await api.tasks.update.mutate({ id, ...task });
-        if (error) throw new Error(typeof error === 'string' ? error : error.message);
-        updatedTask = data;
-      } else {
-        console.error('Update task API not available');
+      const { data, error } = await api.tasks.update({ id, ...task });
+      if (error) {
+        console.error('Failed to update task:', error);
         return null;
       }
 
       // Update local tasks state
-      if (updatedTask) {
-        setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
+      if (data) {
+        setTasks(prev => prev.map(t => t.id === id ? data : t));
 
         // Update selectedTask if it's the one being edited
         if (selectedTask?.id === id) {
-          setSelectedTask(updatedTask);
+          setSelectedTask(data);
         }
       }
-      return updatedTask;
+      return data;
     } catch (error) {
       console.error('Failed to update task:', error);
       return null;
@@ -279,33 +264,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Delete a task
   const deleteTask = useCallback(async (id: string) => {
     try {
-      // Handle both mock API and real tRPC API patterns
-      let success = false;
-      
-      if (typeof api.tasks.delete === 'function') {
-        // Mock API style
-        success = await api.tasks.delete(id);
-      } else if (api.tasks.delete && typeof api.tasks.delete.mutate === 'function') {
-        // Real tRPC API style
-        const { error } = await api.tasks.delete.mutate(id);
-        if (error) throw new Error(typeof error === 'string' ? error : error.message);
-        success = true;
-      } else {
-        console.error('Delete task API not available');
+      const { error } = await api.tasks.delete(id);
+      if (error) {
+        console.error('Failed to delete task:', error);
         return false;
       }
 
-      if (success) {
-        // Update local tasks state
-        setTasks(prev => prev.filter(t => t.id !== id));
+      // Update local tasks state
+      setTasks(prev => prev.filter(t => t.id !== id));
 
-        // Clear selectedTask if it's the one being deleted
-        if (selectedTask?.id === id) {
-          setSelectedTask(null);
-        }
+      // Clear selectedTask if it's the one being deleted
+      if (selectedTask?.id === id) {
+        setSelectedTask(null);
       }
 
-      return success;
+      return true;
     } catch (error) {
       console.error('Failed to delete task:', error);
       return false;

@@ -53,7 +53,7 @@ export function AppLayout() {
     { icon: <IconLayoutKanban size={16} />, label: 'Kanban', to: '/kanban' },
     { icon: <IconCalendar size={16} />, label: 'Calendar', to: '/calendar' },
     { icon: <IconList size={16} />, label: 'Backlog', to: '/backlog' },
-    { icon: <IconTemplate size={16} />, label: 'Templates', to: '/templates' },
+    { icon: <IconTemplate size={16} />, label: 'Templates', to: '/templates', disabled: true },
   ];
 
   return (
@@ -66,7 +66,11 @@ export function AppLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={3}>Track-It</Title>
+            <img 
+              src="/logo.png" 
+              alt="Track-It Logo" 
+              className="app-logo"
+            />
           </Group>
 
           {/* Global search */}
@@ -123,24 +127,44 @@ export function AppLayout() {
         <Stack justify="space-between" h="100%">
           <Stack gap={8}>
             {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => isActive ? 'active-nav-link' : 'nav-link'}
-                style={{
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                }}
-              >
-                <UnstyledButton className="nav-item-button">
-                  <Group gap="xs">
-                    <ThemeIcon variant="light" size="sm" className="nav-icon">
-                      {item.icon}
-                    </ThemeIcon>
-                    <Text className="nav-text">{item.label}</Text>
-                  </Group>
-                </UnstyledButton>
-              </NavLink>
+              item.disabled ? (
+                <div
+                  key={item.to}
+                  className="nav-link disabled coming-soon"
+                  style={{
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <UnstyledButton className="nav-item-button">
+                    <Group gap="xs">
+                      <ThemeIcon variant="light" size="sm" className="nav-icon">
+                        {item.icon}
+                      </ThemeIcon>
+                      <Text className="nav-text">{item.label}</Text>
+                    </Group>
+                  </UnstyledButton>
+                </div>
+              ) : (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => isActive ? 'active-nav-link' : 'nav-link'}
+                  style={{
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <UnstyledButton className="nav-item-button">
+                    <Group gap="xs">
+                      <ThemeIcon variant="light" size="sm" className="nav-icon">
+                        {item.icon}
+                      </ThemeIcon>
+                      <Text className="nav-text">{item.label}</Text>
+                    </Group>
+                  </UnstyledButton>
+                </NavLink>
+              )
             ))}
           </Stack>
 

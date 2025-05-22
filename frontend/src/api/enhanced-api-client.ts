@@ -165,7 +165,51 @@ function parseApiError(error: unknown, context: { endpoint?: string; method?: st
       );
     }
     
-    // Parse HTTP status code to error code
+    // Parse API spec formatted errors (with message and code)
+    if (error.data?.code && error.data?.message) {
+      // API spec errors have a direct mapping to our error codes
+      let errorCode: ErrorCode;
+      
+      // Map API spec error codes to our error codes - direct mapping for standard codes
+      if (Object.values(ErrorCode).includes(error.data.code as ErrorCode)) {
+        errorCode = error.data.code as ErrorCode;
+      } else {
+        // Fallback mapping if needed
+        switch (error.data.code) {
+          case 'VALIDATION_ERROR':
+            errorCode = ErrorCode.VALIDATION_ERROR;
+            break;
+          case 'UNAUTHORIZED':
+            errorCode = ErrorCode.UNAUTHORIZED;
+            break;
+          case 'FORBIDDEN':
+            errorCode = ErrorCode.FORBIDDEN;
+            break;
+          case 'NOT_FOUND':
+            errorCode = ErrorCode.NOT_FOUND;
+            break;
+          case 'INTERNAL_SERVER_ERROR':
+            errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+            break;
+          default:
+            errorCode = ErrorCode.UNKNOWN_ERROR;
+        }
+      }
+      
+      return AppError.create(
+        errorCode,
+        error.data.message,
+        {
+          statusCode: error.data.httpStatus || 500,
+          details: {
+            originalCode: error.data.code,
+            endpoint: context.endpoint
+          }
+        }
+      );
+    }
+    
+    // Fallback to HTTP status code if available
     if (error.data?.httpStatus) {
       const errorCode = mapHttpStatusToErrorCode(error.data.httpStatus);
       return AppError.create(
@@ -175,55 +219,6 @@ function parseApiError(error: unknown, context: { endpoint?: string; method?: st
           statusCode: error.data.httpStatus,
           details: {
             originalError: error.message,
-            ...error.data,
-            endpoint: context.endpoint
-          }
-        }
-      );
-    }
-    
-    // Use TRPC error code if available
-    if (error.data?.code) {
-      let errorCode: ErrorCode;
-      
-      // Map TRPC error codes to our error codes
-      switch (error.data.code) {
-        case 'BAD_REQUEST':
-          errorCode = ErrorCode.VALIDATION_ERROR;
-          break;
-        case 'UNAUTHORIZED':
-          errorCode = ErrorCode.UNAUTHORIZED;
-          break;
-        case 'FORBIDDEN':
-          errorCode = ErrorCode.FORBIDDEN;
-          break;
-        case 'NOT_FOUND':
-          errorCode = ErrorCode.NOT_FOUND;
-          break;
-        case 'TIMEOUT':
-          errorCode = ErrorCode.TIMEOUT_ERROR;
-          break;
-        case 'CONFLICT':
-          errorCode = ErrorCode.CONFLICT;
-          break;
-        case 'PRECONDITION_FAILED':
-          errorCode = ErrorCode.VALIDATION_ERROR;
-          break;
-        case 'INTERNAL_SERVER_ERROR':
-          errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
-          break;
-        default:
-          errorCode = ErrorCode.UNKNOWN_ERROR;
-      }
-      
-      return AppError.create(
-        errorCode,
-        error.message,
-        {
-          statusCode: error.data.httpStatus || 500,
-          details: {
-            trpcCode: error.data.code,
-            ...error.data,
             endpoint: context.endpoint
           }
         }

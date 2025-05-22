@@ -8,25 +8,33 @@
   margin-bottom: var(--spacing-xs) !important;
   padding: 0 !important; /* No padding */
   width: 100% !important;
-}
-
-/* Fix the width issues when dragging */
-[data-rbd-draggable-context-id] {
-  width: auto !important;
   max-width: 100% !important;
+  overflow: hidden !important;
 }
 
-/* Control the dragged item's width */
-[data-rbd-drag-handle-draggable-id] {
+/* Prevent any card from exceeding column width */
+.kanban-board .mantine-Card-root {
   width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-/* Style of item being dragged */
+/* Basic card container - keep it simple */
+.compact-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+/* Minimal drag styling - only fix the specific width issue */
 [data-rbd-draggable-id][data-rbd-dragging="true"] {
-  width: 280px !important; /* Fixed width while dragging */
-  max-width: 280px !important;
+  width: var(--kanban-card-drag-width) !important;
+  max-width: var(--kanban-card-drag-width) !important;
   z-index: 9999 !important;
-  opacity: 0.9 !important;
+  opacity: 0.95 !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 /* Apply even more compact styling to card content */

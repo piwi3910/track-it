@@ -779,7 +779,9 @@ export function CalendarPage() {
         console.log('Would update Google Calendar event:', taskData);
       } else if (taskData.id) {
         // Update existing task
-        await updateTask(taskData.id, taskData);
+        // Extract id and pass the rest as data
+        const { id, ...data } = taskData;
+        await updateTask(id, data);
       } else {
         // Create new task
         await createTask(taskData as Omit<Task, 'id'>);

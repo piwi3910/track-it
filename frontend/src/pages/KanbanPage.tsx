@@ -72,14 +72,20 @@ export function KanbanPage() {
   };
   
   const handleTaskSubmit = async (taskData: any) => {
-    if (taskData.id) {
-      // Update existing task using AppContext
-      updateTask(taskData.id, taskData);
-    } else {
-      // Create new task (AppContext will handle ID generation)
-      await createTask(taskData);
+    try {
+      if (taskData.id) {
+        // Update existing task using AppContext
+        // Extract id and pass the rest as data
+        const { id, ...data } = taskData;
+        await updateTask(id, data);
+      } else {
+        // Create new task (AppContext will handle ID generation)
+        await createTask(taskData);
+      }
+      setTaskModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save task:', error);
     }
-    setTaskModalOpen(false);
   };
   
   const handleDragEnd = (result: any) => {

@@ -29,7 +29,7 @@ import type { Task } from '@/types/task';
 import { useApp } from '@/hooks/useApp';
 
 export function DashboardPage() {
-  const { tasks, currentUser } = useApp();
+  const { tasks, currentUser, updateTask, createTask } = useApp();
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -57,10 +57,24 @@ export function DashboardPage() {
     setTaskModalOpen(true);
   };
 
-  const handleTaskSubmit = (task: Partial<Task>) => {
-    // In a real app, this would create/update the task
-    console.log('Task submitted:', task);
-    setTaskModalOpen(false);
+  const handleTaskSubmit = async (task: Partial<Task>) => {
+    console.log('DashboardPage handleTaskSubmit called with:', task);
+    try {
+      if (task.id) {
+        // Update existing task
+        // Extract id and pass the rest as data
+        const { id, ...data } = task;
+        console.log('Updating task with ID:', id);
+        await updateTask(id, data);
+      } else {
+        // Create new task
+        console.log('Creating new task');
+        await createTask(task as Omit<Task, 'id'>);
+      }
+      setTaskModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save task:', error);
+    }
   };
 
   return (

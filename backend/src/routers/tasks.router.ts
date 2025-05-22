@@ -68,6 +68,7 @@ const createTaskSchema = z.object({
 const updateTaskSchema = z.object({
   id: z.string(),
   data: z.object({
+    // Core fields that exist in database
     title: z.string().min(1).optional(),
     description: z.string().optional(),
     status: frontendTaskStatusSchema.optional(),
@@ -75,16 +76,50 @@ const updateTaskSchema = z.object({
     tags: z.array(z.string()).optional(),
     dueDate: z.string().nullable().optional(),
     assigneeId: z.string().nullable().optional(),
-    estimatedHours: z.number().optional(),
-    actualHours: z.number().optional(),
+    estimatedHours: z.number().nullable().optional(),
+    actualHours: z.number().nullable().optional(),
+    timeTrackingActive: z.boolean().optional(),
+    trackingTimeSeconds: z.number().optional(),
+    
+    // Frontend fields that will be ignored until database supports them
+    weight: z.number().nullable().optional(),
+    startDate: z.string().nullable().optional(),
+    endDate: z.string().nullable().optional(),
+    isMultiDay: z.boolean().optional(),
+    reporterId: z.string().nullable().optional(),
+    startTrackedTimestamp: z.string().nullable().optional(),
+    lastTrackedTimestamp: z.string().nullable().optional(),
+    lastSavedTimestamp: z.string().nullable().optional(),
+    parentTaskId: z.string().nullable().optional(),
+    childTaskIds: z.array(z.string()).optional(),
+    source: z.enum(['app', 'google', 'import']).optional(),
+    isSubtask: z.boolean().optional(),
+    recurrence: z.object({
+      pattern: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']),
+      interval: z.number().optional(),
+      endDate: z.string().nullable().optional(),
+      daysOfWeek: z.array(z.number()).optional(),
+      dayOfMonth: z.number().optional(),
+      monthOfYear: z.number().optional()
+    }).nullable().optional(),
+    isRecurrenceInstance: z.boolean().optional(),
+    originalTaskId: z.string().optional(),
+    isRecurring: z.boolean().optional(),
+    
+    // Subtasks array (will be handled specially)
     subtasks: z.array(z.object({
       id: z.string().optional(),
       title: z.string(),
       completed: z.boolean()
     })).optional(),
-    timeTrackingActive: z.boolean().optional(),
-    trackingTimeSeconds: z.number().optional()
+    
+    // Alternative field names that frontend might send
+    assignee: z.string().nullable().optional(), // Frontend sometimes sends 'assignee' instead of 'assigneeId'
   })
+}).superRefine((val, ctx) => {
+  // Add debug logging for validation
+  logger.info('Validating task update schema:', JSON.stringify(val, null, 2));
+  return true;
 });
 
 const getTaskByIdSchema = z.object({
@@ -199,9 +234,20 @@ export const tasksRouter = router({
     })),
     
   update: protectedProcedure
+    .use(({ next, rawInput }) => {
+      // Log the raw input before validation
+      logger.info('Raw task update input received:', JSON.stringify(rawInput, null, 2));
+      return next();
+    })
     .input(updateTaskSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
+        // Debug logging to see what data is being received
+        logger.info('Task update request received:', {
+          input: JSON.stringify(input, null, 2),
+          userId: ctx.user?.id
+        });
+        
         // First get the task to check permissions
         const task = await taskService.getTaskById(input.id);
         
@@ -216,8 +262,13 @@ export const tasksRouter = router({
           }
         }
         
-        // Prepare update data
+        // Prepare update data - only include fields that exist in the database schema
+        // Handle assignee field (frontend might send 'assignee' instead of 'assigneeId')
+        const assigneeId = input.data.assigneeId ?? input.data.assignee;
+        
+        // Only include database-supported fields to avoid Prisma errors
         const updateData: any = {
+          // Core database fields
           ...(input.data.title && { title: input.data.title }),
           ...(input.data.description !== undefined && { description: input.data.description }),
           ...(input.data.status && { status: input.data.status }),
@@ -228,12 +279,31 @@ export const tasksRouter = router({
           ...(input.data.actualHours !== undefined && { actualHours: input.data.actualHours }),
           ...(input.data.timeTrackingActive !== undefined && { timeTrackingActive: input.data.timeTrackingActive }),
           ...(input.data.trackingTimeSeconds !== undefined && { trackingTimeSeconds: input.data.trackingTimeSeconds }),
-          ...(input.data.assigneeId !== undefined && { 
-            assignee: input.data.assigneeId 
-              ? { connect: { id: input.data.assigneeId } } 
+          
+          // Handle assignee relationship
+          ...((input.data.assigneeId !== undefined || input.data.assignee !== undefined) && { 
+            assignee: assigneeId 
+              ? { connect: { id: assigneeId } } 
               : { disconnect: true } 
           })
         };
+        
+        // Log which frontend fields are being ignored (for future database schema updates)
+        const ignoredFields = [];
+        if (input.data.weight !== undefined) ignoredFields.push('weight');
+        if (input.data.startDate !== undefined) ignoredFields.push('startDate');
+        if (input.data.endDate !== undefined) ignoredFields.push('endDate');
+        if (input.data.isMultiDay !== undefined) ignoredFields.push('isMultiDay');
+        if (input.data.reporterId !== undefined) ignoredFields.push('reporterId');
+        if (input.data.recurrence !== undefined) ignoredFields.push('recurrence');
+        if (input.data.isRecurring !== undefined) ignoredFields.push('isRecurring');
+        
+        if (ignoredFields.length > 0) {
+          logger.info('Ignoring unsupported fields until database schema update:', { 
+            taskId: input.id,
+            ignoredFields 
+          });
+        }
         
         // Handle subtask updates if present
         if (input.data.subtasks) {
@@ -250,10 +320,22 @@ export const tasksRouter = router({
           };
         }
         
+        // Log the final update data being sent to Prisma
+        logger.info('Sending update data to Prisma:', {
+          taskId: input.id,
+          updateData: JSON.stringify(updateData, null, 2)
+        });
+
         // Update the task
         const updatedTask = await taskService.updateTask(input.id, updateData);
+        logger.info('Task updated successfully:', { taskId: input.id });
         return normalizeTaskData(updatedTask);
       } catch (error) {
+        logger.error('Task update failed:', {
+          taskId: input.id,
+          error: error.message,
+          stack: error.stack
+        });
         return handleError(error);
       }
     })),

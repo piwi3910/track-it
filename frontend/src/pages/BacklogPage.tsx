@@ -31,7 +31,7 @@ import {
 import TaskModal from '@/components/TaskModal';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task, TaskPriority } from '@/types/task';
-import { api } from '@/api';
+import { useApp } from '@/hooks/useApp';
 
 // Map priority to color
 const priorityColorMap: Record<TaskPriority, string> = {
@@ -42,8 +42,8 @@ const priorityColorMap: Record<TaskPriority, string> = {
 };
 
 export function BacklogPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { tasks, updateTask, createTask, deleteTask } = useApp();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -53,47 +53,12 @@ export function BacklogPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
   // Load tasks from API
-  useEffect(() => {
-    const fetchBacklogTasks = async () => {
-      setLoading(true);
-      try {
-        // First try to get tasks by status
-        const { data, error } = await api.tasks.getByStatus('backlog');
-        
-        if (error) {
-          throw new Error(error);
-        }
-        
-        if (data) {
-          setTasks(data);
-        } else {
-          // Fallback to getting all tasks and filtering locally
-          const allTasksResult = await api.tasks.getAll();
-          if (allTasksResult.error) {
-            throw new Error(allTasksResult.error);
-          }
-          
-          if (allTasksResult.data) {
-            // Filter tasks with 'backlog' status
-            const backlogTasks = allTasksResult.data.filter(task => task.status === 'backlog');
-            setTasks(backlogTasks);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load backlog tasks:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load tasks');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchBacklogTasks();
-  }, []);
+  // Filter tasks to only show backlog tasks
+  const backlogTasks = tasks.filter(task => task.status === 'backlog');
   
   // Filter and sort tasks
-  const filteredAndSortedTasks = tasks
+  const filteredAndSortedTasks = backlogTasks
     .filter(task => 
-      task.status === 'backlog' &&
       (searchQuery === '' || 
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (task.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -225,33 +190,16 @@ export function BacklogPage() {
     try {
       if (taskData.id) {
         // Update existing task
-        const { data, error } = await api.tasks.update(taskData.id, taskData);
-        if (error) {
-          throw new Error(error);
-        }
-        
-        if (data) {
-          // Update local state
-          setTasks(prev => 
-            prev.map(task => task.id === taskData.id ? data : task)
-          );
-        }
+        // Extract id and pass the rest as data
+        const { id, ...data } = taskData;
+        await updateTask(id, data);
       } else {
         // Create new task with backlog status
         const newTaskData = {
           ...taskData,
           status: 'backlog',
         };
-        
-        const { data, error } = await api.tasks.create(newTaskData);
-        if (error) {
-          throw new Error(error);
-        }
-        
-        if (data) {
-          // Add to local state
-          setTasks(prev => [...prev, data]);
-        }
+        await createTask(newTaskData);
       }
     } catch (err) {
       console.error('Failed to save task:', err);

@@ -170,8 +170,23 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
     fetchUsers();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Helper function to highlight today's date
+  const getTodayHighlightProps = (date: Date) => {
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    return isToday ? {
+      style: {
+        backgroundColor: 'var(--mantine-color-blue-1)',
+        borderRadius: '50%',
+        fontWeight: 'bold'
+      }
+    } : {};
+  };
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    console.log('TaskModal handleSubmit called with formData:', formData);
 
     // Basic validation
     if (!formData.title.trim()) {
@@ -209,6 +224,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       };
     }
 
+    console.log('TaskModal calling onSubmit with taskData:', taskData);
     onSubmit(taskData);
   };
 
@@ -510,6 +526,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
                   withinPortal
+                  getDayProps={getTodayHighlightProps}
                 />
 
                 <div style={{ flex: 1 }}></div>
@@ -532,6 +549,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
                   withinPortal
+                  getDayProps={getTodayHighlightProps}
                 />
 
                 <DatePickerInput
@@ -546,6 +564,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   leftSection={<IconCalendarEvent size={16} />}
                   minDate={formData.startDate ? new Date(formData.startDate) : undefined}
                   withinPortal
+                  getDayProps={getTodayHighlightProps}
                 />
               </Group>
             )}
@@ -763,6 +782,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                     clearable
                     leftSection={<IconCalendar size={16} />}
                     withinPortal
+                    getDayProps={getTodayHighlightProps}
                   />
 
                   <Paper p="xs" withBorder bg="blue.0">

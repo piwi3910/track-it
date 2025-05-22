@@ -239,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update an existing task
   const updateTask = useCallback(async (id: string, task: Partial<Task>) => {
     try {
-      const { data, error } = await api.tasks.update({ id, ...task });
+      const { data, error } = await api.tasks.update(id, task);
       if (error) {
         console.error('Failed to update task:', error);
         return null;

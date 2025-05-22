@@ -49,6 +49,19 @@ export default function QuickAddTask({
   const [estimatedHours, setEstimatedHours] = useState<number | undefined>(undefined);
   const [users, setUsers] = useState<any[]>([]);
 
+  // Helper function to highlight today's date
+  const getTodayHighlightProps = (date: Date) => {
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    return isToday ? {
+      style: {
+        backgroundColor: 'var(--mantine-color-blue-1)',
+        borderRadius: '50%',
+        fontWeight: 'bold'
+      }
+    } : {};
+  };
+
   // Fetch users for assignee dropdown
   useEffect(() => {
     const fetchUsers = async () => {
@@ -212,6 +225,7 @@ export default function QuickAddTask({
                 leftSection={<IconCalendarEvent size={16} />}
                 clearable
                 withinPortal
+                getDayProps={getTodayHighlightProps}
               />
               <TextInput
                 label="Estimated Hours"

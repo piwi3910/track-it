@@ -64,7 +64,7 @@ function TemplateCard({ template, onUse, onEdit, onDelete }: {
       <div>
         {/* Menu in the top-right corner to match TaskCard */}
         <div style={{ position: 'absolute', top: 2, right: 5, paddingBottom: 3, zIndex: 20 }}>
-          <Menu withinPortal position="bottom-end">
+          <Menu position="bottom-end">
             <Menu.Target>
               <ActionIcon variant="subtle" size="sm">
                 <IconDotsVertical size={16} />

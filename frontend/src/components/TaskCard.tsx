@@ -506,7 +506,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         </Popover>
         
         {/* Menu */}
-        <Menu withinPortal position="bottom-end">
+        <Menu position="bottom-end">
           <Menu.Target>
             <ActionIcon variant="subtle" size="sm" onClick={(e) => e.stopPropagation()}>
               <IconDotsVertical size={16} />

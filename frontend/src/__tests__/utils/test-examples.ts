@@ -13,12 +13,15 @@ import {
   assertions
 } from './api-test-utils';
 
+// Type assertion to help TypeScript
+type TRPCClient = ReturnType<typeof createTestClient>;
+
 /**
  * Example test suite for tasks API
  */
 describe('Tasks API Integration Example', () => {
   // Test client and cleanup list
-  let client: ReturnType<typeof createTestClient>;
+  let client: TRPCClient;
   const createdTaskIds: string[] = [];
   
   // Set up test environment - run before all tests
@@ -143,7 +146,7 @@ describe('Tasks API Integration Example', () => {
  * Example test suite for authentication
  */
 describe('Authentication API Example', () => {
-  let client: ReturnType<typeof createTestClient>;
+  let client: TRPCClient;
   
   beforeAll(async () => {
     const backendAvailable = await isBackendRunning();
@@ -211,7 +214,7 @@ describe('Authentication API Example', () => {
  */
 describe('Advanced Testing Example', () => {
   let testState: {
-    client: ReturnType<typeof createTestClient>;
+    client: TRPCClient;
     auth?: { token: string; user: { id: string; name: string; email: string } };
     testTaskId?: string;
     createdItemIds: {
@@ -238,7 +241,7 @@ describe('Advanced Testing Example', () => {
       
       // Update state with initialized values
       testState.client = client;
-      testState.auth = auth;
+      testState.auth = auth as { token: string; user: { id: string; name: string; email: string; } };
       
       // Create a shared task for tests that need it
       const testTask = await testSetup.createTestTask(

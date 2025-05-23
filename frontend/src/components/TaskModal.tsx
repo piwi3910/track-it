@@ -498,7 +498,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   { value: 'in_review', label: 'In Review' },
                   { value: 'done', label: 'Done' }
                 ]}
-                withinPortal
               />
 
               <Select
@@ -512,7 +511,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   { value: 'high', label: 'High' },
                   { value: 'urgent', label: 'Urgent' }
                 ]}
-                withinPortal
               />
             </Group>
 
@@ -536,7 +534,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   }}
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
-                  withinPortal
                   getDayProps={getTodayHighlightProps}
                 />
 
@@ -559,7 +556,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   }}
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
-                  withinPortal
                   getDayProps={getTodayHighlightProps}
                 />
 
@@ -574,7 +570,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   clearable
                   leftSection={<IconCalendarEvent size={16} />}
                   minDate={formData.startDate ? new Date(formData.startDate) : undefined}
-                  withinPortal
                   getDayProps={getTodayHighlightProps}
                 />
               </Group>
@@ -595,7 +590,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                 searchable
                 maxDropdownHeight={200}
                 nothingFoundMessage="No matching user found"
-                withinPortal
                 renderOption={({ option }) => (
                   <Group gap="xs">
                     <Avatar src={option.image} size="sm" radius="xl" />
@@ -729,7 +723,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                       { value: 'yearly', label: 'Yearly' }
                     ]}
                     leftSection={<IconRepeat size={16} />}
-                    withinPortal
                   />
 
                   <NumberInput
@@ -791,7 +784,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                     }}
                     clearable
                     leftSection={<IconCalendar size={16} />}
-                    withinPortal
                     getDayProps={getTodayHighlightProps}
                   />
 

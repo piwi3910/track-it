@@ -595,7 +595,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                           </Text>
                           
                           {isCurrentUser && (
-                            <Menu position="bottom-end" withArrow withinPortal>
+                            <Menu position="bottom-end" withArrow>
                               <Menu.Target>
                                 <ActionIcon size="xs" variant="subtle">
                                   <IconDotsVertical size={12} />
@@ -707,7 +707,6 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
         opened={mentionPopupOpen}
         onChange={setMentionPopupOpen}
         withArrow
-        withinPortal
         closeOnClickOutside
         shadow="md"
       >
@@ -792,7 +791,6 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
             opened={drivePopupOpen}
             onChange={setDrivePopupOpen}
             withArrow
-            withinPortal
             shadow="md"
           >
             <Popover.Target>

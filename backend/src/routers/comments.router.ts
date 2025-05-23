@@ -5,14 +5,14 @@ import * as commentService from '../db/services/comment.service';
 import * as taskService from '../db/services/task.service';
 
 // Define the Comment type from the service response
-type CommentAuthor = {
+export type CommentAuthor = {
   id: string;
   name: string;
   email: string;
   avatarUrl: string | null;
 };
 
-interface CommentWithAuthor {
+export interface CommentWithAuthor {
   id: string;
   text: string;
   createdAt: Date;
@@ -25,7 +25,7 @@ interface CommentWithAuthor {
 }
 
 // Type for normalized comment data
-type NormalizedComment = {
+export type NormalizedComment = {
   id: string;
   text: string;
   createdAt: string;
@@ -43,13 +43,27 @@ type NormalizedComment = {
 };
 
 // Helper function to normalize comment data for API response
-const normalizeCommentData = (comment: CommentWithAuthor): NormalizedComment => {
+const normalizeCommentData = (comment: CommentWithAuthor | (Omit<CommentWithAuthor, 'author'> & { author?: Omit<CommentAuthor, 'email'> })): NormalizedComment => {
   const normalized: NormalizedComment = {
-    ...comment,
+    id: comment.id,
+    text: comment.text,
+    taskId: comment.taskId,
+    authorId: comment.authorId,
+    parentId: comment.parentId,
     // Format dates as ISO strings if they exist as Date objects
     createdAt: comment.createdAt instanceof Date ? comment.createdAt.toISOString() : String(comment.createdAt),
     updatedAt: comment.updatedAt instanceof Date ? comment.updatedAt.toISOString() : String(comment.updatedAt)
   };
+
+  // Add author if it exists
+  if (comment.author) {
+    normalized.author = {
+      id: comment.author.id,
+      name: comment.author.name,
+      email: 'email' in comment.author ? comment.author.email : '',
+      avatarUrl: comment.author.avatarUrl
+    };
+  }
 
   // Normalize nested replies if they exist
   if (comment.replies && Array.isArray(comment.replies)) {

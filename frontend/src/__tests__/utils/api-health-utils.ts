@@ -52,11 +52,16 @@ export const checkApiHealth = async (verbose = false): Promise<{
     // Check root endpoint
     const rootStart = Date.now();
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const rootResponse = await fetch(`${API_CONFIG.baseUrl}/`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        timeout: 5000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       endpoints['/'] = {
         status: rootResponse.status,
@@ -85,11 +90,16 @@ export const checkApiHealth = async (verbose = false): Promise<{
     // Check health endpoint
     const healthStart = Date.now();
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const healthResponse = await fetch(`${API_CONFIG.baseUrl}/health`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        timeout: 5000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       endpoints['/health'] = {
         status: healthResponse.status,
@@ -112,11 +122,16 @@ export const checkApiHealth = async (verbose = false): Promise<{
     // Check tRPC endpoint
     const trpcStart = Date.now();
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const trpcResponse = await fetch(`${API_CONFIG.baseUrl}/trpc`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        timeout: 5000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       endpoints['/trpc'] = {
         status: trpcResponse.status,

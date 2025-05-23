@@ -6,6 +6,9 @@
  */
 
 import { trpcClient } from '@/utils/trpc';
+
+// Type assertion for mocked trpcClient
+const mockedTrpcClient = trpcClient as any;
 import { auth, tasks } from '@/api/trpc-api-client';
 import { 
   createLocalStorageMock, 
@@ -70,7 +73,7 @@ describe('tRPC API Client', () => {
   describe('Error Handling', () => {
     it('should handle network errors gracefully', async () => {
       // Mock a network error
-      (trpcClient.users.login.mutate as jest.Mock).mockRejectedValueOnce(
+      (mockedTrpcClient.users.login.mutate as jest.Mock).mockRejectedValueOnce(
         new Error('Failed to fetch')
       );
       
@@ -84,7 +87,7 @@ describe('tRPC API Client', () => {
     
     it('should handle authentication errors correctly', async () => {
       // Mock an authentication error
-      (trpcClient.users.login.mutate as jest.Mock).mockRejectedValueOnce({
+      (mockedTrpcClient.users.login.mutate as jest.Mock).mockRejectedValueOnce({
         message: 'UNAUTHORIZED',
         data: { code: 'UNAUTHORIZED' }
       });
@@ -103,7 +106,7 @@ describe('tRPC API Client', () => {
     
     it('should handle server errors appropriately', async () => {
       // Mock a server error
-      (trpcClient.tasks.getAll.query as jest.Mock).mockRejectedValueOnce({
+      (mockedTrpcClient.tasks.getAll.query as jest.Mock).mockRejectedValueOnce({
         message: 'Internal server error',
         data: { httpStatus: 500 }
       });
@@ -118,7 +121,7 @@ describe('tRPC API Client', () => {
     
     it('should pass through specific error messages when available', async () => {
       // Mock a specific error message
-      (trpcClient.users.register.mutate as jest.Mock).mockRejectedValueOnce({
+      (mockedTrpcClient.users.register.mutate as jest.Mock).mockRejectedValueOnce({
         message: 'Email already in use',
         data: { code: 'CONFLICT' }
       });
@@ -145,7 +148,7 @@ describe('tRPC API Client', () => {
         role: 'member'
       };
       
-      (trpcClient.users.login.mutate as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
+      (mockedTrpcClient.users.login.mutate as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
       
       // Setup spy to check if localStorage is used
       jest.spyOn(localStorageMock, 'setItem');
@@ -185,7 +188,7 @@ describe('tRPC API Client', () => {
         { id: '2', title: 'Task 2', status: 'in_progress' }
       ];
       
-      (trpcClient.tasks.getAll.query as jest.Mock).mockResolvedValueOnce(mockTasksResponse);
+      (mockedTrpcClient.tasks.getAll.query as jest.Mock).mockResolvedValueOnce(mockTasksResponse);
       
       // Test the API call
       const result = await tasks.getAll();
@@ -197,7 +200,7 @@ describe('tRPC API Client', () => {
     
     it('should retry API calls for retriable errors', async () => {
       // Mock a network error (retriable) followed by success
-      (trpcClient.tasks.getAll.query as jest.Mock)
+      (mockedTrpcClient.tasks.getAll.query as jest.Mock)
         .mockRejectedValueOnce(new Error('Failed to fetch'))
         .mockResolvedValueOnce([{ id: '1', title: 'Task 1' }]);
       
@@ -207,12 +210,12 @@ describe('tRPC API Client', () => {
       // Assertions
       expect(result.data).toEqual([{ id: '1', title: 'Task 1' }]);
       expect(result.error).toBeNull();
-      expect(trpcClient.tasks.getAll.query).toHaveBeenCalledTimes(2);
+      expect(mockedTrpcClient.tasks.getAll.query).toHaveBeenCalledTimes(2);
     });
     
     it('should not retry for non-retriable errors', async () => {
       // Mock a validation error (non-retriable)
-      (trpcClient.tasks.create.mutate as jest.Mock).mockRejectedValueOnce({
+      (mockedTrpcClient.tasks.create.mutate as jest.Mock).mockRejectedValueOnce({
         message: 'Validation failed',
         data: { code: 'BAD_REQUEST', httpStatus: 400 }
       });
@@ -226,7 +229,7 @@ describe('tRPC API Client', () => {
       // Assertions
       expect(result.data).toBeNull();
       expect(result.error).toBe('Validation failed');
-      expect(trpcClient.tasks.create.mutate).toHaveBeenCalledTimes(1);
+      expect(mockedTrpcClient.tasks.create.mutate).toHaveBeenCalledTimes(1);
     });
   });
 });

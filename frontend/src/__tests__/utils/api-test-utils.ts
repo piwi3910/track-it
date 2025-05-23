@@ -15,6 +15,9 @@ import { TRPCClientError } from '@trpc/client';
 import { Task, TaskPriority, TaskStatus, User, Comment, Attachment, TaskTemplate } from '@/types/task';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
+// Type assertion to help TypeScript
+type TRPCClient = ReturnType<typeof createTRPCClient<AppRouter>>;
+
 // Configure global fetch for Node.js environment
 global.fetch = fetch;
 
@@ -96,21 +99,21 @@ export const isBackendRunning = async (
  * Create a tRPC client for testing with auth token handling
  * @returns Configured tRPC client
  */
-export const createTestClient = () => {
+export const createTestClient = (): TRPCClient => {
   return createTRPCClient<AppRouter>({
     links: [
       httpBatchLink({
         url: API_CONFIG.trpcUrl,
-        // Important: disable batching for tests to ensure predictable behavior
-        batch: false,
+        // Important: reduce URL length to effectively disable batching for tests
+        maxURLLength: 50,
         // Configure fetch with auth headers if token exists
         fetch: (url, options = {}) => {
           const fetchOptions = options as RequestInit;
-          const headers = fetchOptions.headers || {};
+          const headers = new Headers(fetchOptions.headers || {});
           const token = mockStorage.getItem('token');
           
           if (token) {
-            headers.Authorization = `Bearer ${token}`;
+            headers.set('Authorization', `Bearer ${token}`);
           }
           
           fetchOptions.headers = headers;
@@ -213,8 +216,8 @@ export const generators = {
       estimatedHours: overrides.estimatedHours || 4,
       assigneeId: overrides.assigneeId,
       subtasks: overrides.subtasks || [
-        { title: 'Subtask 1', completed: false },
-        { title: 'Subtask 2', completed: false }
+        { id: '1', title: 'Subtask 1', completed: false },
+        { id: '2', title: 'Subtask 2', completed: false }
       ]
     };
   },
@@ -252,8 +255,8 @@ export const generators = {
       category: overrides.category || 'test',
       isPublic: overrides.isPublic !== undefined ? overrides.isPublic : true,
       subtasks: overrides.subtasks || [
-        { title: 'Template Subtask 1', completed: false },
-        { title: 'Template Subtask 2', completed: false }
+        { id: '1', title: 'Template Subtask 1', completed: false },
+        { id: '2', title: 'Template Subtask 2', completed: false }
       ]
     };
   },
@@ -310,7 +313,7 @@ export const testSetup = {
    * @returns Created task
    */
   createTestTask: async (
-    client: ReturnType<typeof createTestClient>,
+    client: TRPCClient,
     taskData: Partial<Task> = {},
     createdTasksArray: string[] = []
   ) => {
@@ -334,7 +337,7 @@ export const testSetup = {
    * @returns Array of created tasks
    */
   createMultipleTestTasks: async (
-    client: ReturnType<typeof createTestClient>,
+    client: TRPCClient,
     count: number,
     baseTaskData: Partial<Task> = {},
     createdTasksArray: string[] = []
@@ -363,7 +366,7 @@ export const testSetup = {
    * @returns Created template
    */
   createTestTemplate: async (
-    client: ReturnType<typeof createTestClient>,
+    client: TRPCClient,
     templateData: Partial<TaskTemplate> = {}
   ) => {
     const testTemplate = generators.template(templateData);
@@ -382,7 +385,7 @@ export const testTeardown = {
    * @param taskIds - Array of task IDs to clean up
    */
   cleanupTestTasks: async (
-    client: ReturnType<typeof createTestClient>,
+    client: TRPCClient,
     taskIds: string[]
   ) => {
     if (!taskIds || taskIds.length === 0) return;
@@ -402,7 +405,7 @@ export const testTeardown = {
    * @param templateIds - Array of template IDs to clean up
    */
   cleanupTestTemplates: async (
-    client: ReturnType<typeof createTestClient>,
+    client: TRPCClient,
     templateIds: string[]
   ) => {
     if (!templateIds || templateIds.length === 0) return;
@@ -422,7 +425,7 @@ export const testTeardown = {
    * @param cleanupItems - Object containing arrays of items to clean up
    */
   teardownTestEnvironment: async (
-    client: ReturnType<typeof createTestClient>,
+    client: TRPCClient,
     cleanupItems: {
       taskIds?: string[];
       templateIds?: string[];

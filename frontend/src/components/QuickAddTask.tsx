@@ -69,7 +69,7 @@ export default function QuickAddTask({
       try {
         const { data, error } = await api.admin.getAllUsers();
         if (data && !error) {
-          setUsers(data);
+          setUsers(data as User[]);
         } else {
           console.error('Failed to fetch users:', error);
         }
@@ -85,6 +85,7 @@ export default function QuickAddTask({
     if (!title.trim()) return;
 
     const taskData: Omit<Task, 'id'> = {
+      taskNumber: Date.now(), // Temporary task number, will be replaced by backend
       title: title.trim(),
       status,
       priority,
@@ -119,8 +120,12 @@ export default function QuickAddTask({
         setEstimatedHours(undefined);
         setDetailsOpen(false);
         
-        // Callback with the created task
-        if (onTaskAdded) onTaskAdded(newTask);
+        // Callback with the created task, adding taskNumber if missing
+        const taskWithNumber = {
+          ...newTask,
+          taskNumber: newTask.taskNumber || Date.now()
+        };
+        if (onTaskAdded) onTaskAdded(taskWithNumber);
       } else {
         notifications.show({
           title: 'Failed to Create Task',
@@ -203,7 +208,6 @@ export default function QuickAddTask({
                   onChange={(value) => setStatus(value as TaskStatus)}
                   leftSection={<IconCheck size={16} />}
                   allowDeselect={false}
-                  withinPortal
                 />
               )}
               <Select
@@ -213,7 +217,6 @@ export default function QuickAddTask({
                 onChange={(value) => setPriority(value as TaskPriority)}
                 leftSection={<IconFlag size={16} />}
                 allowDeselect={false}
-                withinPortal
               />
             </Group>
             
@@ -225,7 +228,6 @@ export default function QuickAddTask({
                 onChange={setDueDate}
                 leftSection={<IconCalendarEvent size={16} />}
                 clearable
-                withinPortal
                 getDayProps={getTodayHighlightProps}
               />
               <TextInput
@@ -252,7 +254,6 @@ export default function QuickAddTask({
                 onChange={setAssigneeId}
                 leftSection={<IconUser size={16} />}
                 clearable
-                withinPortal
               />
             </Group>
             
@@ -263,7 +264,6 @@ export default function QuickAddTask({
               value={tags}
               onChange={setTags}
               clearable
-              withinPortal
             />
           </Popover.Dropdown>
         </Popover>

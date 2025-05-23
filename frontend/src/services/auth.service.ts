@@ -56,8 +56,8 @@ export const authService = {
     try {
       const result = await api.auth.login(email, password);
       
-      if (result.data && result.data.token) {
-        this.setToken(result.data.token);
+      if (result.data && (result.data as any).token) {
+        this.setToken((result.data as any).token);
         return { data: result.data, error: null };
       }
       
@@ -80,8 +80,8 @@ export const authService = {
     try {
       const result = await api.auth.loginWithGoogle(idToken);
       
-      if (result.data && result.data.token) {
-        this.setToken(result.data.token);
+      if (result.data && (result.data as any).token) {
+        this.setToken((result.data as any).token);
         return { data: result.data, error: null };
       }
       
@@ -104,13 +104,13 @@ export const authService = {
     try {
       const result = await api.auth.verifyGoogleToken(credential);
       
-      if (result.data && result.data.valid) {
+      if (result.data && (result.data as any).valid) {
         return { 
           data: { 
             valid: true, 
-            email: result.data.email, 
-            name: result.data.name,
-            picture: result.data.picture
+            email: (result.data as any).email, 
+            name: (result.data as any).name,
+            picture: (result.data as any).picture
           }, 
           error: null 
         };
@@ -137,8 +137,8 @@ export const authService = {
       // This method only exists in newer versions of the Google Identity Services
       try {
         // This method might not exist in all versions
-        if (typeof window.google.accounts.id.revoke === 'function') {
-          window.google.accounts.id.revoke();
+        if (typeof (window.google.accounts.id as any).revoke === 'function') {
+          (window.google.accounts.id as any).revoke();
         }
         window.google.accounts.id.disableAutoSelect();
       } catch (e) {

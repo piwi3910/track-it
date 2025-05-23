@@ -62,7 +62,7 @@ export const useGoogleStore = create<GoogleState>()(
             return null;
           }
           
-          const status = response.data;
+          const status = response.data as { connected: boolean; email?: string; scopes?: string[] };
           
           set({ 
             connected: status.connected,
@@ -145,7 +145,7 @@ export const useGoogleStore = create<GoogleState>()(
             return [];
           }
           
-          const files = response.data || [];
+          const files = (response.data || []) as Array<{ id: string; name: string; url: string; iconUrl?: string; mimeType: string; createdAt: string; }>;
           set({ driveFiles: files, isLoading: false });
           
           return files;
@@ -168,7 +168,7 @@ export const useGoogleStore = create<GoogleState>()(
             return [];
           }
           
-          const tasks = response.data || [];
+          const tasks = (response.data || []) as Array<{ id: string; title: string; status: string; priority: string; dueDate?: string; source: "google_tasks"; }>;
           set({ googleTasks: tasks, isLoading: false });
           
           return tasks;

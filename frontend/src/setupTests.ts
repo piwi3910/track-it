@@ -17,20 +17,20 @@ import crossFetch from 'cross-fetch';
 import { jest } from '@jest/globals';
 
 // Mock the window object
-global.window = global.window || {
+global.window = (global.window || {
   addEventListener: jest.fn(),
   removeEventListener: jest.fn(),
   dispatchEvent: jest.fn(),
-  CustomEvent: jest.fn((event, options) => ({
+  CustomEvent: jest.fn((event: string, options: any) => ({
     type: event,
     detail: options?.detail,
     bubbles: options?.bubbles || false,
     cancelable: options?.cancelable || false,
   })),
-};
+}) as Window & typeof globalThis;
 
 // Mock matchMedia for responsive UI tests
-window.matchMedia = window.matchMedia || function() {
+window.matchMedia = (window.matchMedia || function() {
   return {
     matches: false,
     addListener: function() {},
@@ -41,7 +41,7 @@ window.matchMedia = window.matchMedia || function() {
     media: '',
     onchange: null,
   };
-};
+}) as typeof window.matchMedia;
 
 // Mock localStorage implementation
 const localStorageMock = (() => {
@@ -93,7 +93,7 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-}));
+})) as any;
 
 // Mock IntersectionObserver for UI tests
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
@@ -104,7 +104,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   rootMargin: '',
   thresholds: [],
   takeRecords: jest.fn(),
-}));
+})) as any;
 
 // Mock URL.createObjectURL for file uploads
 global.URL.createObjectURL = jest.fn(() => 'mock-object-url');
@@ -127,7 +127,7 @@ const MockAbortSignal = function() {
 
 // Create proper inheritance chain for instanceof checks
 Object.setPrototypeOf(MockAbortSignal.prototype, Object.getPrototypeOf(Object.prototype));
-global.AbortSignal = MockAbortSignal;
+global.AbortSignal = MockAbortSignal as any;
 
 // Mock AbortController using the AbortSignal
 global.AbortController = jest.fn().mockImplementation(() => {
@@ -135,7 +135,7 @@ global.AbortController = jest.fn().mockImplementation(() => {
     signal: new MockAbortSignal(),
     abort: jest.fn()
   };
-});
+}) as any;
 
 // Mock crypto for secure random values
 if (!global.crypto) {

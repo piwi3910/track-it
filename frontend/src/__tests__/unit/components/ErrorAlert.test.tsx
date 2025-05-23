@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MantineProvider } from '@mantine/core';
 import { ErrorAlert, ConnectionErrorAlert, ValidationErrorAlert } from '../../../components/error/ErrorAlert';
-import { describe, it, expect, afterEach } from '@jest/globals';
+import { describe, it, afterEach } from '@jest/globals';
 import { jest } from '@jest/globals';
 import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared/types/errors';
 

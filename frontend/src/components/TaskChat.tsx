@@ -35,6 +35,7 @@ import {
 import { useApp } from '@/hooks/useApp';
 import { useGoogle } from '@/hooks/useGoogle';
 import { api } from '@/api';
+import { apiHandler } from '@/utils/trpc';
 import { Comment, Attachment, User } from '@/types/task';
 import { notifications } from '@mantine/notifications';
 import { useTheme } from '@/hooks/useTheme';;
@@ -73,7 +74,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
         const [commentsRes, attachmentsRes, usersRes] = await Promise.all([
           apiHandler(() => api.comments.getByTaskId(taskId)),
           apiHandler(() => api.attachments.getByTaskId(taskId)),
-          apiHandler(() => api.users.getAll())
+          apiHandler(() => api.admin.getAllUsers())
         ]);
         
         if (commentsRes.data) setComments(commentsRes.data);
@@ -116,29 +117,23 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     
     try {
       // Extract mentions from message
-      const mentionRegex = /@(\w+)/g;
-      const mentions = [...message.matchAll(mentionRegex)].map(match => match[1]);
+      // const mentionRegex = /@(\w+)/g;
+      // const mentions = [...message.matchAll(mentionRegex)].map(match => match[1]);
       
       // Find user IDs for mentioned usernames
-      const mentionedUserIds = users
-        .filter(user => {
-          const username = user.name.toLowerCase().replace(/\s+/g, '');
-          return mentions.some(mention => 
-            username === mention.toLowerCase() || 
-            user.name.toLowerCase().includes(mention.toLowerCase())
-          );
-        })
-        .map(user => user.id);
+      // const mentionedUserIds = users
+      //   .filter(user => {
+      //     const username = user.name.toLowerCase().replace(/\s+/g, '');
+      //     return mentions.some(mention => 
+      //       username === mention.toLowerCase() || 
+      //       user.name.toLowerCase().includes(mention.toLowerCase())
+      //     );
+      //   })
+      //   .map(user => user.id);
       
       // Create new comment
       const { data, error } = await apiHandler(() => 
-        api.comments.create({
-          taskId,
-          authorId: currentUser.id,
-          text: message,
-          mentions: mentionedUserIds.length > 0 ? mentionedUserIds : undefined,
-          createdAt: new Date().toISOString()
-        })
+        api.comments.create(taskId, message)
       );
       
       if (error) throw new Error(error);
@@ -209,14 +204,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     setUploadLoading(true);
     try {
       const { data, error } = await apiHandler(() => 
-        api.attachments.upload(
-          {
-            name: file.name,
-            type: file.type,
-            size: file.size
-          },
-          taskId
-        )
+        api.attachments.upload(taskId, file)
       );
       
       if (error) throw new Error(error);
@@ -226,12 +214,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
         
         // Automatically add a comment about the file
         await apiHandler(() => 
-          api.comments.create({
-            taskId,
-            authorId: currentUser.id,
-            text: `Uploaded file: ${file.name}`,
-            createdAt: new Date().toISOString()
-          })
+          api.comments.create(taskId, `Uploaded file: ${file.name}`)
         );
         
         // Reload comments
@@ -262,12 +245,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     try {
       // Create a comment with the Google Drive link
       const { data, error } = await apiHandler(() => 
-        api.comments.create({
-          taskId,
-          authorId: currentUser.id,
-          text: `Attached Google Drive file: [${driveFile.name}](${driveFile.url})`,
-          createdAt: new Date().toISOString()
-        })
+        api.comments.create(taskId, `Attached Google Drive file: [${driveFile.name}](${driveFile.url})`)
       );
       
       if (error) throw new Error(error);
@@ -346,7 +324,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     
     // Regex for @mentions
     const mentionRegex = /@(\w+)/g;
-    let match;
+    let match: RegExpExecArray | null;
     
     // Regex for links like [text](url)
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
@@ -357,7 +335,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     
     if (linkMatches.length > 0) {
       let offset = 0;
-      for (const linkMatch of linkMatches) {
+      for (const linkMatch of linkMatches as RegExpMatchArray[]) {
         const originalText = linkMatch[0];
         const linkText = linkMatch[1];
         // We use linkMatch[2] later in the rendering of links
@@ -421,7 +399,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             const urlParts = [];
             let lastUrlIndex = 0;
-            let urlMatch;
+            let urlMatch: RegExpExecArray | null;
             
             while ((urlMatch = urlRegex.exec(part)) !== null) {
               const url = urlMatch[0];

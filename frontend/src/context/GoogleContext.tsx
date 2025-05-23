@@ -4,7 +4,7 @@ import { GoogleCalendarEvent, GoogleDriveFile, Task } from '@/types/task';
 import { authService } from '@/services/auth.service';
 import { useStore } from '@/hooks/useStore';
 
-interface GoogleContextType {
+export interface GoogleContextType {
   isAuthenticated: boolean;
   authenticating: boolean;
   // Calendar
@@ -25,29 +25,15 @@ interface GoogleContextType {
   logout: () => void;
 }
 
-// Utility function to safely handle API calls with error handling
-const apiHandler = async <T,>(apiCall: () => Promise<T>): Promise<{ data: T | null; error: string | null }> => {
-  try {
-    const response = await apiCall();
-    return { data: response, error: null };
-  } catch (error) {
-    console.error('API error:', error);
-    return { 
-      data: null, 
-      error: error instanceof Error ? error.message : 'API call failed' 
-    };
-  }
-};
-
-const GoogleContext = createContext<GoogleContextType | undefined>(undefined);
+export const GoogleContext = createContext<GoogleContextType | undefined>(undefined);
 
 export function GoogleProvider({ children }: { children: ReactNode }) {
   // Get Google store state
-  const { googleStore } = useStore();
+  const { google } = useStore();
   
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    googleStore?.connected || false
+    google?.connected || false
   );
   const [authenticating, setAuthenticating] = useState(false);
   
@@ -63,29 +49,29 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
   // Drive state
   const [driveSyncing, setDriveSyncing] = useState(false);
   const [driveFiles, setDriveFiles] = useState<GoogleDriveFile[]>(
-    googleStore?.driveFiles || []
+    google?.driveFiles || []
   );
 
   // Sync state with Zustand store
   useEffect(() => {
-    if (googleStore) {
-      setIsAuthenticated(googleStore.connected);
-      setDriveFiles(googleStore.driveFiles);
+    if (google) {
+      setIsAuthenticated(google.connected);
+      setDriveFiles(google.driveFiles);
       
-      if (googleStore.lastSyncTime) {
+      if (google.lastSyncTime) {
         setCalendarSynced(true);
       }
     }
-  }, [googleStore]);
+  }, [google]);
   
   // Handle auth state changes
   useEffect(() => {
     const checkGoogleAuth = async () => {
       try {
-        // Only check if googleStore exists and has the method
-        if (googleStore?.getAccountStatus) {
-          const response = await googleStore.getAccountStatus();
-          if (response && response.connected) {
+        // Only check if google store exists and has the method
+        if (google?.getAccountStatus) {
+          const response = await google.getAccountStatus();
+          if (response && response.data?.connected) {
             setIsAuthenticated(true);
           } else {
             setIsAuthenticated(false);
@@ -112,19 +98,19 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener('auth_state_change', handleAuthStateChange);
     };
-  }, [googleStore]);
+  }, [google]);
   
   // Authenticate with Google
   const authenticate = useCallback(async () => {
     setAuthenticating(true);
     try {
       // Use the Zustand store to handle authentication
-      if (googleStore?.linkAccount) {
+      if (google?.link) {
         // In a real implementation, this would get the auth code from Google OAuth
         const authCode = 'dummy-auth-code';
-        const success = await googleStore.linkAccount(authCode);
+        const result = await google.link(authCode);
         
-        if (success) {
+        if (result.data && !result.error) {
           setIsAuthenticated(true);
           return true;
         }
@@ -137,7 +123,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     } finally {
       setAuthenticating(false);
     }
-  }, [googleStore]);
+  }, [google]);
   
   // Sync calendar
   const syncCalendar = useCallback(async () => {
@@ -148,8 +134,8 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     
     setCalendarSyncing(true);
     try {
-      if (googleStore?.syncCalendar) {
-        await googleStore.syncCalendar();
+      if (google?.syncCalendar) {
+        await google.syncCalendar();
       } else {
         const result = await api.googleIntegration.syncCalendar();
         if (result.error) {
@@ -158,22 +144,20 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       }
       
       // Fetch calendar events from API
-      const { data, error } = await apiHandler(() => 
-        api.googleIntegration.getCalendarEvents.query()
-      );
+      const { data, error } = await api.googleIntegration.getCalendarEvents();
       
       if (error) {
         throw new Error(error);
       }
       
-      setCalendarEvents(data || []);
+      setCalendarEvents((data as GoogleCalendarEvent[]) || []);
       setCalendarSynced(true);
     } catch (error) {
       console.error('Calendar sync failed:', error);
     } finally {
       setCalendarSyncing(false);
     }
-  }, [isAuthenticated, authenticate, googleStore]);
+  }, [isAuthenticated, authenticate, google]);
   
   // Import Google Tasks
   const importGoogleTasks = useCallback(async () => {
@@ -186,11 +170,12 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     try {
       let tasks: Task[] = [];
       
-      if (googleStore?.importGoogleTasks) {
-        tasks = await googleStore.importGoogleTasks();
+      if (google?.importTasks) {
+        const result = await google.importTasks();
+        tasks = (result.data as Task[]) || [];
       } else {
-        const response = await api.googleIntegration.importGoogleTasks.query();
-        tasks = response;
+        const response = await api.googleIntegration.importGoogleTasks();
+        tasks = (response.data as Task[]) || [];
       }
       
       setTasksSynced(true);
@@ -201,7 +186,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     } finally {
       setTasksSyncing(false);
     }
-  }, [isAuthenticated, authenticate, googleStore]);
+  }, [isAuthenticated, authenticate, google]);
   
   // Fetch Google Drive files
   const fetchDriveFiles = useCallback(async () => {
@@ -214,13 +199,14 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     try {
       let files: GoogleDriveFile[] = [];
       
-      if (googleStore?.fetchDriveFiles) {
-        files = await googleStore.fetchDriveFiles();
+      if (google?.fetchDriveFiles) {
+        const result = await google.fetchDriveFiles();
+        files = (result.data as GoogleDriveFile[]) || [];
       } else {
-        const response = await api.googleIntegration.getGoogleDriveFiles.query();
+        const response = await api.googleIntegration.getGoogleDriveFiles();
         
         // Convert to GoogleDriveFile format
-        files = response.map(file => ({
+        files = ((response.data as Array<{ id: string; name: string; url: string }>) || []).map((file) => ({
           id: file.id,
           name: file.name,
           mimeType: file.name.endsWith('.docx') || file.name.endsWith('.docs') 
@@ -245,14 +231,14 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     } finally {
       setDriveSyncing(false);
     }
-  }, [isAuthenticated, authenticate, googleStore]);
+  }, [isAuthenticated, authenticate, google]);
   
   // Log out
   const logout = useCallback(() => {
     authService.logout();
     
-    if (googleStore?.unlinkAccount) {
-      googleStore.unlinkAccount();
+    if (google?.unlink) {
+      google.unlink();
     }
     
     setIsAuthenticated(false);
@@ -260,7 +246,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     setTasksSynced(false);
     setCalendarEvents([]);
     setDriveFiles([]);
-  }, [googleStore]);
+  }, [google]);
   
   const value: GoogleContextType = {
     isAuthenticated,

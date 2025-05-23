@@ -397,6 +397,13 @@ export const googleIntegration = {
     return apiHandler(() => 
       trpcClient.googleIntegration.getGoogleAccountStatus.query()
     );
+  },
+  
+  // Get calendar events
+  getCalendarEvents: async () => {
+    return apiHandler(() => 
+      trpcClient.googleIntegration.getCalendarEvents.query()
+    );
   }
 };
 

@@ -86,7 +86,12 @@ export function GlobalSearch() {
     try {
       // Use API search for all queries - it handles task ID, title, description, and tags
       const searchResults = await searchTasks(searchQuery);
-      setResults(Array.isArray(searchResults) ? searchResults : []);
+      // Map results to frontend Task type with taskNumber
+      const mappedResults = (Array.isArray(searchResults) ? searchResults : []).map((task, index) => ({
+        ...task,
+        taskNumber: 'taskNumber' in task && typeof task.taskNumber === 'number' ? task.taskNumber : index + 1
+      })) as Task[];
+      setResults(mappedResults);
     } catch (error) {
       console.error('Search failed:', error);
       setResults([]);

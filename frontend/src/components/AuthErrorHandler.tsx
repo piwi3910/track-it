@@ -18,8 +18,8 @@ export function AuthErrorHandler() {
       const hasAuthError = api.error?.includes('UNAUTHORIZED') ||
                           api.error?.includes('401') ||
                           api.recentErrors.some(err => 
-                            err.includes('UNAUTHORIZED') || 
-                            err.includes('401')
+                            err.message.includes('UNAUTHORIZED') || 
+                            err.message.includes('401')
                           );
       
       // Check for 401 errors in auth store

@@ -3,10 +3,42 @@ import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
 import * as commentService from '../db/services/comment.service';
 import * as taskService from '../db/services/task.service';
-import * as userService from '../db/services/user.service';
+
+// Define the Comment type from the service response
+type CommentWithAuthor = {
+  id: string;
+  text: string;
+  createdAt: Date;
+  updatedAt: Date;
+  taskId: string;
+  authorId: string;
+  parentId: string | null;
+  author?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+  replies?: Array<CommentWithAuthor>;
+};
 
 // Helper function to normalize comment data for API response
-const normalizeCommentData = (comment: any) => {
+const normalizeCommentData = (comment: CommentWithAuthor): {
+  id: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+  taskId: string;
+  authorId: string;
+  parentId: string | null;
+  author?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+  replies?: Array<any>;
+} => {
   return {
     ...comment,
     // Format dates as ISO strings if they exist as Date objects
@@ -41,7 +73,22 @@ const deleteCommentSchema = z.object({
 export const commentsRouter = router({
   getByTaskId: protectedProcedure
     .input(getCommentsByTaskSchema)
-    .query(({ input }) => safeProcedure(async () => {
+    .query(({ input }) => safeProcedure(async (): Promise<Array<{
+      id: string;
+      text: string;
+      createdAt: string;
+      updatedAt: string;
+      taskId: string;
+      authorId: string;
+      parentId: string | null;
+      author?: {
+        id: string;
+        name: string;
+        email: string;
+        avatarUrl: string | null;
+      };
+      replies?: Array<any>;
+    }>> => {
       try {
         // Verify task exists
         const task = await taskService.getTaskById(input.taskId);
@@ -62,7 +109,7 @@ export const commentsRouter = router({
     
   getCommentCount: protectedProcedure
     .input(getCommentCountSchema)
-    .query(({ input }) => safeProcedure(async () => {
+    .query(({ input }) => safeProcedure(async (): Promise<number> => {
       try {
         // Verify task exists
         const task = await taskService.getTaskById(input.taskId);
@@ -83,7 +130,22 @@ export const commentsRouter = router({
     
   create: protectedProcedure
     .input(createCommentSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input, ctx }) => safeProcedure(async (): Promise<{
+      id: string;
+      text: string;
+      createdAt: string;
+      updatedAt: string;
+      taskId: string;
+      authorId: string;
+      parentId: string | null;
+      author?: {
+        id: string;
+        name: string;
+        email: string;
+        avatarUrl: string | null;
+      };
+      replies?: Array<any>;
+    }> => {
       try {
         // Verify task exists
         const task = await taskService.getTaskById(input.taskId);
@@ -110,7 +172,7 @@ export const commentsRouter = router({
         // For example, create notifications for mentioned users
         if (mentionedUsernames.length > 0) {
           // Resolve usernames to user IDs
-          const mentionedUserIds = await commentService.resolveUserIds(mentionedUsernames);
+          await commentService.resolveUserIds(mentionedUsernames);
           
           // In a real app, you would create notifications for mentioned users here
           // This could be done in a background job to avoid blocking the response
@@ -124,7 +186,22 @@ export const commentsRouter = router({
     
   update: protectedProcedure
     .input(updateCommentSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input, ctx }) => safeProcedure(async (): Promise<{
+      id: string;
+      text: string;
+      createdAt: string;
+      updatedAt: string;
+      taskId: string;
+      authorId: string;
+      parentId: string | null;
+      author?: {
+        id: string;
+        name: string;
+        email: string;
+        avatarUrl: string | null;
+      };
+      replies?: Array<any>;
+    }> => {
       try {
         // Get comment by ID
         const comment = await commentService.getCommentById(input.id);
@@ -150,7 +227,7 @@ export const commentsRouter = router({
         // If there are mentions, we would handle them here
         if (mentionedUsernames.length > 0) {
           // Resolve usernames to user IDs
-          const mentionedUserIds = await commentService.resolveUserIds(mentionedUsernames);
+          await commentService.resolveUserIds(mentionedUsernames);
           
           // In a real app, you would create notifications for mentioned users here
           // This could be done in a background job to avoid blocking the response
@@ -164,7 +241,7 @@ export const commentsRouter = router({
     
   delete: protectedProcedure
     .input(deleteCommentSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input, ctx }) => safeProcedure(async (): Promise<{ success: boolean }> => {
       try {
         // Get comment by ID
         const comment = await commentService.getCommentById(input.id);

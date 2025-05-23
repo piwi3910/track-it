@@ -52,7 +52,7 @@ export class AppError extends Error {
     message: string;
     statusCode?: number;
     field?: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
     timestamp: string;
     requestId?: string;
     retryable?: boolean;
@@ -85,7 +85,7 @@ export class AppError extends Error {
   /**
    * Create a JSON representation of the error
    */
-  toJSON() {
+  toJSON(): { name: string; message: string; details: AppError['details'] } {
     return {
       name: this.name,
       message: this.message,
@@ -103,12 +103,14 @@ export function handleError(error: unknown): never {
   logger.error({ error }, 'Error encountered');
   
   // Type guard for AppError
-  const isAppError = (err: any): err is AppError => {
+  const isAppError = (err: unknown): err is AppError => {
     return (
-      err &&
+      err !== null &&
       typeof err === 'object' &&
+      'name' in err &&
       err.name === 'AppError' &&
-      err.details &&
+      'details' in err &&
+      err.details !== null &&
       typeof err.details === 'object' &&
       'code' in err.details
     );
@@ -288,7 +290,7 @@ export function createForbiddenError(message = 'Access denied'): AppError {
 /**
  * Create a standardized AppError for database errors
  */
-export function createDatabaseError(message: string, details?: any): AppError {
+export function createDatabaseError(message: string, details?: Record<string, unknown>): AppError {
   return AppError.create(ErrorCode.DATABASE_ERROR, message, {
     statusCode: 500,
     details
@@ -301,13 +303,13 @@ export function createDatabaseError(message: string, details?: any): AppError {
 export function createExternalServiceError(
   service: string, 
   message: string,
-  details?: any
+  details?: Record<string, unknown>
 ): AppError {
   return AppError.create(ErrorCode.EXTERNAL_SERVICE_ERROR, message, {
     statusCode: 502,
     details: {
       service,
-      ...details
+      ...(details || {})
     }
   });
 }
@@ -315,7 +317,7 @@ export function createExternalServiceError(
 /**
  * Create a standardized AppError for Google API errors
  */
-export function createGoogleApiError(message: string, details?: any): AppError {
+export function createGoogleApiError(message: string, details?: Record<string, unknown>): AppError {
   return AppError.create(ErrorCode.GOOGLE_API_ERROR, message, {
     statusCode: 502,
     details
@@ -328,7 +330,7 @@ export function createGoogleApiError(message: string, details?: any): AppError {
  * @param error Any error object
  * @returns Formatted error with message and code properties
  */
-export function formatErrorResponse(error: any): { message: string; code: string } {
+export function formatErrorResponse(error: unknown): { message: string; code: string } {
   // Default error response
   const defaultResponse = {
     message: "An unexpected error occurred",
@@ -336,12 +338,14 @@ export function formatErrorResponse(error: any): { message: string; code: string
   };
   
   // Type guard for AppError
-  const isAppError = (err: any): err is AppError => {
+  const isAppError = (err: unknown): err is AppError => {
     return (
-      err && 
+      err !== null && 
       typeof err === 'object' && 
+      'name' in err &&
       err.name === 'AppError' && 
-      err.details && 
+      'details' in err &&
+      err.details !== null && 
       typeof err.details === 'object' && 
       'code' in err.details
     );
@@ -355,10 +359,11 @@ export function formatErrorResponse(error: any): { message: string; code: string
     };
   } 
   // If it's a TRPCError, format accordingly
-  else if (error && typeof error === 'object' && 'code' in error) {
+  else if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
     // Map TRPC error codes to API specification codes
     let code: string;
-    switch (error.code) {
+    const errorWithCode = error as { code: string; message?: string };
+    switch (errorWithCode.code) {
       case 'UNAUTHORIZED':
         code = 'UNAUTHORIZED';
         break;
@@ -376,7 +381,7 @@ export function formatErrorResponse(error: any): { message: string; code: string
     }
     
     return {
-      message: error.message || defaultResponse.message,
+      message: errorWithCode.message || defaultResponse.message,
       code
     };
   } 

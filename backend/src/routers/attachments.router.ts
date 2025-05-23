@@ -5,7 +5,33 @@ import * as attachmentService from '../db/services/attachment.service';
 import * as taskService from '../db/services/task.service';
 
 // Helper function to normalize attachment data for API response
-const normalizeAttachmentData = (attachment: any) => {
+const normalizeAttachmentData = (attachment: {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  filePath: string;
+  uploadedAt: Date;
+  taskId: string;
+  googleDriveId: string | null;
+  googleDriveUrl: string | null;
+  url?: string;
+  thumbnailUrl?: string | null;
+  size?: number;
+}): {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  filePath: string;
+  createdAt: string;
+  taskId: string;
+  googleDriveId: string | null;
+  googleDriveUrl: string | null;
+  url?: string;
+  thumbnailUrl?: string | null;
+  size: number;
+} => {
   return {
     ...attachment,
     // Map database column names to API spec names
@@ -38,7 +64,20 @@ const deleteAttachmentSchema = z.object({
 export const attachmentsRouter = router({
   getByTaskId: protectedProcedure
     .input(getAttachmentsByTaskSchema)
-    .query(({ input }) => safeProcedure(async () => {
+    .query(({ input }) => safeProcedure(async (): Promise<Array<{
+      id: string;
+      fileName: string;
+      fileSize: number;
+      fileType: string;
+      filePath: string;
+      createdAt: string;
+      taskId: string;
+      googleDriveId: string | null;
+      googleDriveUrl: string | null;
+      url?: string;
+      thumbnailUrl?: string | null;
+      size: number;
+    }>> => {
       try {
         // Verify task exists
         const task = await taskService.getTaskById(input.taskId);
@@ -59,7 +98,20 @@ export const attachmentsRouter = router({
   
   upload: protectedProcedure
     .input(uploadAttachmentSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input }) => safeProcedure(async (): Promise<{
+      id: string;
+      fileName: string;
+      fileSize: number;
+      fileType: string;
+      filePath: string;
+      createdAt: string;
+      taskId: string;
+      googleDriveId: string | null;
+      googleDriveUrl: string | null;
+      url: string;
+      thumbnailUrl: string | null;
+      size: number;
+    }> => {
       try {
         // Verify task exists
         const task = await taskService.getTaskById(input.taskId);
@@ -98,7 +150,7 @@ export const attachmentsRouter = router({
   
   delete: protectedProcedure
     .input(deleteAttachmentSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input, ctx }) => safeProcedure(async (): Promise<{ success: boolean }> => {
       try {
         // Get attachment by ID
         const attachment = await attachmentService.getAttachmentById(input.id);

@@ -395,7 +395,7 @@ export function useSyncMantineTheme() {
       // Only set if we don't have a stored preference already
       setColorScheme(colorScheme);
     }
-  }, []); // Empty dependency array to run only once on mount
+  }, [colorScheme, setColorScheme]); // Include dependencies
   
   // Expose a manual sync function if needed elsewhere
   return {

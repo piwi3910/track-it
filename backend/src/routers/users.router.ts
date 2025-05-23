@@ -1,15 +1,10 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure, adminProcedure, safeProcedure } from '../trpc/trpc';
-import type {
-  User,
-  LoginResponse,
-  RegisterResponse
-} from '@track-it/shared';
+// Removed unused imports: User, LoginResponse, RegisterResponse
 import { 
   createNotFoundError, 
   createUnauthorizedError, 
-  createValidationError,
   handleError
 } from '../utils/error-handler';
 import * as userService from '../db/services/user.service';
@@ -19,7 +14,13 @@ import { config } from '../config';
 import { logger } from '../server';
 
 // Helper function to normalize user data for API response
-const normalizeUserData = (user: any) => {
+const normalizeUserData = (user: { 
+  role: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  lastLogin?: Date | string | null;
+  [key: string]: unknown;
+}): Record<string, unknown> => {
   return {
     ...user,
     role: formatEnumForApi(user.role),
@@ -56,7 +57,12 @@ const googleTokenVerificationSchema = z.object({
 
 // Function to decode and verify a Google ID token
 // In a real app, you would use the Google OAuth2 API to verify the token
-async function verifyGoogleIdToken(idToken: string) {
+async function verifyGoogleIdToken(idToken: string): Promise<{
+  sub: string;
+  email: string;
+  name: string;
+  picture?: string;
+} | null> {
   try {
     // Log token verification attempt (only show prefix for security)
     logger.info({ tokenPrefix: idToken.substring(0, 10) }, 'Verifying Google ID token');
@@ -294,12 +300,13 @@ export const usersRouter = router({
           name: newUser.name,
           email: newUser.email
         };
-      } catch (error: any) {
+      } catch (error) {
         logger.error({ error, input: { email: input.email, name: input.name } }, 'Registration error');
         
         // Special handling for duplicate email errors
-        if (error.message === 'Email already exists' || 
-            (error.code === 'P2002' && error.meta?.target?.includes('email'))) {
+        const err = error as { message?: string; code?: string; meta?: { target?: string[] } };
+        if (err.message === 'Email already exists' || 
+            (err.code === 'P2002' && err.meta?.target?.includes('email'))) {
           // Use TRPCError for consistent error handling
           throw new TRPCError({
             code: 'CONFLICT',
@@ -380,7 +387,7 @@ export const usersRouter = router({
         }
         
         // Update basic profile fields
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         
         if (input.name) updateData.name = input.name;
         
@@ -579,9 +586,10 @@ export const usersRouter = router({
 
         const newUser = await userService.createUser(userData);
         return normalizeUserData(newUser);
-      } catch (error: any) {
-        if (error.message?.includes('already exists')) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+      } catch (error) {
+        const err = error as { message?: string };
+        if (err.message?.includes('already exists')) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message || 'User already exists' });
         }
         return handleError(error);
       }
@@ -622,9 +630,10 @@ export const usersRouter = router({
 
         const updatedUser = await userService.updateUser(input.userId, updateData);
         return normalizeUserData(updatedUser);
-      } catch (error: any) {
-        if (error.message?.includes('already exists')) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+      } catch (error) {
+        const err = error as { message?: string };
+        if (err.message?.includes('already exists')) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message || 'Operation failed' });
         }
         return handleError(error);
       }

@@ -1,9 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createValidationError, handleError } from '../utils/error-handler';
+import { createValidationError, handleError } from '../utils/error-handler';
 import { logger } from '../server';
 import * as googleService from '../db/services/google.service';
-import * as taskService from '../db/services/task.service';
 
 
 // Input validation schemas

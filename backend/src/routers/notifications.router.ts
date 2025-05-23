@@ -2,10 +2,33 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
 import * as notificationService from '../db/services/notification.service';
-import { NOTIFICATION_TYPE, formatEnumForApi } from '../utils/constants';
+import { formatEnumForApi } from '../utils/constants';
+
+// Define the Notification type from the service response
+type NotificationFromService = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: Date;
+  userId: string;
+  resourceType: string | null;
+  resourceId: string | null;
+};
 
 // Helper function to normalize notification data for API response
-const normalizeNotificationData = (notification: any) => {
+const normalizeNotificationData = (notification: NotificationFromService): {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  userId: string;
+  relatedEntityId: string | null;
+  relatedEntityType: string | null;
+} => {
   return {
     ...notification,
     // Map database field names to API spec names
@@ -25,7 +48,17 @@ const markAsReadSchema = z.object({
 
 export const notificationsRouter = router({
   getAll: protectedProcedure
-    .query(({ ctx }) => safeProcedure(async () => {
+    .query(({ ctx }) => safeProcedure(async (): Promise<Array<{
+      id: string;
+      type: string;
+      title: string;
+      message: string;
+      read: boolean;
+      createdAt: string;
+      userId: string;
+      relatedEntityId: string | null;
+      relatedEntityType: string | null;
+    }>> => {
       try {
         // Get all notifications for the user
         const notifications = await notificationService.getUserNotifications(ctx.user.id);
@@ -39,7 +72,10 @@ export const notificationsRouter = router({
   
   markAsRead: protectedProcedure
     .input(markAsReadSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input, ctx }) => safeProcedure(async (): Promise<{
+      id: string;
+      read: boolean;
+    }> => {
       try {
         // Get notification by ID
         const notification = await notificationService.getNotificationById(input.id);
@@ -66,7 +102,10 @@ export const notificationsRouter = router({
     })),
   
   markAllAsRead: protectedProcedure
-    .mutation(({ ctx }) => safeProcedure(async () => {
+    .mutation(({ ctx }) => safeProcedure(async (): Promise<{
+      markedCount: number;
+      success: boolean;
+    }> => {
       try {
         // Mark all notifications as read for the user
         const markedCount = await notificationService.markAllAsRead(ctx.user.id);
@@ -81,7 +120,7 @@ export const notificationsRouter = router({
     })),
   
   getUnreadCount: protectedProcedure
-    .query(({ ctx }) => safeProcedure(async () => {
+    .query(({ ctx }) => safeProcedure(async (): Promise<{ count: number }> => {
       try {
         // Get unread notification count for the user
         const count = await notificationService.getUnreadCount(ctx.user.id);

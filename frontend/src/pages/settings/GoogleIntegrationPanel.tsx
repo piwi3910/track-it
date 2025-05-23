@@ -35,7 +35,6 @@ import {
 import { useGoogle } from '@/context/GoogleContext';
 import { useApp } from '@/hooks/useApp';
 import { useStore } from '@/hooks/useStore';
-import { authService } from '@/services/auth.service';
 import { notifications } from '@mantine/notifications';
 import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';

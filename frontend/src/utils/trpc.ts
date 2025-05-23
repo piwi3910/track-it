@@ -222,11 +222,11 @@ export const trpcClient = trpc.createClient({
               response.clone().text().then(text => {
                 try {
                   console.error('Response body:', JSON.parse(text));
-                } catch (e) {
+                } catch {
                   console.error('Response body (not JSON):', text);
                 }
-              }).catch(e => {
-                console.error('Failed to read response body:', e);
+              }).catch(() => {
+                console.error('Failed to read response body');
               });
             }
           }

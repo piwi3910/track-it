@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useApp } from './useApp';
 import { authService } from '@/services/auth.service';
 import { useStore } from './useStore';
 
@@ -10,22 +9,36 @@ interface GoogleCredentialResponse {
   select_by: string;
 }
 
-interface GoogleUser {
-  email: string;
-  name: string;
-  picture: string;
-}
 
 declare global {
   interface Window {
     google?: {
       accounts: {
         id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, options: any) => void;
-          prompt: (notification?: any) => void;
+          initialize: (config: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+            auto_select?: boolean;
+            cancel_on_tap_outside?: boolean;
+          }) => void;
+          renderButton: (element: HTMLElement, options: {
+            type?: 'standard' | 'icon';
+            theme?: 'outline' | 'filled_blue' | 'filled_black';
+            size?: 'large' | 'medium' | 'small';
+            text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+            shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+            logo_alignment?: 'left' | 'center';
+            width?: string | number;
+            locale?: string;
+          }) => void;
+          prompt: (notification?: (notification: {
+            isNotDisplayed: () => boolean;
+            isSkippedMoment: () => boolean;
+            getNotDisplayedReason: () => string;
+            getMomentType: () => string;
+          }) => void) => void;
           disableAutoSelect: () => void;
-          storeCredential: (credential: any, callback: () => void) => void;
+          storeCredential: (credential: { id: string; password: string }, callback: () => void) => void;
           cancel: () => void;
           onGoogleLibraryLoad: () => void;
         };
@@ -52,7 +65,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
   const { googleStore } = useStore();
   
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const [connected, setConnected] = useState(googleStore?.connected || false);
   const [connectedEmail, setConnectedEmail] = useState<string | null>(googleStore?.connectedEmail || null);
@@ -195,10 +208,15 @@ export function useGoogleAuth(): UseGoogleAuthResult {
         
         // Temporarily replace the callback
         // We're doing a runtime override
-        (window as any).google.accounts.id.callback = wrappedCallback;
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: wrappedCallback,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
         
         // Prompt the user to select their Google account
-        window.google.accounts.id.prompt((notification: any) => {
+        window.google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
             // If the One Tap dialog is not displayed or skipped, fall back to a render button
             console.log('Google One Tap was skipped or not displayed:', notification.getNotDisplayedReason());
@@ -257,8 +275,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
     login, 
     renderButton, 
     isGoogleLoaded, 
-    loading, 
-    error,
+    loading,
     connected,
     connectedEmail
   };

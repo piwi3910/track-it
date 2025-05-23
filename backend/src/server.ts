@@ -110,7 +110,7 @@ app.use(
 );
 
 // Error handling middleware
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: Error & { statusCode?: number; code?: string; name?: string }, _req: express.Request, res: express.Response): express.Response => {
   logger.error(err, 'Express error handler');
   
   // Handle auth errors
@@ -129,7 +129,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 });
 
 // Start the server
-const startServer = async () => {
+const startServer = async (): Promise<void> => {
   try {
     // Connect to database
     const dbConnected = await connectToDatabase();

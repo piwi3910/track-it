@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { isApiAvailable } from '@/utils/api-utils';
-import { env } from '@/utils/env';
 
 interface ApiContextType {
   apiAvailable: boolean;

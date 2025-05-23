@@ -950,7 +950,9 @@ export function CalendarPage() {
       <Box mb="xl">
         <QuickAddTask
           defaultDueDate={date instanceof Date ? date : null}
-          onTaskAdded={() => console.log('Task added from calendar quick add')}
+          onTaskAdded={() => {
+            // Task will be automatically added to the store
+          }}
         />
       </Box>
 
@@ -1500,8 +1502,9 @@ export function CalendarPage() {
                           cursor: 'pointer'
                         }}
                         onClick={() => {
-                          // Future: Add time-based task creation
-                          date && handleAddTaskForDay(date);
+                          if (date) {
+                            handleAddTaskForDay(date);
+                          }
                         }}
                       />
                     </Grid.Col>

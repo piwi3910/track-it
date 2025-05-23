@@ -47,7 +47,7 @@ export interface ErrorLogEntry {
   /**
    * Additional error details
    */
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   
   /**
    * Component where the error occurred
@@ -67,7 +67,7 @@ export interface ErrorLogEntry {
   /**
    * Browser and environment information
    */
-  environment?: Record<string, any>;
+  environment?: Record<string, string | number | boolean>;
   
   /**
    * User ID if available
@@ -155,7 +155,7 @@ class ErrorLoggingService {
   /**
    * Get environment information
    */
-  private getEnvironment(): Record<string, any> {
+  private getEnvironment(): Record<string, string | number | boolean> {
     if (typeof window === 'undefined') {
       return { environment: 'server' };
     }
@@ -175,7 +175,7 @@ class ErrorLoggingService {
   /**
    * Format an error for logging
    */
-  private formatError(error: unknown, context: Record<string, any> = {}): ErrorLogEntry {
+  private formatError(error: unknown, context: Record<string, unknown> = {}): ErrorLogEntry {
     let errorLog: ErrorLogEntry = {
       message: 'Unknown error',
       timestamp: new Date().toISOString(),
@@ -210,7 +210,7 @@ class ErrorLoggingService {
         ...errorLog,
         message: errorDetails.message,
         code: errorDetails.code,
-        severity: (errorDetails as any).severity,
+        severity: 'severity' in errorDetails ? (errorDetails as AppErrorDetails & { severity?: ErrorSeverity }).severity : undefined,
         details: {
           ...errorLog.details,
           ...errorDetails.details
@@ -246,7 +246,7 @@ class ErrorLoggingService {
   /**
    * Log an error to the console and/or backend
    */
-  logError(error: unknown, context: Record<string, any> = {}): void {
+  logError(error: unknown, context: Record<string, unknown> = {}): void {
     const errorLog = this.formatError(error, context);
     
     // Add to in-memory log
@@ -276,7 +276,7 @@ class ErrorLoggingService {
         }).catch(() => {
           // Ignore fetch errors to prevent infinite loops
         });
-      } catch (e) {
+      } catch {
         // Ignore errors in the error logger to prevent infinite loops
       }
     }
@@ -285,7 +285,7 @@ class ErrorLoggingService {
   /**
    * Log an API error specifically
    */
-  logApiError(error: unknown, endpoint: string, params?: any): void {
+  logApiError(error: unknown, endpoint: string, params?: unknown): void {
     this.logError(error, {
       type: 'api_error',
       endpoint,

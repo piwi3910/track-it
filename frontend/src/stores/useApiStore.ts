@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { isApiAvailable } from '@/utils/api-utils';
-import { env } from '@/utils/env';
 
 // Track API errors
 interface ApiError {

@@ -1,5 +1,4 @@
 import { ReactNode, useEffect } from 'react';
-import { useMantineColorScheme } from '@mantine/core';
 import { useThemeStore, useSyncMantineTheme } from '@/stores/useThemeStore';
 import { ThemeProvider as ThemeContextProvider } from '@/context/ThemeContext';
 
@@ -12,7 +11,7 @@ import { ThemeProvider as ThemeContextProvider } from '@/context/ThemeContext';
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Sync with Mantine theme (one-way sync to avoid loops)
-  const themeSyncer = useSyncMantineTheme();
+  useSyncMantineTheme();
   
   const { toggleColorScheme, isDark } = useThemeStore();
   
@@ -24,13 +23,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Expose theme toggle for development purposes
   useEffect(() => {
     // Adding global property for development
-    (window as any).__toggleTheme = () => {
+    const extendedWindow = window as Window & { __toggleTheme?: () => void };
+    extendedWindow.__toggleTheme = () => {
       toggleColorScheme();
     };
     
     return () => {
       // Removing global property 
-      delete (window as any).__toggleTheme;
+      delete extendedWindow.__toggleTheme;
     };
   }, [toggleColorScheme]);
   

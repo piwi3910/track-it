@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Container,
   Title,
@@ -18,7 +18,6 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import {
-  IconPlus,
   IconSearch,
   IconFilter,
   IconSortAscending,
@@ -43,8 +42,8 @@ const priorityColorMap: Record<TaskPriority, string> = {
 
 export function BacklogPage() {
   const { tasks, updateTask, createTask, deleteTask } = useApp();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading] = useState(false);
+  const [error] = useState<string | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -92,10 +91,6 @@ export function BacklogPage() {
       return 0;
     });
   
-  const handleAddTask = () => {
-    setSelectedTask(null);
-    setTaskModalOpen(true);
-  };
   
   const handleEditTask = (task: Task) => {
     setSelectedTask(task);
@@ -104,8 +99,8 @@ export function BacklogPage() {
   
   const handleDeleteTask = async (taskId: string) => {
     try {
-      const { error } = await api.tasks.delete(taskId);
-      if (error) {
+      const success = await deleteTask(taskId);
+      if (!success) {
         // Check if it's a permission error
         if (error.includes('permission') || error.includes('forbidden') || error.includes('403')) {
           notifications.show({
@@ -125,8 +120,7 @@ export function BacklogPage() {
         return;
       }
       
-      // On success, update the local state and show success message
-      setTasks(prev => prev.filter(task => task.id !== taskId));
+      // On success, show success message
       notifications.show({
         title: 'Task Deleted',
         message: 'Task has been successfully deleted.',
@@ -146,29 +140,18 @@ export function BacklogPage() {
   
   const handleMoveToTodo = async (taskId: string) => {
     try {
-      const { error } = await api.tasks.updateStatus(taskId, 'todo');
-      if (error) {
-        // Check if it's a permission error
-        if (error.includes('permission') || error.includes('forbidden') || error.includes('403')) {
-          notifications.show({
-            title: 'Permission Denied',
-            message: 'You do not have permission to move this task.',
-            color: 'orange',
-            position: 'top-right',
-          });
-        } else {
-          notifications.show({
-            title: 'Move Failed',
-            message: `Failed to move task: ${error}`,
-            color: 'red',
-            position: 'top-right',
-          });
-        }
+      const result = await updateTask(taskId, { status: 'todo' });
+      if (!result) {
+        notifications.show({
+          title: 'Move Failed',
+          message: 'Failed to move task. You may not have permission.',
+          color: 'red',
+          position: 'top-right',
+        });
         return;
       }
       
-      // On success, update the local state and show success message
-      setTasks(prev => prev.filter(task => task.id !== taskId));
+      // On success, show success message
       notifications.show({
         title: 'Task Moved',
         message: 'Task has been moved to Todo.',
@@ -186,7 +169,7 @@ export function BacklogPage() {
     }
   };
   
-  const handleTaskSubmit = async (taskData: any) => {
+  const handleTaskSubmit = async (taskData: Partial<Task> & { id?: string }) => {
     try {
       if (taskData.id) {
         // Update existing task
@@ -222,10 +205,8 @@ export function BacklogPage() {
       <Box mb="xl">
         <QuickAddTask 
           defaultStatus="backlog" 
-          onTaskAdded={(task) => {
-            if (task) {
-              setTasks(prev => [...prev, task]);
-            }
+          onTaskAdded={() => {
+            // Task will be automatically added to the store
           }} 
         />
       </Box>

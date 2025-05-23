@@ -61,7 +61,7 @@ interface TaskState {
   stopTimeTracking: (id: string) => Promise<Task | null>;
   
   // Template actions
-  saveAsTemplate: (taskId: string, templateName: string, isPublic?: boolean) => Promise<any>;
+  saveAsTemplate: (taskId: string, templateName: string, isPublic?: boolean) => Promise<RouterOutputs['templates']['create'] | null>;
   createFromTemplate: (templateId: string, taskData: Partial<Task>) => Promise<Task | null>;
   
   // Filter actions
@@ -512,7 +512,7 @@ export const useTaskStore = create<TaskState>()(
           
           // Filter by tags
           if (filters.tags && filters.tags.length > 0 && task.tags) {
-            if (!task.tags || !task.tags.some((tag: string) => filters.tags!.includes(tag))) {
+            if (!task.tags || !task.tags.some(tag => filters.tags!.includes(tag))) {
               return false;
             }
           }
@@ -522,7 +522,7 @@ export const useTaskStore = create<TaskState>()(
             const searchLower = filters.search.toLowerCase();
             const titleMatch = task.title.toLowerCase().includes(searchLower);
             const descriptionMatch = task.description?.toLowerCase().includes(searchLower) || false;
-            const tagMatch = task.tags?.some((tag: string) => tag.toLowerCase().includes(searchLower)) || false;
+            const tagMatch = task.tags?.some(tag => tag.toLowerCase().includes(searchLower)) || false;
             
             if (!titleMatch && !descriptionMatch && !tagMatch) {
               return false;

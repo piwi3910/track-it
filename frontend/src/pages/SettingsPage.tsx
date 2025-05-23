@@ -40,7 +40,7 @@ export function SettingsPage() {
   // Handle avatar update using the correct API pattern
   const handleAvatarChange = async (avatarUrl: string | null) => {
     try {
-      const { data, error } = await api.auth.updateProfile({ 
+      const { error } = await api.auth.updateProfile({ 
         avatarUrl: avatarUrl
       });
       
@@ -51,8 +51,8 @@ export function SettingsPage() {
       // Trigger a refetch of user data to update the UI
       window.location.reload();
       
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update avatar');
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to update avatar');
     }
   };
   

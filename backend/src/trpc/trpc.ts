@@ -16,12 +16,6 @@ const t = initTRPC.context<Context>().create({
     
     // Special handling for Zod validation errors
     if (error.cause instanceof z.ZodError) {
-      // Log validation details for debugging
-      console.error('Zod validation error:', {
-        issues: error.cause.issues,
-        inputData: error.cause.format ? error.cause.format() : 'N/A'
-      });
-      
       // Format validation error message from all Zod issues
       const formattedIssues = error.cause.issues.map(issue => {
         const path = issue.path.join('.') || 'value';

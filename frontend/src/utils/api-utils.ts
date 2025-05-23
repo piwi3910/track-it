@@ -1,7 +1,6 @@
 /**
  * Utilities for working with the API
  */
-import { RouterOutputs } from '@track-it/shared';
 
 /**
  * Helper type for API response
@@ -16,12 +15,12 @@ export type ApiResponse<T> = {
  * @param responses API responses to handle
  * @returns Object with all data or combined errors
  */
-export function combineResponses<T extends Record<string, any>>(
+export function combineResponses<T extends Record<string, unknown>>(
   responses: { [K in keyof T]: ApiResponse<T[K]> }
 ): ApiResponse<T> {
   // Check if any responses have errors
   const errors = Object.entries(responses)
-    .filter(([_, response]) => response.error !== null)
+    .filter(([, response]) => response.error !== null)
     .map(([key, response]) => `${key}: ${response.error}`)
     .join(', ');
   

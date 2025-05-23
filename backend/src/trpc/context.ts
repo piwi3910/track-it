@@ -59,14 +59,12 @@ export async function createContext({
 export type Context = inferAsyncReturnType<typeof createContext>;
 
 // Add type augmentation for express Request
-declare global {
-  namespace Express {
-    interface Request {
-      auth?: {
-        id: string;
-        role: string;
-        [key: string]: any;
-      };
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    auth?: {
+      id: string;
+      role: string;
+      [key: string]: unknown;
+    };
   }
 }

@@ -60,14 +60,14 @@ export function KanbanPage() {
     setTaskModalOpen(true);
     // The conversation tab will be shown by setting a flag in TaskModal
     // We're passing the parameter through selectedTask
-    (task as any).openConversation = true;
+    (task as Task & { openConversation?: boolean }).openConversation = true;
   };
 
   const handleDeleteTask = (taskId: string) => {
     deleteTask(taskId);
   };
   
-  const handleTaskSubmit = async (taskData: any) => {
+  const handleTaskSubmit = async (taskData: Partial<Task>) => {
     try {
       if (taskData.id) {
         // Update existing task using AppContext
@@ -84,7 +84,7 @@ export function KanbanPage() {
     }
   };
   
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: { destination?: { droppableId: string; index: number }; source: { droppableId: string; index: number }; draggableId: string }) => {
     const { destination, source, draggableId } = result;
 
     // Reset drag over column state
@@ -121,7 +121,9 @@ export function KanbanPage() {
       <Box mb="xl">
         <QuickAddTask
           defaultStatus={selectedColumn || 'todo'}
-          onTaskAdded={() => console.log('Task added from quick add')}
+          onTaskAdded={() => {
+            // Task will be automatically added to the store
+          }}
         />
       </Box>
 

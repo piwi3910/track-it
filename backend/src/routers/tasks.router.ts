@@ -4,11 +4,18 @@ import { createNotFoundError, createForbiddenError, handleError } from '../utils
 import { logger } from '../server';
 import * as taskService from '../db/services/task.service';
 import * as templateService from '../db/services/template.service';
-import { TASK_STATUS, TASK_PRIORITY, formatEnumForApi } from '../utils/constants';
+import { formatEnumForApi } from '../utils/constants';
 import { TaskStatus, TaskPriority } from '../generated/prisma';
 
 // Define helper function to normalize task data for API response
-const normalizeTaskData = (task: any) => {
+const normalizeTaskData = (task: {
+  status: string;
+  priority: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  dueDate?: Date | string | null;
+  [key: string]: unknown;
+}): Record<string, unknown> => {
   // Ensure consistent casing of status and priority
   return {
     ...task,

@@ -26,7 +26,7 @@ interface GoogleContextType {
 }
 
 // Utility function to safely handle API calls with error handling
-const apiHandler = async <T,>(apiCall: () => Promise<any>): Promise<{ data: T | null; error: string | null }> => {
+const apiHandler = async <T,>(apiCall: () => Promise<T>): Promise<{ data: T | null; error: string | null }> => {
   try {
     const response = await apiCall();
     return { data: response, error: null };

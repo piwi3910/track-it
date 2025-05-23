@@ -1,5 +1,5 @@
 // Properly typed Context for the Track-It application
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Task, User, TaskTemplate } from '@track-it/shared';
 import { TaskFilter } from '@track-it/shared/types';
 import { api } from '@/api';

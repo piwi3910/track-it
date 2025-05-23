@@ -8,7 +8,7 @@ import { ThemeProvider, ApiProvider, AuthProvider, AppProvider, NotificationProv
 import App from './App';
 
 // Import for query client configuration
-import { trpc, trpcClient, queryClient } from './utils/trpc';
+import { trpc, trpcClientConfig, queryClient } from './utils/trpc';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 // Import all required styles
@@ -27,7 +27,7 @@ const theme = createTheme({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <trpc.Provider client={trpcClient}>
+      <trpc.Provider client={trpcClientConfig} queryClient={queryClient}>
         <ColorSchemeScript defaultColorScheme="light" />
         <MantineProvider theme={theme} defaultColorScheme="light">
           <ThemeProvider>

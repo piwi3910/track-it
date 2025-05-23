@@ -104,8 +104,8 @@ export const apiHandler = async <T>(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const trpc = createTRPCReact<any>();
 
-// Initialize tRPC react-query client
-export const trpcClient = trpc.createClient({
+// tRPC client configuration for v11
+export const trpcClientConfig = {
   // Explicitly disable batching at the client level
   transformer: undefined,
   // Forced non-batch query behavior
@@ -255,7 +255,7 @@ export const trpcClient = trpc.createClient({
       }
     }),
   ],
-});
+};
 
 // Create a query client for React Query
 export const queryClient = new QueryClient({

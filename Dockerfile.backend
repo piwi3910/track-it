@@ -33,6 +33,10 @@ COPY backend/ .
 # Build TypeScript
 RUN npm run build
 
+# Copy generated Prisma client to where the compiled JS expects it
+# From /app/backend/dist/db/services/, ../../generated/prisma resolves to /app/backend/generated/prisma
+RUN cp -r /app/backend/src/generated /app/backend/generated
+
 # Stage 2: Production image
 FROM node:20-alpine
 
@@ -63,7 +67,7 @@ RUN npm ci --only=production && \
 # Copy built application from builder
 COPY --from=builder /app/backend/dist ./dist
 # Copy generated Prisma client to the location where compiled JS expects it
-COPY --from=builder /app/backend/src/generated ./generated
+COPY --from=builder /app/backend/generated ./generated
 
 # Change ownership to nodejs user
 RUN chown -R nodejs:nodejs /app

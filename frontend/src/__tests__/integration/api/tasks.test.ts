@@ -547,8 +547,8 @@ describe('Task Management API Integration Tests', () => {
       // Save task as template
       const templateData = {
         taskId: testTaskId,
-        templateName: `Test Template ${Date.now()}`,
-        isPublic: true
+        name: `Test Template ${Date.now()}`,
+        description: 'Test template description'
       };
       
       try {
@@ -560,8 +560,8 @@ describe('Task Management API Integration Tests', () => {
         // Validate response
         expect(result).toBeDefined();
         expect(result.id).toBeDefined();
-        expect(result.name).toEqual(templateData.templateName);
-        expect(result.taskId).toEqual(templateData.taskId);
+        expect(result.name).toEqual(templateData.name);
+        expect((result as any).taskId).toEqual(templateData.taskId);
       } catch (error) {
         // Some implementations might not support templates
         console.warn('Template creation failed, might not be implemented yet:', error);

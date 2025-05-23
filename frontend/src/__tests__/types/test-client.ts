@@ -139,6 +139,10 @@ export interface TestTemplateProcedures {
   delete: { mutate: (input: { id: string }) => TestResponse<{ success: boolean }> };
   getMy: { query: () => TestResponse<Template[]> };
   getPublic: { query: () => TestResponse<Template[]> };
+  getAll: { query: () => TestResponse<Template[]> };
+  getByCategory: { query: (input: { category: string }) => TestResponse<Template[]> };
+  getCategories: { query: () => TestResponse<string[]> };
+  search: { query: (input: { query: string }) => TestResponse<Template[]> };
   createTaskFromTemplate: { mutate: (input: { templateId: string; assigneeId?: string }) => TestResponse<Task> };
   duplicate: { mutate: (input: { id: string; name: string }) => TestResponse<Template> };
 }

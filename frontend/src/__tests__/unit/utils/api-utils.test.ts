@@ -65,8 +65,8 @@ describe('isApiAvailable', () => {
   const originalFetch = global.fetch;
   const originalViteApiUrlDescriptor = Object.getOwnPropertyDescriptor(import.meta.env, 'VITE_API_URL');
 
-  let consoleLogSpy: jest.SpyInstance;
-  let consoleErrorSpy: jest.SpyInstance;
+  let consoleLogSpy: ReturnType<typeof jest.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
 
   beforeAll(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});

@@ -66,13 +66,15 @@ const generateTestTemplate = () => {
   return {
     name: `Test Template ${timestamp}`,
     description: `This is a test template created at ${new Date(timestamp).toISOString()}`,
-    priority: 'medium',
-    tags: ['test', 'template'],
-    estimatedHours: 4,
-    subtasks: [
-      { title: 'Subtask 1', completed: false },
-      { title: 'Subtask 2', completed: false }
-    ],
+    templateData: {
+      priority: 'medium',
+      tags: ['test', 'template'],
+      estimatedHours: 4,
+      subtasks: [
+        { title: 'Subtask 1', completed: false },
+        { title: 'Subtask 2', completed: false }
+      ]
+    },
     category: 'testing',
     isPublic: true
   };
@@ -191,15 +193,15 @@ describe('Task Templates API Integration Tests', () => {
         expect(result.id).toBeDefined();
         expect(result.name).toEqual(templateData.name);
         expect(result.description).toEqual(templateData.description);
-        expect(result.priority).toEqual(templateData.priority);
-        expect(result.tags).toEqual(expect.arrayContaining(templateData.tags));
-        expect(result.estimatedHours).toEqual(templateData.estimatedHours);
+        expect((result as any).priority).toEqual((templateData.templateData as any).priority);
+        expect((result as any).tags).toEqual(expect.arrayContaining((templateData.templateData as any).tags));
+        expect((result as any).estimatedHours).toEqual((templateData.templateData as any).estimatedHours);
         expect(result.category).toEqual(templateData.category);
         expect(result.isPublic).toEqual(templateData.isPublic);
         
         // Check subtasks in template data
-        expect(result.subtasks).toBeDefined();
-        expect(result.subtasks.length).toEqual(templateData.subtasks.length);
+        expect((result as any).subtasks).toBeDefined();
+        expect((result as any).subtasks.length).toEqual((templateData.templateData as any).subtasks.length);
       } catch (error) {
         // Direct template creation might not be implemented
         console.warn('Direct template creation not implemented:', error);
@@ -214,8 +216,8 @@ describe('Task Templates API Integration Tests', () => {
       // Save task as template
       const templateData = {
         taskId: testTaskId,
-        templateName: `Template from Task ${Date.now()}`,
-        isPublic: true
+        name: `Template from Task ${Date.now()}`,
+        description: 'Template created from task'
       };
       
       try {
@@ -228,8 +230,8 @@ describe('Task Templates API Integration Tests', () => {
         // Validate response
         expect(result).toBeDefined();
         expect(result.id).toBeDefined();
-        expect(result.name).toEqual(templateData.templateName);
-        expect(result.taskId).toEqual(templateData.taskId);
+        expect(result.name).toEqual(templateData.name);
+        expect((result as any).taskId).toEqual(templateData.taskId);
         
         return true;
       } catch (error) {
@@ -260,7 +262,7 @@ describe('Task Templates API Integration Tests', () => {
       // Try to save a task as template without authentication
       await expect(client.tasks.saveAsTemplate.mutate({
         taskId: testTaskId,
-        templateName: 'Unauthorized Template',
+        name: 'Unauthorized Template',
         isPublic: true
       })).rejects.toThrow(/authentication|unauthorized/i);
       
@@ -283,7 +285,8 @@ describe('Task Templates API Integration Tests', () => {
           // Try saving task as template
           const templateData = {
             taskId: testTaskId,
-            templateName: `Template for Retrieval ${Date.now()}`,
+            name: `Template for Retrieval ${Date.now()}`,
+            description: 'Template for retrieval test',
             isPublic: true
           };
           
@@ -408,7 +411,8 @@ describe('Task Templates API Integration Tests', () => {
           // Try saving task as template
           const templateData = {
             taskId: testTaskId,
-            templateName: `Template for Updates ${Date.now()}`,
+            name: `Template for Updates ${Date.now()}`,
+            description: 'Template for update test',
             isPublic: true
           };
           
@@ -483,7 +487,8 @@ describe('Task Templates API Integration Tests', () => {
         // Try saving task as template
         const templateData = {
           taskId: testTaskId,
-          templateName: `Deletion Test Template ${Date.now()}`,
+          name: `Deletion Test Template ${Date.now()}`,
+          description: 'Template for deletion test',
           isPublic: true
         };
         
@@ -592,7 +597,8 @@ describe('Task Templates API Integration Tests', () => {
         
         const templateData = {
           taskId: newTask.id,
-          templateName: `UNIQUESEARCHTERM Template ${Date.now()}`,
+          name: `UNIQUESEARCHTERM Template ${Date.now()}`,
+          description: 'Template for search test',
           isPublic: true
         };
         

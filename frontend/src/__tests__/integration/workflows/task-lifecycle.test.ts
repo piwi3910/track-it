@@ -255,8 +255,8 @@ describe('Task Lifecycle Workflow', () => {
       // Save task as template
       const templateData = {
         taskId,
-        templateName: `Workflow Test Template ${TEST_RUN_ID}`,
-        isPublic: true
+        name: `Workflow Test Template ${TEST_RUN_ID}`,
+        description: 'Template created in workflow test'
       };
       
       const result = await client.tasks.saveAsTemplate.mutate(templateData);
@@ -323,8 +323,7 @@ describe('Task Lifecycle Workflow', () => {
       id: taskId,
       data: {
         status: 'done',
-        subtasks: completedSubtasks,
-        actualHours: 7.5
+        subtasks: completedSubtasks
       }
     });
     
@@ -337,7 +336,7 @@ describe('Task Lifecycle Workflow', () => {
     expect(allCompleted).toBe(true);
     
     console.log(`Completed task: ${updateResult.title}`);
-    console.log(`Actual hours spent: ${updateResult.actualHours}`);
+    console.log(`Status: ${updateResult.status}`);
   });
   
   it('should add a final comment with completion notes', async () => {

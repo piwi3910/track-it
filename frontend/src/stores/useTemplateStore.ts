@@ -3,9 +3,10 @@ import { api } from '@/api';
 import type { RouterOutputs, RouterInputs } from '@track-it/shared';
 
 // Types
-type Template = RouterOutputs['templates']['getAll'][0];
-type CreateTemplateInput = RouterInputs['templates']['create'][0];
-type UpdateTemplateInput = RouterInputs['templates']['update'][0]['data'];
+type TemplateArray = RouterOutputs['templates']['getAll'];
+type Template = TemplateArray extends (infer T)[] ? T : never;
+type CreateTemplateInput = RouterInputs['templates']['create'];
+type UpdateTemplateInput = RouterInputs['templates']['update']['data'];
 
 interface TemplateState {
   // Templates data
@@ -58,7 +59,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return [];
       }
       
-      const templates = response.data || [];
+      const templates = (response.data as Template[]) || [];
       set({ templates, isLoading: false });
       
       return templates;
@@ -81,7 +82,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return [];
       }
       
-      const categories = response.data || [];
+      const categories = (response.data as string[]) || [];
       set({ categories, isLoading: false });
       
       return categories;
@@ -111,7 +112,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return null;
       }
       
-      const template = response.data;
+      const template = response.data as Template;
       set({ selectedTemplate: template, isLoading: false });
       return template;
     } catch (err) {
@@ -134,7 +135,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       }
       
       set({ isLoading: false });
-      return response.data || [];
+      return (response.data as Template[]) || [];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get templates by category';
       set({ isLoading: false, error: errorMessage });
@@ -253,7 +254,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       }
       
       set({ isLoading: false });
-      return response.data || [];
+      return (response.data as Template[]) || [];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to search templates';
       set({ isLoading: false, error: errorMessage });

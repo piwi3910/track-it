@@ -22,6 +22,7 @@ interface NotificationContextType {
 
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,8 +40,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Notification API error:', error);
         setError({
-          message: typeof error === 'string' ? error : (error as any)?.message || 'Failed to fetch notifications',
-          code: typeof error === 'object' && error ? (error as any).code : undefined,
+          message: typeof error === 'string' ? error : (error as Error)?.message || 'Failed to fetch notifications',
+          code: typeof error === 'object' && error ? (error as { code?: string }).code : undefined,
           timestamp: new Date()
         });
       } else if (data && Array.isArray(data)) {
@@ -79,8 +80,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error marking notification as read:', error);
         setError({
-          message: typeof error === 'string' ? error : (error as any)?.message || 'Failed to mark notification as read',
-          code: typeof error === 'object' && error ? (error as any).code : undefined,
+          message: typeof error === 'string' ? error : (error as Error)?.message || 'Failed to mark notification as read',
+          code: typeof error === 'object' && error ? (error as { code?: string }).code : undefined,
           timestamp: new Date()
         });
         return; // Exit early on error
@@ -111,8 +112,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error marking all notifications as read:', error);
         setError({
-          message: typeof error === 'string' ? error : (error as any)?.message || 'Failed to mark all notifications as read',
-          code: typeof error === 'object' && error ? (error as any).code : undefined,
+          message: typeof error === 'string' ? error : (error as Error)?.message || 'Failed to mark all notifications as read',
+          code: typeof error === 'object' && error ? (error as { code?: string }).code : undefined,
           timestamp: new Date()
         });
         return;

@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { MantineProvider } from '@mantine/core';
 import { ErrorAlert, ConnectionErrorAlert, ValidationErrorAlert } from '../../../components/error/ErrorAlert';
 import { describe, it, expect, afterEach } from '@jest/globals';
@@ -119,6 +120,7 @@ describe('ErrorAlert', () => {
     it('should handle AppErrorDetails objects', () => {
       const errorDetails: AppErrorDetails = {
         code: ErrorCode.NOT_FOUND,
+        timestamp: Date.now(),
         message: 'Resource not found',
         severity: ErrorSeverity.ERROR,
         details: { id: '123' },

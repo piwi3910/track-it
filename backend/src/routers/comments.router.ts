@@ -44,12 +44,19 @@ type NormalizedComment = {
 
 // Helper function to normalize comment data for API response
 const normalizeCommentData = (comment: CommentWithAuthor): NormalizedComment => {
-  return {
+  const normalized: NormalizedComment = {
     ...comment,
     // Format dates as ISO strings if they exist as Date objects
-    createdAt: comment.createdAt instanceof Date ? comment.createdAt.toISOString() : comment.createdAt,
-    updatedAt: comment.updatedAt instanceof Date ? comment.updatedAt.toISOString() : comment.updatedAt
+    createdAt: comment.createdAt instanceof Date ? comment.createdAt.toISOString() : String(comment.createdAt),
+    updatedAt: comment.updatedAt instanceof Date ? comment.updatedAt.toISOString() : String(comment.updatedAt)
   };
+
+  // Normalize nested replies if they exist
+  if (comment.replies && Array.isArray(comment.replies)) {
+    normalized.replies = comment.replies.map(reply => normalizeCommentData(reply));
+  }
+
+  return normalized;
 };
 
 // Input validation schemas

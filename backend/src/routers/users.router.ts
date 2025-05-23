@@ -37,6 +37,11 @@ export interface NormalizedUser {
   [key: string]: unknown;
 }
 
+// Helper function to format enum values for API
+const formatEnumForApi = (value: unknown): string => {
+  return String(value);
+};
+
 // Helper function to normalize user data for API response
 const normalizeUserData = (user: { 
   role: string;

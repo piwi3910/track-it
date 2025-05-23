@@ -31,7 +31,8 @@ export function NotificationMenu() {
     loading, 
     error,
     markAsRead, 
-    markAllAsRead
+    markAllAsRead,
+    clearError
   } = useNotifications();
   
   const navigate = useNavigate();

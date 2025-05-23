@@ -80,7 +80,7 @@ export function ErrorAlert({
   
   // Determine the alert color and icon based on severity
   let color: string;
-  let Icon: React.ComponentType<{ size?: number }> | null = null;
+  let Icon: React.ComponentType<{ size?: string | number }> | null = null;
   
   switch (severity) {
     case ErrorSeverity.INFO:
@@ -139,8 +139,8 @@ export function ErrorAlert({
   
   // Accessibility attributes
   const alertAttributes = {
-    role: 'alert',
-    'aria-live': 'assertive',
+    role: 'alert' as const,
+    'aria-live': 'assertive' as const,
     'aria-atomic': 'true'
   };
   
@@ -191,7 +191,7 @@ export function ConnectionErrorAlert({
   onRetry, 
   onClose 
 }: { 
-  error: unknown; 
+  error: string | Error | AppError | AppErrorDetails; 
   onRetry: () => void; 
   onClose?: () => void;
 }) {
@@ -216,7 +216,7 @@ export function ValidationErrorAlert({
   error, 
   onClose 
 }: { 
-  error: unknown; 
+  error: string | Error | AppError | AppErrorDetails; 
   onClose?: () => void;
 }) {
   // Extract field information from the error if available

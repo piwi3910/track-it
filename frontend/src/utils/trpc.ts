@@ -257,6 +257,9 @@ export const trpcClientConfig = {
   ],
 };
 
+// Export trpcClient for backward compatibility
+export const trpcClient = trpcClientConfig;
+
 // Create a query client for React Query
 export const queryClient = new QueryClient({
   defaultOptions: {

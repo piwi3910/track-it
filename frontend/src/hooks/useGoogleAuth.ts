@@ -62,13 +62,13 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   '123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com';
 
 export function useGoogleAuth(): UseGoogleAuthResult {
-  const { googleStore } = useStore();
+  const { google } = useStore();
   
   const [loading, setLoading] = useState(false);
-  const [, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-  const [connected, setConnected] = useState(googleStore?.connected || false);
-  const [connectedEmail, setConnectedEmail] = useState<string | null>(googleStore?.connectedEmail || null);
+  const [connected, setConnected] = useState(google?.connected || false);
+  const [connectedEmail, setConnectedEmail] = useState<string | null>(google?.email || null);
   const googleInitialized = useRef(false);
 
   // Sync with Zustand store
@@ -276,6 +276,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
     renderButton, 
     isGoogleLoaded, 
     loading,
+    error,
     connected,
     connectedEmail
   };

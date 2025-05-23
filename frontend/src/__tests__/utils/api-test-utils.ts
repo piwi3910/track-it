@@ -134,7 +134,7 @@ export const authenticateTestUser = async (
   email: string = API_CONFIG.testUser.email,
   password: string = API_CONFIG.testUser.password
 ): Promise<{ token: string; user: Partial<User> }> => {
-  const client = createTestClient();
+  const client = createTestClient() as any;
   
   try {
     const result = await client.users.login.mutate({ email, password });
@@ -299,7 +299,7 @@ export const testSetup = {
     mockStorage.clear();
     
     // Create client and authenticate
-    const client = createTestClient();
+    const client = createTestClient() as any;
     const auth = await authenticateTestUser();
     
     return { client, auth };
@@ -313,7 +313,7 @@ export const testSetup = {
    * @returns Created task
    */
   createTestTask: async (
-    client: TRPCClient,
+    client: any,
     taskData: Partial<Task> = {},
     createdTasksArray: string[] = []
   ) => {
@@ -337,7 +337,7 @@ export const testSetup = {
    * @returns Array of created tasks
    */
   createMultipleTestTasks: async (
-    client: TRPCClient,
+    client: any,
     count: number,
     baseTaskData: Partial<Task> = {},
     createdTasksArray: string[] = []
@@ -366,7 +366,7 @@ export const testSetup = {
    * @returns Created template
    */
   createTestTemplate: async (
-    client: TRPCClient,
+    client: any,
     templateData: Partial<TaskTemplate> = {}
   ) => {
     const testTemplate = generators.template(templateData);
@@ -385,7 +385,7 @@ export const testTeardown = {
    * @param taskIds - Array of task IDs to clean up
    */
   cleanupTestTasks: async (
-    client: TRPCClient,
+    client: any,
     taskIds: string[]
   ) => {
     if (!taskIds || taskIds.length === 0) return;
@@ -405,7 +405,7 @@ export const testTeardown = {
    * @param templateIds - Array of template IDs to clean up
    */
   cleanupTestTemplates: async (
-    client: TRPCClient,
+    client: any,
     templateIds: string[]
   ) => {
     if (!templateIds || templateIds.length === 0) return;
@@ -425,7 +425,7 @@ export const testTeardown = {
    * @param cleanupItems - Object containing arrays of items to clean up
    */
   teardownTestEnvironment: async (
-    client: TRPCClient,
+    client: any,
     cleanupItems: {
       taskIds?: string[];
       templateIds?: string[];

@@ -141,7 +141,7 @@ export function ErrorAlert({
   const alertAttributes = {
     role: 'alert' as const,
     'aria-live': 'assertive' as const,
-    'aria-atomic': 'true'
+    'aria-atomic': true
   };
   
   return (

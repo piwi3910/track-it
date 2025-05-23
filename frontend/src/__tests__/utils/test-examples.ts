@@ -21,7 +21,7 @@ type TRPCClient = ReturnType<typeof createTestClient>;
  */
 describe('Tasks API Integration Example', () => {
   // Test client and cleanup list
-  let client: TRPCClient;
+  let client: any;
   const createdTaskIds: string[] = [];
   
   // Set up test environment - run before all tests
@@ -146,7 +146,7 @@ describe('Tasks API Integration Example', () => {
  * Example test suite for authentication
  */
 describe('Authentication API Example', () => {
-  let client: TRPCClient;
+  let client: any;
   
   beforeAll(async () => {
     const backendAvailable = await isBackendRunning();
@@ -214,7 +214,7 @@ describe('Authentication API Example', () => {
  */
 describe('Advanced Testing Example', () => {
   let testState: {
-    client: TRPCClient;
+    client: any;
     auth?: { token: string; user: { id: string; name: string; email: string } };
     testTaskId?: string;
     createdItemIds: {

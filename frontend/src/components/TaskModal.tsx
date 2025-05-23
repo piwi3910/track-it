@@ -122,8 +122,10 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       // Fetch comment count when task changes
       const fetchCommentCount = async () => {
         try {
-          const count = await api.comments.getCommentCount(task.id);
-          setCommentCount(count);
+          const { data: count } = await api.comments.getCommentCount(task.id);
+          if (count !== null) {
+            setCommentCount(count);
+          }
         } catch (error) {
           console.error('Failed to fetch comment count:', error);
         }
@@ -149,6 +151,9 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
         status: 'todo',
         priority: 'medium',
         dueDate: null,
+        startDate: null,
+        endDate: null,
+        isMultiDay: false,
         tags: [],
         assignee: '',
         subtasks: [],
@@ -169,7 +174,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       try {
         const { data, error } = await api.admin.getAllUsers();
         if (data && !error) {
-          setUsers(data);
+          setUsers(data as User[]);
         } else {
           console.error('Failed to fetch users:', error);
         }

@@ -22,36 +22,39 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     initializedRef.current = true;
     
     // Create an unsubscribe function for the store
-    const unsubscribe = useApiStore.subscribe(
-      (state) => ({
-        isMockApi: state.isMockApi,
-        apiAvailable: state.apiAvailable,
-        apiError: state.apiError,
-        connectionAttempts: state.connectionAttempts
-      }),
-      (newState, prevState) => {
+    // Store previous state for comparison
+    let prevIsMockApi = useApiStore.getState().isMockApi;
+    let prevApiAvailable = useApiStore.getState().apiAvailable;
+    let prevApiError = useApiStore.getState().apiError;
+    
+    const unsubscribe = useApiStore.subscribe((state) => {
         // Update ref
-        isMockApiRef.current = newState.isMockApi;
+        isMockApiRef.current = state.isMockApi;
         
         // Log status changes
-        if (newState.apiAvailable && !prevState.apiAvailable) {
+        if (state.apiAvailable && !prevApiAvailable) {
           console.log('API connection established successfully');
-        } else if (newState.apiError && newState.apiError !== prevState.apiError) {
-          console.warn(`API connection error: ${newState.apiError}`);
+        } else if (state.apiError && state.apiError !== prevApiError) {
+          console.warn(`API connection error: ${state.apiError}`);
         }
         
         // Handle interval when mock API status changes
-        if (newState.isMockApi !== prevState.isMockApi) {
-          if (newState.isMockApi && intervalRef.current !== null) {
+        if (state.isMockApi !== prevIsMockApi) {
+          if (state.isMockApi && intervalRef.current !== null) {
             // Clear interval if we switch to mock API
             window.clearInterval(intervalRef.current);
             intervalRef.current = null;
-          } else if (!newState.isMockApi && intervalRef.current === null) {
+          } else if (!state.isMockApi && intervalRef.current === null) {
             // Start interval if we switch away from mock API
             checkApiAvailability();
             setupInterval();
           }
         }
+        
+        // Update previous state for next comparison
+        prevIsMockApi = state.isMockApi;
+        prevApiAvailable = state.apiAvailable;
+        prevApiError = state.apiError;
       }
     );
     

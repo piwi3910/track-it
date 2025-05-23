@@ -2,7 +2,7 @@
 # This Dockerfile should be built from the repository root
 
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
 # Set working directory
 WORKDIR /app

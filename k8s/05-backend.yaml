@@ -33,7 +33,9 @@ spec:
         - /bin/sh
         - -c
         - |
-          export DATABASE_URL="postgresql://${DATABASE_USER}:${POSTGRES_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}?schema=public"
+          # URL encode the password to handle special characters
+          ENCODED_PASSWORD=$(echo -n "${POSTGRES_PASSWORD}" | sed 's/\//%2F/g' | sed 's/:/%3A/g' | sed 's/@/%40/g')
+          export DATABASE_URL="postgresql://${DATABASE_USER}:${ENCODED_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}?schema=public"
           npm start
         envFrom:
         - configMapRef:

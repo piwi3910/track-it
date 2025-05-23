@@ -161,6 +161,7 @@ describe('Task Lifecycle Workflow', () => {
       ]
     };
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await client.tasks.create.mutate(taskData as any);
     
     // Store task ID for further steps
@@ -173,6 +174,7 @@ describe('Task Lifecycle Workflow', () => {
     expect(result.description).toEqual(taskData.description);
     expect(result.status).toEqual(taskData.status);
     expect(result.subtasks).toBeDefined();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((result.subtasks as any[])?.length).toEqual(taskData.subtasks.length);
     
     console.log(`Created task: ${result.title} (${result.id})`);
@@ -224,6 +226,7 @@ describe('Task Lifecycle Workflow', () => {
     const currentTask = await client.tasks.getById.query({ id: taskId });
     
     // Mark first subtask as completed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatedSubtasks = (currentTask.subtasks as any[])?.map((subtask: any, index: number) => ({
       ...subtask,
       completed: index === 0 ? true : subtask.completed

@@ -153,7 +153,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('Failed to get task by ID:', error);
         return null;
       }
-      return data;
+      return data as Task;
     } catch (error) {
       console.error('Failed to get task:', error);
       return null;
@@ -171,7 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local tasks state
       if (data) {
-        setTasks(prev => [...prev, data]);
+        setTasks(prev => [...prev, data as Task]);
       }
       return data;
     } catch (error) {
@@ -191,11 +191,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local tasks state
       if (data) {
-        setTasks(prev => prev.map(t => t.id === id ? data : t));
+        setTasks(prev => prev.map(t => t.id === id ? (data as Task) : t));
 
         // Update selectedTask if it's the one being edited
         if (selectedTask?.id === id) {
-          setSelectedTask(data);
+          setSelectedTask(data as Task);
         }
       }
       return data;
@@ -266,7 +266,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { data, error } = await api.tasks.search(query);
       if (error) {
         console.error('Search API error:', error);
-        throw new Error(typeof error === 'string' ? error : error.message);
+        throw new Error(typeof error === 'string' ? error : (error as any).message || 'Search failed');
       }
       return data || [];
     } catch (error) {
@@ -276,8 +276,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return tasks.filter(task => 
         task.title.toLowerCase().includes(query.toLowerCase()) || 
         (task.description && task.description.toLowerCase().includes(query.toLowerCase())) ||
-        (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))) ||
-        (task.taskNumber && task.taskNumber.toString().includes(query))
+        (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
       );
     }
   }, [tasks]); // Depends on tasks for fallback local filtering
@@ -302,7 +301,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local templates state
       if (data) {
-        setTemplates(prev => [...prev, data]);
+        setTemplates(prev => [...prev, data as TaskTemplate]);
       }
       return data;
     } catch (error) {
@@ -319,11 +318,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local templates state
       if (data) {
-        setTemplates(prev => prev.map(t => t.id === id ? data : t));
+        setTemplates(prev => prev.map(t => t.id === id ? (data as TaskTemplate) : t));
 
         // Update selectedTemplate if it's the one being edited
         if (selectedTemplate?.id === id) {
-          setSelectedTemplate(data);
+          setSelectedTemplate(data as TaskTemplate);
         }
       }
       return data;
@@ -367,7 +366,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local templates state
       if (data) {
-        setTemplates(prev => [...prev, data]);
+        setTemplates(prev => [...prev, data as TaskTemplate]);
       }
       return data;
     } catch (error) {
@@ -384,7 +383,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local tasks state
       if (data) {
-        setTasks(prev => [...prev, data]);
+        setTasks(prev => [...prev, data as Task]);
       }
       return data;
     } catch (error) {
@@ -401,10 +400,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Mock API style
         const result = await api.templates.search(query);
         return Array.isArray(result) ? result : [];
-      } else if (api.templates.search && typeof api.templates.search.query === 'function') {
+      } else if (api.templates.search && typeof (api.templates.search as any).query === 'function') {
         // Real tRPC API style
-        const { data, error } = await api.templates.search.query(query);
-        if (error) throw new Error(typeof error === 'string' ? error : error.message);
+        const { data, error } = await (api.templates.search as any).query(query);
+        if (error) throw new Error(typeof error === 'string' ? error : (error as any).message || 'Search failed');
         return data || [];
       } else {
         // Fallback to filtering existing templates in memory

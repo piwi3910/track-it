@@ -52,6 +52,9 @@ RUN npx prisma generate
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy generated Prisma client to match the import paths
+COPY --from=builder /app/src/generated ./generated
+
 # Change ownership to nodejs user
 RUN chown -R nodejs:nodejs /app
 

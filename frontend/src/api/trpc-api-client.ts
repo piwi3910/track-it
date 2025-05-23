@@ -18,7 +18,7 @@ export const auth = {
     );
     
     // If login successful, save token
-    if (result.data?.token) {
+    if (result.data && 'token' in result.data && typeof result.data.token === 'string') {
       setAuthToken(result.data.token);
     }
     
@@ -32,7 +32,7 @@ export const auth = {
     );
     
     // If login successful, save token
-    if (result.data?.token) {
+    if (result.data && 'token' in result.data && typeof result.data.token === 'string') {
       setAuthToken(result.data.token);
     }
     
@@ -58,7 +58,7 @@ export const auth = {
     );
     
     // If registration successful, save token
-    if (result.data?.token) {
+    if (result.data && 'token' in result.data && typeof result.data.token === 'string') {
       setAuthToken(result.data.token);
     }
     

@@ -4,7 +4,7 @@
 
 import { createTRPCClient, httpLink } from '@trpc/client';
 import fetch from 'cross-fetch';
-import type { AppRouter } from '@track-it/shared/types/trpc';
+import type { TestClient } from '../types/test-client';
 
 // Configure global fetch for Node.js environment
 global.fetch = fetch;
@@ -36,33 +36,6 @@ export const mockLocalStorage: MockStorage = {
 };
 
 // Define a properly typed test client interface
-interface TestClient {
-  users: {
-    login: { mutate: (input: any) => Promise<any> };
-    register: { mutate: (input: any) => Promise<any> };
-    getCurrentUser: { query: () => Promise<any> };
-    updateProfile: { mutate: (input: any) => Promise<any> };
-  };
-  tasks: {
-    getAll: { query: () => Promise<any> };
-    getById: { query: (input: any) => Promise<any> };
-    getByStatus: { query: (input: any) => Promise<any> };
-    create: { mutate: (input: any) => Promise<any> };
-    update: { mutate: (input: any) => Promise<any> };
-    delete: { mutate: (input: any) => Promise<any> };
-  };
-  comments: {
-    getByTaskId: { query: (input: any) => Promise<any> };
-    create: { mutate: (input: any) => Promise<any> };
-    update: { mutate: (input: any) => Promise<any> };
-    delete: { mutate: (input: any) => Promise<any> };
-  };
-  attachments: {
-    getByTaskId: { query: (input: any) => Promise<any> };
-    upload: { mutate: (input: any) => Promise<any> };
-    delete: { mutate: (input: any) => Promise<any> };
-  };
-}
 
 // Create a tRPC client for testing
 export const createTestClient = (): TestClient => {

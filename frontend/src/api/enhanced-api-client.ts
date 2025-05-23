@@ -10,6 +10,7 @@ import {
   isRetryableError,
   parseErrorResponse
 } from '@track-it/shared';
+import type { Task } from '@/types/task';
 import { errorLoggingService } from '@/services/error-logging.service';
 
 // Retry options

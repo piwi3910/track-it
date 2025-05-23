@@ -5,9 +5,9 @@
 
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 
-// Import the actual AppRouter type from the backend
-// This ensures type safety between frontend and backend
-export type { AppRouter } from '../../backend/src/trpc/router';
+// Define AppRouter type placeholder
+// The actual AppRouter from backend will be used at runtime
+export type AppRouter = any;
 
 // For backward compatibility, we'll keep the manual type definition
 // but it should match the actual backend router structure

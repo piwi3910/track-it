@@ -8,7 +8,7 @@
 import crossFetch from 'cross-fetch';
 import { createTRPCClient, httpLink } from '@trpc/client';
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
-import type { AppRouter } from '@track-it/shared/types/trpc';
+import type { TestClient } from "../../types/test-client";
 
 // Mock global objects for testing
 global.fetch = crossFetch as typeof fetch;
@@ -29,25 +29,6 @@ Object.defineProperty(global, 'localStorage', { value: localStorageMock });
 const BASE_URL = 'http://localhost:3001/trpc';
 
 // Define a properly typed test client interface
-interface TestClient {
-  users: {
-    login: { mutate: (input: any) => Promise<any> };
-    register: { mutate: (input: any) => Promise<any> };
-  };
-  tasks: {
-    create: { mutate: (input: any) => Promise<any> };
-    getById: { query: (input: any) => Promise<any> };
-    delete: { mutate: (input: any) => Promise<any> };
-  };
-  comments: {
-    getByTaskId: { query: (input: any) => Promise<any> };
-    getCommentCount: { query: (input: any) => Promise<any> };
-    create: { mutate: (input: any) => Promise<any> };
-    update: { mutate: (input: any) => Promise<any> };
-    delete: { mutate: (input: any) => Promise<any> };
-    getCommentReplies: { query: (input: any) => Promise<any> };
-  };
-}
 
 // Create tRPC client for testing
 const createClient = (): TestClient => {

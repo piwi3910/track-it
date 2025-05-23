@@ -11,7 +11,11 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/glo
 // Before running tests, check if the backend server is available and log in
 beforeAll(async () => {
   // Set up global localStorage mock
-  (global as typeof globalThis & { localStorage: typeof mockLocalStorage }).localStorage = mockLocalStorage;
+  Object.defineProperty(global, 'localStorage', { 
+    value: mockLocalStorage,
+    writable: true,
+    configurable: true
+  });
   
   // Check if backend is available
   const serverAvailable = await isBackendAvailable();

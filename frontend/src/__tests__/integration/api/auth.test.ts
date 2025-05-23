@@ -6,7 +6,7 @@
  */
 
 import crossFetch from 'cross-fetch';
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpLink } from '@trpc/client';
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
@@ -28,14 +28,30 @@ Object.defineProperty(global, 'localStorage', { value: localStorageMock });
 // Base URL for the API
 const BASE_URL = 'http://localhost:3001/trpc';
 
+// Define a properly typed test client interface
+interface TestClient {
+  users: {
+    ping: { query: () => Promise<any> };
+    login: { mutate: (input: any) => Promise<any> };
+    register: { mutate: (input: any) => Promise<any> };
+    getCurrentUser: { query: () => Promise<any> };
+    updateProfile: { mutate: (input: any) => Promise<any> };
+    getAllUsers: { query: () => Promise<any> };
+    getUserDeletionStats: { query: (input: any) => Promise<any> };
+    createUser: { mutate: (input: any) => Promise<any> };
+    updateUser: { mutate: (input: any) => Promise<any> };
+    deleteUser: { mutate: (input: any) => Promise<any> };
+    resetUserPassword: { mutate: (input: any) => Promise<any> };
+    updateUserRole: { mutate: (input: any) => Promise<any> };
+  };
+}
+
 // Create tRPC client for testing
-const createClient = () => {
-  return createTRPCClient<AppRouter>({
+const createClient = (): TestClient => {
+  return createTRPCClient<any>({
     links: [
-      httpBatchLink({
+      httpLink({
         url: BASE_URL,
-        // Important: disable batching for tests
-        batch: false,
         fetch: (url, options = {}) => {
           const fetchOptions = { ...options } as RequestInit;
           const headers = new Headers(fetchOptions.headers);
@@ -56,7 +72,7 @@ const createClient = () => {
         }
       }),
     ],
-  });
+  }) as unknown as TestClient;
 };
 
 // Generate random user data for testing

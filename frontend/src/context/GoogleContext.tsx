@@ -48,15 +48,22 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
   
   // Drive state
   const [driveSyncing, setDriveSyncing] = useState(false);
-  const [driveFiles, setDriveFiles] = useState<GoogleDriveFile[]>(
-    google?.driveFiles || []
-  );
+  const [driveFiles, setDriveFiles] = useState<GoogleDriveFile[]>([]);
 
   // Sync state with Zustand store
   useEffect(() => {
     if (google) {
       setIsAuthenticated(google.connected);
-      setDriveFiles(google.driveFiles);
+      
+      // Convert driveFiles from store format to GoogleDriveFile format
+      const convertedFiles: GoogleDriveFile[] = google.driveFiles.map(file => ({
+        id: file.id,
+        name: file.name,
+        mimeType: file.mimeType,
+        webViewLink: file.url,
+        iconLink: file.iconUrl || `https://drive-thirdparty.googleusercontent.com/16/type/${file.mimeType}`
+      }));
+      setDriveFiles(convertedFiles);
       
       if (google.lastSyncTime) {
         setCalendarSynced(true);
@@ -71,7 +78,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
         // Only check if google store exists and has the method
         if (google?.getAccountStatus) {
           const response = await google.getAccountStatus();
-          if (response && response.data?.connected) {
+          if (response?.connected) {
             setIsAuthenticated(true);
           } else {
             setIsAuthenticated(false);
@@ -110,7 +117,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
         const authCode = 'dummy-auth-code';
         const result = await google.link(authCode);
         
-        if (result.data && !result.error) {
+        if (result) {
           setIsAuthenticated(true);
           return true;
         }
@@ -171,8 +178,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       let tasks: Task[] = [];
       
       if (google?.importTasks) {
-        const result = await google.importTasks();
-        tasks = (result.data as Task[]) || [];
+        tasks = await google.importTasks();
       } else {
         const response = await api.googleIntegration.importGoogleTasks();
         tasks = (response.data as Task[]) || [];
@@ -200,28 +206,26 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       let files: GoogleDriveFile[] = [];
       
       if (google?.fetchDriveFiles) {
-        const result = await google.fetchDriveFiles();
-        files = (result.data as GoogleDriveFile[]) || [];
+        const storeFiles = await google.fetchDriveFiles();
+        // Convert to GoogleDriveFile format
+        files = storeFiles.map(file => ({
+          id: file.id,
+          name: file.name,
+          mimeType: file.mimeType,
+          webViewLink: file.url,
+          iconLink: file.iconUrl || `https://drive-thirdparty.googleusercontent.com/16/type/${file.mimeType}`
+        }));
       } else {
         const response = await api.googleIntegration.getGoogleDriveFiles();
         
         // Convert to GoogleDriveFile format
-        files = ((response.data as Array<{ id: string; name: string; url: string }>) || []).map((file) => ({
+        const apiFiles = response.data as Array<{ id: string; name: string; url: string; mimeType: string; iconUrl?: string }> || [];
+        files = apiFiles.map((file) => ({
           id: file.id,
           name: file.name,
-          mimeType: file.name.endsWith('.docx') || file.name.endsWith('.docs') 
-            ? 'application/vnd.google-apps.document'
-            : file.name.endsWith('.sheets') 
-              ? 'application/vnd.google-apps.spreadsheet'
-              : 'application/octet-stream',
+          mimeType: file.mimeType,
           webViewLink: file.url,
-          iconLink: `https://drive-thirdparty.googleusercontent.com/16/type/${
-            file.name.endsWith('.docx') || file.name.endsWith('.docs') 
-              ? 'application/vnd.google-apps.document'
-              : file.name.endsWith('.sheets') 
-                ? 'application/vnd.google-apps.spreadsheet'
-                : 'application/octet-stream'
-          }`
+          iconLink: file.iconUrl || `https://drive-thirdparty.googleusercontent.com/16/type/${file.mimeType}`
         }));
       }
       

@@ -77,9 +77,9 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
           apiHandler(() => api.admin.getAllUsers())
         ]);
         
-        if (commentsRes.data) setComments(commentsRes.data);
-        if (attachmentsRes.data) setAttachments(attachmentsRes.data);
-        if (usersRes.data) setUsers(usersRes.data);
+        if (commentsRes.data) setComments(commentsRes.data as Comment[]);
+        if (attachmentsRes.data) setAttachments(attachmentsRes.data as Attachment[]);
+        if (usersRes.data) setUsers(usersRes.data as User[]);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -139,7 +139,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
       if (error) throw new Error(error);
       
       if (data) {
-        setComments(prev => [...prev, data]);
+        setComments(prev => [...prev, data as Comment]);
         setMessage('');
       }
     } catch (error) {
@@ -166,7 +166,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
       if (data) {
         setComments(prev => 
           prev.map(comment => 
-            comment.id === commentId ? data : comment
+            comment.id === commentId ? data as Comment : comment
           )
         );
         setEditingComment(null);
@@ -210,7 +210,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
       if (error) throw new Error(error);
       
       if (data) {
-        setAttachments(prev => [...prev, data]);
+        setAttachments(prev => [...prev, data as Attachment]);
         
         // Automatically add a comment about the file
         await apiHandler(() => 
@@ -223,7 +223,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
         );
         
         if (commentsData) {
-          setComments(commentsData);
+          setComments(commentsData as Comment[]);
         }
       }
     } catch (error) {
@@ -251,7 +251,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
       if (error) throw new Error(error);
       
       if (data) {
-        setComments(prev => [...prev, data]);
+        setComments(prev => [...prev, data as Comment]);
         setDrivePopupOpen(false);
       }
     } catch (error) {

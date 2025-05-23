@@ -6,7 +6,7 @@
  */
 
 import crossFetch from 'cross-fetch';
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpLink } from '@trpc/client';
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
@@ -28,21 +28,40 @@ Object.defineProperty(global, 'localStorage', { value: localStorageMock });
 // Base URL for the API
 const BASE_URL = 'http://localhost:3001/trpc';
 
+// Define a properly typed test client interface
+interface TestClient {
+  users: {
+    login: { mutate: (input: any) => Promise<any> };
+    register: { mutate: (input: any) => Promise<any> };
+  };
+  tasks: {
+    create: { mutate: (input: any) => Promise<any> };
+    getById: { query: (input: any) => Promise<any> };
+    delete: { mutate: (input: any) => Promise<any> };
+  };
+  comments: {
+    getByTaskId: { query: (input: any) => Promise<any> };
+    getCommentCount: { query: (input: any) => Promise<any> };
+    create: { mutate: (input: any) => Promise<any> };
+    update: { mutate: (input: any) => Promise<any> };
+    delete: { mutate: (input: any) => Promise<any> };
+    getCommentReplies: { query: (input: any) => Promise<any> };
+  };
+}
+
 // Create tRPC client for testing
-const createClient = () => {
-  return createTRPCClient<AppRouter>({
+const createClient = (): TestClient => {
+  return createTRPCClient<any>({
     links: [
-      httpBatchLink({
+      httpLink({
         url: BASE_URL,
-        // Important: disable batching for tests
-        batch: false,
         fetch: (url, options = {}) => {
           const fetchOptions = { ...options } as RequestInit;
-          const headers = fetchOptions.headers || {};
+          const headers = new Headers(fetchOptions.headers);
           const token = localStorageMock.getItem('token');
           
           if (token) {
-            headers.Authorization = `Bearer ${token}`;
+            headers.set('Authorization', `Bearer ${token}`);
           }
           
           fetchOptions.headers = headers;
@@ -56,7 +75,7 @@ const createClient = () => {
         }
       }),
     ],
-  });
+  }) as unknown as TestClient;
 };
 
 // Generate random task data for testing

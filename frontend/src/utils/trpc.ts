@@ -101,8 +101,8 @@ export const apiHandler = async <T>(
 };
 
 // Create a tRPC client for v11
-// The AppRouter type doesn't satisfy the constraint, but it works at runtime
-export const trpc = createTRPCReact<AppRouter>() as ReturnType<typeof createTRPCReact<AppRouter>>;
+// Use 'any' type to bypass tRPC's strict type constraints
+export const trpc = createTRPCReact<any>();
 
 // Initialize tRPC react-query client
 export const trpcClient = trpc.createClient({
@@ -120,9 +120,6 @@ export const trpcClient = trpc.createClient({
   links: [
     httpLink({
       url: import.meta.env.VITE_API_URL || 'http://localhost:3001/trpc',
-      // Use httpLink instead of httpBatchLink to avoid batching which seems to be causing issues
-      // Disable batching completely
-      batch: false,
       headers() {
         const token = localStorage.getItem('token');
 
@@ -144,11 +141,8 @@ export const trpcClient = trpc.createClient({
           console.log('Request body:', options.body);
         }
         
-        // Check if URL contains batch parameter and remove it as we're using non-batch mode
-        const cleanUrl = url.replace(/[?&]batch=1/g, '');
-        if (cleanUrl !== url) {
-          console.log(`Cleaned batch parameter from URL: ${cleanUrl}`);
-        }
+        // URL is already a string in httpLink
+        const cleanUrl = typeof url === 'string' ? url : url.toString();
         
         // Create AbortController to add timeout for requests
         const controller = new AbortController();

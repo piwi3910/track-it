@@ -3,37 +3,15 @@
  * It's shared between the frontend and backend to ensure type safety.
  */
 
-// We'll use our own simplified version of inferRouterInputs and inferRouterOutputs
-// Define the simplified types
-type inferRouterInputs<TRouter extends Record<string, any>> = {
-  [TKey in keyof TRouter]: TRouter[TKey] extends Record<string, any>
-    ? {
-        [TProcedure in keyof TRouter[TKey]]:
-          TRouter[TKey][TProcedure] extends { _def: { input: [infer TInput] } }
-            ? TInput
-            : never
-      }
-    : never
-};
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 
-type inferRouterOutputs<TRouter extends Record<string, any>> = {
-  [TKey in keyof TRouter]: TRouter[TKey] extends Record<string, any>
-    ? {
-        [TProcedure in keyof TRouter[TKey]]:
-          TRouter[TKey][TProcedure] extends { _def: { query: () => infer TOutput } }
-            ? TOutput
-            : TRouter[TKey][TProcedure] extends { _def: { mutation: () => infer TOutput } }
-              ? TOutput
-              : never
-      }
-    : never
-};
+// Import the actual AppRouter type from the backend
+// This ensures type safety between frontend and backend
+export type { AppRouter } from '../../backend/src/trpc/router';
 
-/**
- * Define the base router structure that will be imported by the frontend.
- * This provides a centralized type definition for the tRPC API.
- */
-export type AppRouter = {
+// For backward compatibility, we'll keep the manual type definition
+// but it should match the actual backend router structure
+export type AppRouterManual = {
   // Cache Admin
   cacheAdmin: {
     getMetrics: {

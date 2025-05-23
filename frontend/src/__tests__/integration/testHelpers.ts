@@ -2,7 +2,7 @@
  * Test helpers for integration tests
  */
 
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpLink } from '@trpc/client';
 import fetch from 'cross-fetch';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
@@ -35,24 +35,49 @@ export const mockLocalStorage: MockStorage = {
   }
 };
 
+// Define a properly typed test client interface
+interface TestClient {
+  users: {
+    login: { mutate: (input: any) => Promise<any> };
+    register: { mutate: (input: any) => Promise<any> };
+    getCurrentUser: { query: () => Promise<any> };
+    updateProfile: { mutate: (input: any) => Promise<any> };
+  };
+  tasks: {
+    getAll: { query: () => Promise<any> };
+    getById: { query: (input: any) => Promise<any> };
+    getByStatus: { query: (input: any) => Promise<any> };
+    create: { mutate: (input: any) => Promise<any> };
+    update: { mutate: (input: any) => Promise<any> };
+    delete: { mutate: (input: any) => Promise<any> };
+  };
+  comments: {
+    getByTaskId: { query: (input: any) => Promise<any> };
+    create: { mutate: (input: any) => Promise<any> };
+    update: { mutate: (input: any) => Promise<any> };
+    delete: { mutate: (input: any) => Promise<any> };
+  };
+  attachments: {
+    getByTaskId: { query: (input: any) => Promise<any> };
+    upload: { mutate: (input: any) => Promise<any> };
+    delete: { mutate: (input: any) => Promise<any> };
+  };
+}
+
 // Create a tRPC client for testing
-export const createTestClient = () => {
-  return createTRPCClient<AppRouter>({
+export const createTestClient = (): TestClient => {
+  return createTRPCClient<any>({
     links: [
-      httpBatchLink({
+      httpLink({
         url: 'http://localhost:3001/trpc',
-        // Important: explicitly disable batching for tests
-        batch: false,
         // Configure fetch with auth headers if token exists
         fetch: (url, options = {}) => {
           const fetchOptions = { ...options } as RequestInit;
-          const headers = fetchOptions.headers || {};
+          const headers = new Headers(fetchOptions.headers);
           const token = mockLocalStorage.getItem('token');
           
           if (token) {
-            Object.assign(headers, {
-              Authorization: `Bearer ${token}`
-            });
+            headers.set('Authorization', `Bearer ${token}`);
           }
           
           fetchOptions.headers = headers;
@@ -66,7 +91,7 @@ export const createTestClient = () => {
         }
       }),
     ],
-  });
+  }) as unknown as TestClient;
 };
 
 // Check if backend server is available

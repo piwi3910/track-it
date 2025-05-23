@@ -6,7 +6,7 @@
  */
 
 import crossFetch from 'cross-fetch';
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpLink } from '@trpc/client';
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
@@ -28,21 +28,43 @@ Object.defineProperty(global, 'localStorage', { value: localStorageMock });
 // Base URL for the API
 const BASE_URL = 'http://localhost:3001/trpc';
 
+// Define a properly typed test client interface
+interface TestClient {
+  users: {
+    login: { mutate: (input: any) => Promise<any> };
+    getCurrentUser: { query: () => Promise<any> };
+  };
+  tasks: {
+    create: { mutate: (input: any) => Promise<any> };
+    getById: { query: (input: any) => Promise<any> };
+    update: { mutate: (input: any) => Promise<any> };
+    delete: { mutate: (input: any) => Promise<any> };
+    updateStatus: { mutate: (input: any) => Promise<any> };
+    saveAsTemplate: { mutate: (input: any) => Promise<any> };
+  };
+  comments: {
+    create: { mutate: (input: any) => Promise<any> };
+    getByTaskId: { query: (input: any) => Promise<any> };
+  };
+  templates: {
+    getById: { query: (input: any) => Promise<any> };
+    delete: { mutate: (input: any) => Promise<any> };
+  };
+}
+
 // Create tRPC client for testing
-const createClient = () => {
-  return createTRPCClient<AppRouter>({
+const createClient = (): TestClient => {
+  return createTRPCClient<any>({
     links: [
-      httpBatchLink({
+      httpLink({
         url: BASE_URL,
-        // Important: disable batching for tests
-        batch: false,
         fetch: (url, options = {}) => {
           const fetchOptions = { ...options } as RequestInit;
-          const headers = fetchOptions.headers || {};
+          const headers = new Headers(fetchOptions.headers);
           const token = localStorageMock.getItem('token');
           
           if (token) {
-            headers.Authorization = `Bearer ${token}`;
+            headers.set('Authorization', `Bearer ${token}`);
           }
           
           fetchOptions.headers = headers;
@@ -56,7 +78,7 @@ const createClient = () => {
         }
       }),
     ],
-  });
+  }) as unknown as TestClient;
 };
 
 // Default test user credentials
@@ -160,10 +182,10 @@ describe('Task Lifecycle Workflow', () => {
       ]
     };
     
-    const result = await client.tasks.create.mutate(taskData);
+    const result = await client.tasks.create.mutate(taskData as any);
     
     // Store task ID for further steps
-    taskId = result.id;
+    taskId = result?.id || '';
     
     // Validate task creation
     expect(result).toBeDefined();
@@ -172,7 +194,7 @@ describe('Task Lifecycle Workflow', () => {
     expect(result.description).toEqual(taskData.description);
     expect(result.status).toEqual(taskData.status);
     expect(result.subtasks).toBeDefined();
-    expect(result.subtasks.length).toEqual(taskData.subtasks.length);
+    expect((result.subtasks as any[])?.length).toEqual(taskData.subtasks.length);
     
     console.log(`Created task: ${result.title} (${result.id})`);
   });
@@ -223,7 +245,7 @@ describe('Task Lifecycle Workflow', () => {
     const currentTask = await client.tasks.getById.query({ id: taskId });
     
     // Mark first subtask as completed
-    const updatedSubtasks = currentTask.subtasks.map((subtask, index) => ({
+    const updatedSubtasks = (currentTask.subtasks as any[])?.map((subtask: any, index: number) => ({
       ...subtask,
       completed: index === 0 ? true : subtask.completed
     }));

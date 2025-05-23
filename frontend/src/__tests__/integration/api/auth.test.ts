@@ -32,6 +32,7 @@ const BASE_URL = 'http://localhost:3001/trpc';
 
 // Create tRPC client for testing
 const createClient = (): TestClient => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return createTRPCClient<any>({
     links: [
       httpLink({

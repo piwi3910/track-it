@@ -39,6 +39,7 @@ export const mockLocalStorage: MockStorage = {
 
 // Create a tRPC client for testing
 export const createTestClient = (): TestClient => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return createTRPCClient<any>({
     links: [
       httpLink({

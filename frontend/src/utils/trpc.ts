@@ -1,6 +1,5 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { httpLink, TRPCClientError } from '@trpc/client';
-import type { AppRouter } from '@track-it/shared';
 import { QueryClient } from '@tanstack/react-query';
 
 // Function to get the auth token from storage
@@ -102,6 +101,7 @@ export const apiHandler = async <T>(
 
 // Create a tRPC client for v11
 // Use 'any' type to bypass tRPC's strict type constraints
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const trpc = createTRPCReact<any>();
 
 // Initialize tRPC react-query client

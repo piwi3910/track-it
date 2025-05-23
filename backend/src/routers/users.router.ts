@@ -9,7 +9,7 @@ import {
 } from '../utils/error-handler';
 import * as userService from '../db/services/user.service';
 import { Prisma, UserRole } from '../generated/prisma';
-import { USER_ROLE, formatEnumForApi, formatEnumForDb } from '../utils/constants';
+import { USER_ROLE } from '../utils/constants';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { config } from '../config';

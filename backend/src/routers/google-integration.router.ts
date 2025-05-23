@@ -80,6 +80,7 @@ export const googleIntegrationRouter = router({
     .input(updateEventSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updateData: any = {
           ...input.data
         };

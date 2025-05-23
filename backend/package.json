@@ -13,6 +13,7 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:seed-admin": "node scripts/seed-admin-user.js",
     "db:migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "cache:flush": "ts-node -e \"require('./src/cache/redis').getRedisClient().flushdb().then(() => console.log('Cache flushed successfully!')).catch(err => console.error('Error flushing cache:', err)).finally(() => process.exit(0))\"",

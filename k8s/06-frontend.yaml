@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: trackit
+  labels:
+    app: trackit
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: trackit
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: trackit
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ghcr.io/piwi3910/trackit-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: NGINX_ENVSUBST_OUTPUT_DIR
+          value: /etc/nginx
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: trackit
+  labels:
+    app: trackit
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: trackit
+    component: frontend

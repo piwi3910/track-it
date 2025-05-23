@@ -1,0 +1,24 @@
+# Development Dockerfile for Track-It Backend
+FROM node:20-alpine
+
+# Install development dependencies
+RUN apk add --no-cache python3 make g++ git curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install dependencies
+RUN npm install
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Expose port 3001
+EXPOSE 3001
+
+# Start development server
+CMD ["npm", "run", "dev"]

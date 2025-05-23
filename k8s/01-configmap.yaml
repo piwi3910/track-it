@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trackit-config
+  namespace: trackit
+  labels:
+    app: trackit
+data:
+  # Frontend configuration
+  VITE_API_URL: "https://trackit.azrty.com/api/trpc"
+  VITE_APP_URL: "https://trackit.azrty.com"
+  VITE_WS_URL: "wss://trackit.azrty.com/ws"
+  
+  # Backend configuration
+  NODE_ENV: "production"
+  PORT: "3001"
+  DATABASE_URL: "postgresql://trackit:$(POSTGRES_PASSWORD)@postgres-service:5432/trackit?schema=public"
+  REDIS_URL: "redis://redis-service:6379"
+  CORS_ORIGIN: "https://trackit.azrty.com"
+  
+  # Application settings
+  SESSION_NAME: "trackit-session"
+  COOKIE_DOMAIN: ".azrty.com"
+  SECURE_COOKIES: "true"
+  SAME_SITE: "strict"
+  
+  # Rate limiting
+  RATE_LIMIT_WINDOW_MS: "900000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  
+  # Google OAuth (if enabled)
+  GOOGLE_OAUTH_ENABLED: "false"

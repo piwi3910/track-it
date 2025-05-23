@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: trackit
+  labels:
+    app: trackit
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: trackit
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: trackit
+        component: backend
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for postgres; sleep 2; done']
+      containers:
+      - name: backend
+        image: ghcr.io/piwi3910/trackit-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3001
+          name: http
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: PORT
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: trackit-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: "postgresql://trackit:$(POSTGRES_PASSWORD)@postgres-service:5432/trackit?schema=public"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: REDIS_URL
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: CORS_ORIGIN
+        - name: SESSION_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: SESSION_NAME
+        - name: COOKIE_DOMAIN
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: COOKIE_DOMAIN
+        - name: SECURE_COOKIES
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: SECURE_COOKIES
+        - name: SAME_SITE
+          valueFrom:
+            configMapKeyRef:
+              name: trackit-config
+              key: SAME_SITE
+        envFrom:
+        - secretRef:
+            name: trackit-secrets
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: trackit
+  labels:
+    app: trackit
+    component: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: http
+  selector:
+    app: trackit
+    component: backend

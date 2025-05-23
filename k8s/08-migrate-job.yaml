@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trackit-migrate
+  namespace: trackit
+  labels:
+    app: trackit
+    component: migration
+spec:
+  template:
+    metadata:
+      labels:
+        app: trackit
+        component: migration
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z postgres-service 5432; do echo waiting for postgres; sleep 2; done']
+      containers:
+      - name: migrate
+        image: ghcr.io/piwi3910/trackit-backend:latest
+        imagePullPolicy: IfNotPresent
+        command: ["npm", "run", "migrate:deploy"]
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: trackit-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: "postgresql://trackit:$(POSTGRES_PASSWORD)@postgres-service:5432/trackit?schema=public"
+        envFrom:
+        - secretRef:
+            name: trackit-secrets

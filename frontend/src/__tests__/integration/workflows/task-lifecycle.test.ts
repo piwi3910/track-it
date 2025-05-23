@@ -267,7 +267,7 @@ describe('Task Lifecycle Workflow', () => {
       // Validate template creation
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
-      expect(result.name).toEqual(templateData.templateName);
+      expect(result.name).toEqual(templateData.name);
       
       console.log(`Saved task as template: ${result.name} (${result.id})`);
     } catch (error) {

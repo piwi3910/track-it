@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { ErrorAlert, ConnectionErrorAlert, ValidationErrorAlert } from '../../../components/error/ErrorAlert';
 import { describe, it, expect, afterEach } from '@jest/globals';
 import { jest } from '@jest/globals';
+import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared/types/errors';
 
 // Mock the shared types since they may not be available in test
 const ErrorCode = {
@@ -120,7 +121,7 @@ describe('ErrorAlert', () => {
     it('should handle AppErrorDetails objects', () => {
       const errorDetails: AppErrorDetails = {
         code: ErrorCode.NOT_FOUND,
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         message: 'Resource not found',
         severity: ErrorSeverity.ERROR,
         details: { id: '123' },

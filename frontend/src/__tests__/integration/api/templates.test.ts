@@ -263,7 +263,7 @@ describe('Task Templates API Integration Tests', () => {
       await expect(client.tasks.saveAsTemplate.mutate({
         taskId: testTaskId,
         name: 'Unauthorized Template',
-        isPublic: true
+        description: 'Test unauthorized template creation'
       })).rejects.toThrow(/authentication|unauthorized/i);
       
       // Restore token for further tests

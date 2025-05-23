@@ -27,6 +27,7 @@ export interface GoogleContextType {
 
 export const GoogleContext = createContext<GoogleContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function GoogleProvider({ children }: { children: ReactNode }) {
   // Get Google store state
   const { google } = useStore();
@@ -177,8 +178,14 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     try {
       let tasks: Task[] = [];
       
-      if (google?.importTasks) {
-        tasks = await google.importTasks();
+      if (google?.importGoogleTasks) {
+        const googleTasks = await google.importGoogleTasks();
+        // Map GoogleTasks to Tasks with taskNumber
+        tasks = googleTasks.map((gt, index) => ({
+          ...gt,
+          taskNumber: index + 1,
+          source: 'google_tasks' as const
+        } as Task));
       } else {
         const response = await api.googleIntegration.importGoogleTasks();
         tasks = (response.data as Task[]) || [];

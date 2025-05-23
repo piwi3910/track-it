@@ -38,7 +38,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         const { data, error } = await authService.getCurrentUser();
         if (data && !error) {
-          setCurrentUser(data);
+          setCurrentUser(data as User);
         } else {
           // If error, clear token and user
           authService.clearToken();
@@ -79,7 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Failed to fetch tasks:', error);
       } else if (data) {
-        setTasks(data);
+        setTasks(data as Task[]);
       }
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
@@ -98,12 +98,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const result = await api.templates.getAll();
         if (Array.isArray(result)) {
           setTemplates(result);
-        }
-      } else if (api.templates.getAll && typeof api.templates.getAll.query === 'function') {
-        // Real tRPC API style
-        const { data, error } = await api.templates.getAll.query();
-        if (data && !error) {
-          setTemplates(data);
         }
       } else {
         console.error('Templates API not available');

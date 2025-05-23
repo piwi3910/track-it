@@ -150,7 +150,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true
           });
           
-          return response.data;
+          return response.data as User;
         } catch {
           set({ 
             user: null, 

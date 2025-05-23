@@ -61,7 +61,7 @@ interface TaskState {
   stopTimeTracking: (id: string) => Promise<Task | null>;
   
   // Template actions
-  saveAsTemplate: (taskId: string, templateName: string, isPublic?: boolean) => Promise<RouterOutputs['templates']['create'] | null>;
+  saveAsTemplate: (taskId: string, templateName: string, isPublic?: boolean) => Promise<any | null>;
   createFromTemplate: (templateId: string, taskData: Partial<Task>) => Promise<Task | null>;
   
   // Filter actions
@@ -274,8 +274,8 @@ export const useTaskStore = create<TaskState>()(
           
           const updatedTask = response.data as Task;
           set(state => ({
-            tasks: state.tasks.map(t => t.id === id ? { ...t, status, updatedAt: updatedTask.updatedAt } : t),
-            selectedTask: state.selectedTask?.id === id ? { ...state.selectedTask, status, updatedAt: updatedTask.updatedAt } : state.selectedTask,
+            tasks: state.tasks.map(t => t.id === id ? { ...t, status: status as TaskStatus, updatedAt: updatedTask.updatedAt || new Date().toISOString() } : t),
+            selectedTask: state.selectedTask?.id === id ? { ...state.selectedTask, status: status as TaskStatus, updatedAt: updatedTask.updatedAt || new Date().toISOString() } : state.selectedTask,
             isUpdating: false
           }));
           

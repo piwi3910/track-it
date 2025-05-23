@@ -1,5 +1,3 @@
-/// <reference types="@testing-library/jest-dom" />
-
 import '@testing-library/jest-dom';
 
 declare global {
@@ -12,7 +10,7 @@ declare global {
       toBeVisible(): R;
       toBeDisabled(): R;
       toBeEnabled(): R;
-      toHaveStyle(css: Record<string, any>): R;
+      toHaveStyle(css: Record<string, unknown>): R;
       toContainElement(element: HTMLElement | null): R;
       toContainHTML(html: string): R;
       toHaveValue(value: string | string[] | number): R;
@@ -20,7 +18,7 @@ declare global {
       toBeChecked(): R;
       toBePartiallyChecked(): R;
       toHaveFocus(): R;
-      toHaveFormValues(expectedValues: Record<string, any>): R;
+      toHaveFormValues(expectedValues: Record<string, unknown>): R;
       toHaveDescription(text: string | RegExp): R;
       toHaveErrorMessage(text: string | RegExp): R;
       toBeInvalid(): R;

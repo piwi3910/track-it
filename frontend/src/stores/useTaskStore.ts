@@ -338,12 +338,12 @@ export const useTaskStore = create<TaskState>()(
             tasks: state.tasks.map(t => t.id === id ? { 
               ...t, 
               timeTrackingActive: true,
-              trackingStartTime: (updatedTask as any).trackingStartTime 
+              trackingStartTime: (updatedTask as Task & { trackingStartTime?: string }).trackingStartTime 
             } : t),
             selectedTask: state.selectedTask?.id === id ? { 
               ...state.selectedTask, 
               timeTrackingActive: true,
-              trackingStartTime: (updatedTask as any).trackingStartTime 
+              trackingStartTime: (updatedTask as Task & { trackingStartTime?: string }).trackingStartTime 
             } : state.selectedTask,
             isUpdating: false
           }));
@@ -374,13 +374,13 @@ export const useTaskStore = create<TaskState>()(
               ...t, 
               timeTrackingActive: false,
               trackingStartTime: null,
-              trackingTimeSeconds: (updatedTask as any).trackingTimeSeconds
+              trackingTimeSeconds: (updatedTask as Task & { trackingTimeSeconds?: number }).trackingTimeSeconds
             } : t),
             selectedTask: state.selectedTask?.id === id ? { 
               ...state.selectedTask, 
               timeTrackingActive: false,
               trackingStartTime: null,
-              trackingTimeSeconds: (updatedTask as any).trackingTimeSeconds
+              trackingTimeSeconds: (updatedTask as Task & { trackingTimeSeconds?: number }).trackingTimeSeconds
             } : state.selectedTask,
             isUpdating: false
           }));

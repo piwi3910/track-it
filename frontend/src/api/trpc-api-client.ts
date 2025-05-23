@@ -18,8 +18,11 @@ export const auth = {
     );
     
     // If login successful, save token
-    if (result.data && typeof result.data === 'object' && 'token' in result.data && typeof (result.data as any).token === 'string') {
-      setAuthToken((result.data as any).token);
+    if (result.data && typeof result.data === 'object' && 'token' in result.data) {
+      const tokenData = result.data as { token: string };
+      if (typeof tokenData.token === 'string') {
+        setAuthToken(tokenData.token);
+      }
     }
     
     return result;
@@ -32,8 +35,11 @@ export const auth = {
     );
     
     // If login successful, save token
-    if (result.data && typeof result.data === 'object' && 'token' in result.data && typeof (result.data as any).token === 'string') {
-      setAuthToken((result.data as any).token);
+    if (result.data && typeof result.data === 'object' && 'token' in result.data) {
+      const tokenData = result.data as { token: string };
+      if (typeof tokenData.token === 'string') {
+        setAuthToken(tokenData.token);
+      }
     }
     
     return result;
@@ -58,8 +64,11 @@ export const auth = {
     );
     
     // If registration successful, save token
-    if (result.data && typeof result.data === 'object' && 'token' in result.data && typeof (result.data as any).token === 'string') {
-      setAuthToken((result.data as any).token);
+    if (result.data && typeof result.data === 'object' && 'token' in result.data) {
+      const tokenData = result.data as { token: string };
+      if (typeof tokenData.token === 'string') {
+        setAuthToken(tokenData.token);
+      }
     }
     
     return result;

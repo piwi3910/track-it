@@ -154,7 +154,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return null;
       }
       
-      const newTemplate = response.data;
+      const newTemplate = response.data as Template;
       set(state => ({
         templates: [...state.templates, newTemplate],
         isCreating: false
@@ -187,7 +187,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return null;
       }
       
-      const updatedTemplate = response.data;
+      const updatedTemplate = response.data as Template;
       set(state => ({
         templates: state.templates.map(t => t.id === id ? { ...t, ...updatedTemplate } : t),
         selectedTemplate: state.selectedTemplate?.id === id ? { ...state.selectedTemplate, ...updatedTemplate } : state.selectedTemplate,

@@ -19,6 +19,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
 
   // Redis configuration
+  REDIS_URL: z.string().optional(),
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6381),
   REDIS_PASSWORD: z.string().optional(),
@@ -34,6 +35,24 @@ if (!env.success) {
   throw new Error('Invalid environment variables');
 }
 
+// Parse Redis URL if provided
+let redisHost = env.data.REDIS_HOST;
+let redisPort = env.data.REDIS_PORT;
+let redisPassword = env.data.REDIS_PASSWORD;
+
+if (env.data.REDIS_URL) {
+  try {
+    const redisUrl = new URL(env.data.REDIS_URL);
+    redisHost = redisUrl.hostname;
+    redisPort = parseInt(redisUrl.port) || 6379;
+    if (redisUrl.password) {
+      redisPassword = redisUrl.password;
+    }
+  } catch (e) {
+    console.error('Failed to parse REDIS_URL:', e);
+  }
+}
+
 // Export validated config
 export const config = {
   nodeEnv: env.data.NODE_ENV,
@@ -47,9 +66,9 @@ export const config = {
   isTest: env.data.NODE_ENV === 'test',
   logLevel: env.data.NODE_ENV === 'production' ? 'info' : 'debug',
   redis: {
-    host: env.data.REDIS_HOST,
-    port: env.data.REDIS_PORT,
-    password: env.data.REDIS_PASSWORD,
+    host: redisHost,
+    port: redisPort,
+    password: redisPassword,
     ttl: env.data.REDIS_TTL
   }
 };

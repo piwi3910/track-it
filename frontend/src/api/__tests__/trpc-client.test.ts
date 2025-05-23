@@ -7,8 +7,24 @@
 
 import { trpcClient } from '@/utils/trpc';
 
+// Type definition for mocked tRPC client
+interface MockedTrpcClient {
+  users: {
+    login: { mutate: jest.Mock };
+    register: { mutate: jest.Mock };
+    getCurrentUser: { query: jest.Mock };
+  };
+  tasks: {
+    getAll: { query: jest.Mock };
+    getById: { query: jest.Mock };
+    create: { mutate: jest.Mock };
+    update: { mutate: jest.Mock };
+    delete: { mutate: jest.Mock };
+  };
+}
+
 // Type assertion for mocked trpcClient
-const mockedTrpcClient = trpcClient as any;
+const mockedTrpcClient = trpcClient as unknown as MockedTrpcClient;
 import { auth, tasks } from '@/api/trpc-api-client';
 import { 
   createLocalStorageMock, 

@@ -5,7 +5,7 @@
  */
 
 import { createTRPCClient, httpBatchLink, httpLink } from '@trpc/client';
-import type { AppRouter } from '@track-it/shared';
+import type { AppRouter } from '@track-it/shared/types/trpc';
 import { QueryClient } from '@tanstack/react-query';
 import crossFetch from 'cross-fetch';
 
@@ -96,14 +96,9 @@ export const createTestQueryClient = () => new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      cacheTime: 0,
+      gcTime: 0,
       staleTime: 0,
     },
-  },
-  logger: {
-    log: console.log,
-    warn: console.warn,
-    error: process.env.NODE_ENV === 'test' ? () => {} : console.error,
   },
 });
 

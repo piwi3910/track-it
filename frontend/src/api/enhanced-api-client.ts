@@ -1,9 +1,7 @@
 /**
  * Enhanced API client with improved error handling and retry logic
  */
-import { createTRPCProxyClient } from '@trpc/client';
-import { trpcClientConfig } from '@/utils/trpc';
-import { TRPCClientError } from '@trpc/client';
+import { vanillaClient as trpcClient, TRPCClientError } from './trpc-vanilla-client';
 import { 
   AppError, 
   ErrorCode, 
@@ -12,11 +10,7 @@ import {
   parseErrorResponse
 } from '@track-it/shared';
 import type { Task } from '@/types/task';
-import type { AppRouter } from '@track-it/shared/types/trpc';
 import { errorLoggingService } from '@/services/error-logging.service';
-
-// Create the actual tRPC client instance
-const trpcClient = createTRPCProxyClient<AppRouter>(trpcClientConfig) as any;
 
 // Retry options
 interface RetryOptions {
@@ -329,7 +323,7 @@ export const enhancedApi = {
      */
     loginWithGoogle: async (credential: string) => {
       return apiCall(
-        () => trpcClient.users.loginWithGoogle.mutate({ credential }),
+        () => trpcClient.users.loginWithGoogle.mutate({ idToken: credential }),
         { endpoint: 'users.loginWithGoogle', method: 'mutate' }
       );
     },
@@ -339,7 +333,7 @@ export const enhancedApi = {
      */
     verifyGoogleToken: async (token: string) => {
       return apiCall(
-        () => trpcClient.googleIntegration.verifyGoogleToken.query({ token }),
+        () => trpcClient.googleIntegration.verifyGoogleToken.mutate({ credential: token }),
         { endpoint: 'googleIntegration.verifyGoogleToken', method: 'query' }
       );
     }

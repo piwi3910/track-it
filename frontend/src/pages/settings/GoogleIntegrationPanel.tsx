@@ -40,7 +40,7 @@ import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 export function GoogleIntegrationPanel() {
-  const { googleStore } = useStore();
+  const { google } = useStore();
   const {
     isAuthenticated,
     authenticating,
@@ -80,14 +80,12 @@ export function GoogleIntegrationPanel() {
   // Fetch Google account status when authenticated
   useEffect(() => {
     const fetchAccountStatus = async () => {
-      if (isAuthenticated && googleStore?.getAccountStatus) {
+      if (isAuthenticated && google?.getAccountStatus) {
         try {
-          const status = await googleStore.getAccountStatus();
+          const status = await google.getAccountStatus();
           if (status) {
             setAccountStatus({
-              name: status.name,
-              email: status.email,
-              picture: status.picture
+              email: status.email
             });
           }
         } catch (error) {
@@ -97,7 +95,7 @@ export function GoogleIntegrationPanel() {
     };
     
     fetchAccountStatus();
-  }, [isAuthenticated, googleStore]);
+  }, [isAuthenticated, google]);
   
   // Render Google Sign-in button if not authenticated
   useEffect(() => {
@@ -127,8 +125,8 @@ export function GoogleIntegrationPanel() {
     setError(null);
     try {
       // Disconnect Google account both in store and context
-      if (googleStore?.unlinkAccount) {
-        await googleStore.unlinkAccount();
+      if (google?.unlink) {
+        await google.unlink();
       }
       googleLogout();
       
@@ -219,8 +217,7 @@ export function GoogleIntegrationPanel() {
           status: 'todo',
           priority: 'medium',
           dueDate: new Date(event.start).toISOString().split('T')[0],
-          tags: ['calendar', 'imported'],
-          source: 'google'
+          tags: ['calendar', 'imported']
         });
       }
       
@@ -251,14 +248,14 @@ export function GoogleIntegrationPanel() {
       <Group align="start">
         <Avatar 
           src={accountStatus?.picture || 
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(googleStore?.connectedEmail || 'User')}&background=random`
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(google?.email || 'User')}&background=random`
           } 
           color="red" 
           radius="xl"
         />
         <Stack gap={0} style={{ flex: 1 }}>
           <Text fw={500}>{accountStatus?.name || 'Connected to Google'}</Text>
-          <Text size="sm" c="dimmed">{accountStatus?.email || googleStore?.connectedEmail || 'Google account connected'}</Text>
+          <Text size="sm" c="dimmed">{accountStatus?.email || google?.email || 'Google account connected'}</Text>
         </Stack>
         <Button 
           variant="outline" 
@@ -321,8 +318,8 @@ export function GoogleIntegrationPanel() {
       
       <Box mt="md">
         <Text size="xs" c="dimmed" ta="center">
-          Last synced: {googleStore?.lastSyncTime ? 
-            new Date(googleStore.lastSyncTime).toLocaleString() : 
+          Last synced: {google?.lastSyncTime ? 
+            new Date(google.lastSyncTime).toLocaleString() : 
             'Never'
           }
         </Text>

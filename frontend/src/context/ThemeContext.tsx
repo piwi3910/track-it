@@ -1,7 +1,11 @@
-import { createContext, useEffect } from 'react';
-import { useMantineColorScheme, useMantineTheme, MantineColorScheme } from '@mantine/core';
+import { useEffect } from 'react';
+import { useMantineColorScheme, useMantineTheme } from '@mantine/core';
+import { ThemeContext, ThemeContextType } from './ThemeContextDefinition';
 import '../styles/theme/index.css';
 
+export { ThemeContext, type ThemeContextType } from './ThemeContextDefinition';
+
+// Re-define the interfaces locally since they're used in the implementation
 interface ThemeColors {
   // Base colors
   background: string;
@@ -86,26 +90,6 @@ interface ThemeTypography {
     relaxed: number;
   };
 }
-
-export interface ThemeContextType {
-  // Theme controls
-  colorScheme: MantineColorScheme;
-  toggleColorScheme: () => void;
-  isDark: boolean;
-
-  // Theme properties
-  colors: ThemeColors;
-  spacing: ThemeSpacing;
-  borderRadius: ThemeBorderRadius;
-  shadows: ThemeShadows;
-  typography: ThemeTypography;
-
-  // Task status and priority mappings
-  getStatusColor: (status: string) => string;
-  getPriorityColor: (priority: string) => string;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { colorScheme, setColorScheme } = useMantineColorScheme();

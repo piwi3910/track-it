@@ -60,8 +60,7 @@ export function BacklogPage() {
     .filter(task => 
       (searchQuery === '' || 
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        task.taskNumber.toString().includes(searchQuery)
+        (task.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
       ) &&
       (priorityFilter === null || task.priority === priorityFilter)
     )
@@ -180,9 +179,9 @@ export function BacklogPage() {
         // Create new task with backlog status
         const newTaskData = {
           ...taskData,
-          status: 'backlog',
+          status: 'backlog' as const,
         };
-        await createTask(newTaskData);
+        await createTask(newTaskData as Omit<Task, 'id'>);
       }
     } catch (err) {
       console.error('Failed to save task:', err);
@@ -316,9 +315,6 @@ export function BacklogPage() {
                   <Table.Td>
                     <Stack gap={5}>
                       <Group gap={8}>
-                        <Badge size="xs" variant="filled" color="blue" style={{ borderRadius: '50%', minWidth: '18px' }}>
-                          {task.taskNumber}
-                        </Badge>
                         <Text fw={500}>{task.title}</Text>
                       </Group>
                       {task.description && (
@@ -358,7 +354,7 @@ export function BacklogPage() {
                         <Menu.Dropdown>
                           <Menu.Item 
                             leftSection={<IconPencil size={14} />}
-                            onClick={() => handleEditTask(task)}
+                            onClick={() => handleEditTask(task as Task)}
                           >
                             Edit
                           </Menu.Item>

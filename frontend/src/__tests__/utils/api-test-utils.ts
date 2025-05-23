@@ -15,6 +15,89 @@ import { TRPCClientError } from '@trpc/client';
 import { Task, TaskPriority, TaskStatus, User, Comment, Attachment, TaskTemplate } from '@/types/task';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
+// Type for test client with expected procedures
+export interface TestTRPCClient {
+  users: {
+    login: {
+      mutate: (input: { email: string; password: string }) => Promise<{ token: string; user: User }>;
+    };
+    register: {
+      mutate: (input: { name: string; email: string; password: string; passwordConfirm: string }) => Promise<{ token: string; user: User }>;
+    };
+    getCurrentUser: {
+      query: () => Promise<User>;
+    };
+    updateProfile: {
+      mutate: (input: { name?: string; avatarUrl?: string }) => Promise<User>;
+    };
+  };
+  tasks: {
+    create: {
+      mutate: (input: Partial<Task>) => Promise<Task>;
+    };
+    update: {
+      mutate: (input: { id: string; data: Partial<Task> }) => Promise<Task>;
+    };
+    delete: {
+      mutate: (input: { id: string }) => Promise<{ id: string }>;
+    };
+    getAll: {
+      query: () => Promise<Task[]>;
+    };
+    getById: {
+      query: (input: { id: string }) => Promise<Task>;
+    };
+    getByStatus: {
+      query: (input: { status: string }) => Promise<Task[]>;
+    };
+    search: {
+      query: (input: { query: string }) => Promise<Task[]>;
+    };
+  };
+  templates: {
+    create: {
+      mutate: (input: Partial<TaskTemplate>) => Promise<TaskTemplate>;
+    };
+    getAll: {
+      query: () => Promise<TaskTemplate[]>;
+    };
+    getByCategory: {
+      query: (input: { category: string }) => Promise<TaskTemplate[]>;
+    };
+    update: {
+      mutate: (input: { id: string; data: Partial<TaskTemplate> }) => Promise<TaskTemplate>;
+    };
+    delete: {
+      mutate: (input: { id: string }) => Promise<{ id: string }>;
+    };
+  };
+  comments: {
+    create: {
+      mutate: (input: { taskId: string; text: string; parentId?: string }) => Promise<Comment>;
+    };
+    getByTaskId: {
+      query: (input: { taskId: string }) => Promise<Comment[]>;
+    };
+    update: {
+      mutate: (input: { id: string; text: string }) => Promise<Comment>;
+    };
+    delete: {
+      mutate: (input: { id: string }) => Promise<{ success: boolean }>;
+    };
+  };
+  attachments: {
+    upload: {
+      mutate: (input: { taskId: string; file: { name: string; type: string; size: number } }) => Promise<Attachment>;
+    };
+    getByTaskId: {
+      query: (input: { taskId: string }) => Promise<Attachment[]>;
+    };
+    delete: {
+      mutate: (input: { id: string }) => Promise<{ success: boolean }>;
+    };
+  };
+}
+
 // Type assertion to help TypeScript
 type TRPCClient = ReturnType<typeof createTRPCClient<AppRouter>>;
 
@@ -134,7 +217,7 @@ export const authenticateTestUser = async (
   email: string = API_CONFIG.testUser.email,
   password: string = API_CONFIG.testUser.password
 ): Promise<{ token: string; user: Partial<User> }> => {
-  const client = createTestClient() as any;
+  const client = createTestClient() as unknown as TestTRPCClient;
   
   try {
     const result = await client.users.login.mutate({ email, password });
@@ -148,10 +231,10 @@ export const authenticateTestUser = async (
     return {
       token: result.token,
       user: {
-        id: result.id,
-        name: result.name,
-        email: result.email,
-        role: result.role
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        role: result.user.role
       }
     };
   } catch (error) {
@@ -299,7 +382,7 @@ export const testSetup = {
     mockStorage.clear();
     
     // Create client and authenticate
-    const client = createTestClient() as any;
+    const client = createTestClient() as unknown as TestTRPCClient;
     const auth = await authenticateTestUser();
     
     return { client, auth };
@@ -313,7 +396,7 @@ export const testSetup = {
    * @returns Created task
    */
   createTestTask: async (
-    client: any,
+    client: TestTRPCClient,
     taskData: Partial<Task> = {},
     createdTasksArray: string[] = []
   ) => {
@@ -337,7 +420,7 @@ export const testSetup = {
    * @returns Array of created tasks
    */
   createMultipleTestTasks: async (
-    client: any,
+    client: TestTRPCClient,
     count: number,
     baseTaskData: Partial<Task> = {},
     createdTasksArray: string[] = []
@@ -366,7 +449,7 @@ export const testSetup = {
    * @returns Created template
    */
   createTestTemplate: async (
-    client: any,
+    client: TestTRPCClient,
     templateData: Partial<TaskTemplate> = {}
   ) => {
     const testTemplate = generators.template(templateData);
@@ -385,7 +468,7 @@ export const testTeardown = {
    * @param taskIds - Array of task IDs to clean up
    */
   cleanupTestTasks: async (
-    client: any,
+    client: TestTRPCClient,
     taskIds: string[]
   ) => {
     if (!taskIds || taskIds.length === 0) return;
@@ -405,7 +488,7 @@ export const testTeardown = {
    * @param templateIds - Array of template IDs to clean up
    */
   cleanupTestTemplates: async (
-    client: any,
+    client: TestTRPCClient,
     templateIds: string[]
   ) => {
     if (!templateIds || templateIds.length === 0) return;
@@ -425,7 +508,7 @@ export const testTeardown = {
    * @param cleanupItems - Object containing arrays of items to clean up
    */
   teardownTestEnvironment: async (
-    client: any,
+    client: TestTRPCClient,
     cleanupItems: {
       taskIds?: string[];
       templateIds?: string[];

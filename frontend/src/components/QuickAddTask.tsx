@@ -123,7 +123,7 @@ export default function QuickAddTask({
         // Callback with the created task, adding taskNumber if missing
         const taskWithNumber = {
           ...newTask,
-          taskNumber: (newTask as any).taskNumber || Date.now()
+          taskNumber: (newTask as Task & { taskNumber?: number }).taskNumber || Date.now()
         } as Task;
         if (onTaskAdded) onTaskAdded(taskWithNumber);
       } else {

@@ -21,7 +21,7 @@ global.window = (global.window || {
   addEventListener: jest.fn(),
   removeEventListener: jest.fn(),
   dispatchEvent: jest.fn(),
-  CustomEvent: jest.fn((event: string, options: any) => ({
+  CustomEvent: jest.fn((event: string, options: CustomEventInit<unknown>) => ({
     type: event,
     detail: options?.detail,
     bubbles: options?.bubbles || false,
@@ -93,7 +93,7 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-})) as any;
+})) as unknown as typeof ResizeObserver;
 
 // Mock IntersectionObserver for UI tests
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
@@ -104,7 +104,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   rootMargin: '',
   thresholds: [],
   takeRecords: jest.fn(),
-})) as any;
+})) as unknown as typeof IntersectionObserver;
 
 // Mock URL.createObjectURL for file uploads
 global.URL.createObjectURL = jest.fn(() => 'mock-object-url');
@@ -127,7 +127,7 @@ const MockAbortSignal = function() {
 
 // Create proper inheritance chain for instanceof checks
 Object.setPrototypeOf(MockAbortSignal.prototype, Object.getPrototypeOf(Object.prototype));
-global.AbortSignal = MockAbortSignal as any;
+global.AbortSignal = MockAbortSignal as unknown as typeof AbortSignal;
 
 // Mock AbortController using the AbortSignal
 global.AbortController = jest.fn().mockImplementation(() => {
@@ -135,7 +135,7 @@ global.AbortController = jest.fn().mockImplementation(() => {
     signal: new MockAbortSignal(),
     abort: jest.fn()
   };
-}) as any;
+}) as unknown as typeof AbortController;
 
 // Mock crypto for secure random values
 if (!global.crypto) {

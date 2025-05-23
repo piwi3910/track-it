@@ -76,7 +76,7 @@ export function KanbanPage() {
         await updateTask(id, data);
       } else {
         // Create new task (AppContext will handle ID generation)
-        await createTask(taskData);
+        await createTask(taskData as Omit<Task, 'id'>);
       }
       setTaskModalOpen(false);
     } catch (error) {

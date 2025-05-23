@@ -3,13 +3,7 @@
  * This file provides a typesafe API client to interact with the backend
  */
 
-import { createTRPCProxyClient } from '@trpc/client';
-import { trpcClientConfig } from '@/utils/trpc';
-import { TRPCClientError } from '@trpc/client';
-import type { AppRouter } from '@track-it/shared/types/trpc';
-
-// Create the actual tRPC client instance
-const trpcClient = createTRPCProxyClient<AppRouter>(trpcClientConfig) as any;
+import { vanillaClient as trpcClient, TRPCClientError } from './trpc-vanilla-client';
 
 /**
  * Error handling wrapper for tRPC API calls

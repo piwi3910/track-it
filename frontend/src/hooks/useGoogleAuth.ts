@@ -68,16 +68,16 @@ export function useGoogleAuth(): UseGoogleAuthResult {
   const [error, setError] = useState<string | null>(null);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const [connected, setConnected] = useState(google?.connected || false);
-  const [connectedEmail, setConnectedEmail] = useState<string | null>(google?.connectedEmail || null);
+  const [connectedEmail, setConnectedEmail] = useState<string | null>(google?.email || null);
   const googleInitialized = useRef(false);
 
   // Sync with Zustand store
   useEffect(() => {
     if (google) {
       setConnected(google.connected);
-      setConnectedEmail(google.connectedEmail);
+      setConnectedEmail(google.email);
     }
-  }, [google?.connected, google?.connectedEmail, google]);
+  }, [google?.connected, google?.email, google]);
 
   // Initialize Google Identity Services
   useEffect(() => {
@@ -157,11 +157,11 @@ export function useGoogleAuth(): UseGoogleAuthResult {
       console.log('Login successful with Google authentication');
       
       // Link Google account if the user has Zustand store
-      if (google?.linkAccount) {
+      if (google?.link) {
         try {
           // In a real implementation, we would extract an auth code from the response
           // Here we'll simulate it with the token
-          await google.linkAccount(data.token);
+          await google.link(data.token);
         } catch (linkError) {
           console.warn('Linking Google account failed but login succeeded:', linkError);
           // We still continue since auth worked

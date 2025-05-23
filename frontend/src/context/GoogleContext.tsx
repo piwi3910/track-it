@@ -1,33 +1,11 @@
-import { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { useState, useCallback, ReactNode, useEffect } from 'react';
 import { api } from '@/api';
 import { GoogleCalendarEvent, GoogleDriveFile, Task } from '@/types/task';
 import { authService } from '@/services/auth.service';
 import { useStore } from '@/hooks/useStore';
+import { GoogleContext, GoogleContextType } from './GoogleContextDefinition';
 
-export interface GoogleContextType {
-  isAuthenticated: boolean;
-  authenticating: boolean;
-  // Calendar
-  calendarSyncing: boolean;
-  calendarSynced: boolean;
-  calendarEvents: GoogleCalendarEvent[];
-  syncCalendar: () => Promise<void>;
-  // Tasks
-  tasksSyncing: boolean;
-  tasksSynced: boolean;
-  importGoogleTasks: () => Promise<Task[]>;
-  // Drive
-  driveSyncing: boolean;
-  driveFiles: GoogleDriveFile[];
-  fetchDriveFiles: () => Promise<void>;
-  // Auth
-  authenticate: () => Promise<boolean>;
-  logout: () => void;
-}
-
-export const GoogleContext = createContext<GoogleContextType | undefined>(undefined);
-
-// eslint-disable-next-line react-refresh/only-export-components
+export { GoogleContext, type GoogleContextType } from './GoogleContextDefinition';
 export function GoogleProvider({ children }: { children: ReactNode }) {
   // Get Google store state
   const { google } = useStore();
@@ -178,13 +156,13 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     try {
       let tasks: Task[] = [];
       
-      if (google?.importGoogleTasks) {
-        const googleTasks = await google.importGoogleTasks();
+      if (google?.importTasks) {
+        const googleTasks = await google.importTasks();
         // Map GoogleTasks to Tasks with taskNumber
         tasks = googleTasks.map((gt, index) => ({
           ...gt,
           taskNumber: index + 1,
-          source: 'google_tasks' as const
+          source: 'google'
         } as Task));
       } else {
         const response = await api.googleIntegration.importGoogleTasks();

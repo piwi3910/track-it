@@ -173,7 +173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (data) {
         setTasks(prev => [...prev, data as Task]);
       }
-      return data;
+      return data as Task;
     } catch (error) {
       console.error('Failed to create task:', error);
       return null;
@@ -198,7 +198,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setSelectedTask(data as Task);
         }
       }
-      return data;
+      return data as Task;
     } catch (error) {
       console.error('Failed to update task:', error);
       return null;
@@ -266,9 +266,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { data, error } = await api.tasks.search(query);
       if (error) {
         console.error('Search API error:', error);
-        throw new Error(typeof error === 'string' ? error : (error as any).message || 'Search failed');
+        throw new Error(typeof error === 'string' ? error : (error as Error).message || 'Search failed');
       }
-      return data || [];
+      return (data || []) as Task[];
     } catch (error) {
       console.error('Failed to search tasks:', error);
       
@@ -286,7 +286,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await api.templates.getById(id);
       if (error) return null;
-      return data;
+      return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to get template:', error);
       return null;
@@ -303,7 +303,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (data) {
         setTemplates(prev => [...prev, data as TaskTemplate]);
       }
-      return data;
+      return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to create template:', error);
       return null;
@@ -325,7 +325,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setSelectedTemplate(data as TaskTemplate);
         }
       }
-      return data;
+      return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to update template:', error);
       return null;
@@ -368,7 +368,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (data) {
         setTemplates(prev => [...prev, data as TaskTemplate]);
       }
-      return data;
+      return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to save task as template:', error);
       return null;
@@ -385,7 +385,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (data) {
         setTasks(prev => [...prev, data as Task]);
       }
-      return data;
+      return data as Task;
     } catch (error) {
       console.error('Failed to create task from template:', error);
       return null;
@@ -400,11 +400,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Mock API style
         const result = await api.templates.search(query);
         return Array.isArray(result) ? result : [];
-      } else if (api.templates.search && typeof (api.templates.search as any).query === 'function') {
+      } else if (api.templates.search && typeof (api.templates.search as { query?: (...args: unknown[]) => unknown }).query === 'function') {
         // Real tRPC API style
-        const { data, error } = await (api.templates.search as any).query(query);
-        if (error) throw new Error(typeof error === 'string' ? error : (error as any).message || 'Search failed');
-        return data || [];
+        const { data, error } = await (api.templates.search as { query: (q: string) => Promise<{ data?: unknown; error?: unknown }> }).query(query);
+        if (error) throw new Error(typeof error === 'string' ? error : (error as Error).message || 'Search failed');
+        return (data || []) as TaskTemplate[];
       } else {
         // Fallback to filtering existing templates in memory
         console.warn('Search API not available, filtering in-memory templates');
@@ -425,7 +425,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await api.templates.getCategories();
       if (error) throw new Error(error);
-      return data || [];
+      return (data || []) as string[];
     } catch (error) {
       console.error('Failed to get template categories:', error);
       return [];

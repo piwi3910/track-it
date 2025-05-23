@@ -40,8 +40,17 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         return [];
       }
       
-      const notifications = response.data || [];
-      const unreadCount = notifications.filter((n: Notification) => !n.read).length;
+      const notifications = (response.data || []) as Array<{
+        id: string;
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        read: boolean;
+        data?: { taskId?: string; commentId?: string; userId?: string; url?: string; };
+        createdAt: string;
+      }>;
+      const unreadCount = notifications.filter((n) => !n.read).length;
       
       set({ 
         notifications, 
@@ -66,7 +75,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         return get().unreadCount;
       }
       
-      const count = response.data || 0;
+      const count = (response.data || 0) as number;
       set({ unreadCount: count });
       
       return count;

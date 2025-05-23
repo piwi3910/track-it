@@ -597,7 +597,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                 nothingFoundMessage="No matching user found"
                 renderOption={({ option }) => (
                   <Group gap="xs">
-                    <Avatar src={(option as any).image} size="sm" radius="xl" />
+                    <Avatar src={(option as { image?: string }).image} size="sm" radius="xl" />
                     <div>
                       <Text size="sm">{option.label.split(' (')[0]}</Text>
                       <Text size="xs" c="dimmed">{option.label.match(/\((.*?)\)/)?.[1] || ''}</Text>

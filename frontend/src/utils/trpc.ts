@@ -1,6 +1,7 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { httpLink, TRPCClientError } from '@trpc/client';
 import { QueryClient } from '@tanstack/react-query';
+import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Function to get the auth token from storage
 export function getAuthToken(): string | null {
@@ -100,9 +101,13 @@ export const apiHandler = async <T>(
 };
 
 // Create a tRPC client for v11
-// Use 'any' type to bypass tRPC's strict type constraints
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const trpc = createTRPCReact<any>();
+// Using type assertion to work around AppRouter being 'any' in shared package
+type TRPCReactClient = ReturnType<typeof createTRPCReact<AppRouter>> & {
+  createClient: (config: unknown) => unknown;
+  Provider: React.ComponentType<{ client: unknown; queryClient: unknown; children: React.ReactNode }>;
+};
+
+export const trpc = createTRPCReact<AppRouter>() as TRPCReactClient;
 
 // tRPC client configuration for v11
 export const trpcClientConfig = {
@@ -132,7 +137,7 @@ export const trpcClientConfig = {
           'Accept': 'application/json',
         };
       },
-      fetch(url, options) {
+      async fetch(url, options) {
         // Add debugging for API requests
         console.log(`Making API request to: ${url}`);
         
@@ -257,8 +262,9 @@ export const trpcClientConfig = {
   ],
 };
 
-// Export trpcClient for backward compatibility
-export const trpcClient = trpcClientConfig;
+// Create the actual tRPC client
+export const trpcClient = trpc.createClient(trpcClientConfig);
+
 
 // Create a query client for React Query
 export const queryClient = new QueryClient({

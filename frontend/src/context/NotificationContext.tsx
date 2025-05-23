@@ -1,6 +1,9 @@
-import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '@/api';
 import { Notification } from '@/types/task';
+import { NotificationContext } from './NotificationContextDefinition';
+
+export { NotificationContext, type NotificationContextType } from './NotificationContextDefinition';
 
 // Define error state type
 interface NotificationError {
@@ -8,21 +11,6 @@ interface NotificationError {
   code?: string;
   timestamp: Date;
 }
-
-interface NotificationContextType {
-  notifications: Notification[];
-  unreadCount: number;
-  loading: boolean;
-  error: NotificationError | null;
-  fetchNotifications: () => Promise<void>;
-  markAsRead: (id: string) => Promise<void>;
-  markAllAsRead: () => Promise<void>;
-  clearError: () => void;
-}
-
-export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
-
-// eslint-disable-next-line react-refresh/only-export-components
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);

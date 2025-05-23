@@ -12,16 +12,15 @@ import {
   testTeardown,
   assertions
 } from './api-test-utils';
+import type { TestTRPCClient } from './api-test-utils';
 
-// Type assertion to help TypeScript
-type TRPCClient = ReturnType<typeof createTestClient>;
 
 /**
  * Example test suite for tasks API
  */
 describe('Tasks API Integration Example', () => {
   // Test client and cleanup list
-  let client: any;
+  let client: TestTRPCClient;
   const createdTaskIds: string[] = [];
   
   // Set up test environment - run before all tests
@@ -34,7 +33,7 @@ describe('Tasks API Integration Example', () => {
     }
     
     // Initialize test client
-    client = createTestClient();
+    client = createTestClient() as unknown as TestTRPCClient;
     
     // Authenticate with test user
     try {
@@ -146,7 +145,7 @@ describe('Tasks API Integration Example', () => {
  * Example test suite for authentication
  */
 describe('Authentication API Example', () => {
-  let client: any;
+  let client: TestTRPCClient;
   
   beforeAll(async () => {
     const backendAvailable = await isBackendRunning();
@@ -155,7 +154,7 @@ describe('Authentication API Example', () => {
       return;
     }
     
-    client = createTestClient();
+    client = createTestClient() as unknown as TestTRPCClient;
   });
   
   beforeEach(() => {
@@ -214,7 +213,7 @@ describe('Authentication API Example', () => {
  */
 describe('Advanced Testing Example', () => {
   let testState: {
-    client: any;
+    client: TestTRPCClient;
     auth?: { token: string; user: { id: string; name: string; email: string } };
     testTaskId?: string;
     createdItemIds: {
@@ -227,7 +226,7 @@ describe('Advanced Testing Example', () => {
   beforeAll(async () => {
     // Initialize state
     testState = {
-      client: createTestClient(),
+      client: createTestClient() as unknown as TestTRPCClient,
       createdItemIds: {
         tasks: [],
         templates: [],

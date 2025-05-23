@@ -114,7 +114,7 @@ export function AdminPage() {
         throw new Error(error);
       }
       
-      setUsers(data || []);
+      setUsers((data || []) as User[]);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load users';
       notifications.show({
@@ -137,7 +137,12 @@ export function AdminPage() {
   // Handle create user
   const handleCreateUser = async () => {
     try {
-      const { error } = await api.admin.createUser(createForm);
+      const { error } = await api.admin.createUser({
+        name: createForm.name,
+        email: createForm.email,
+        password: createForm.password || '',
+        role: createForm.role
+      });
       
       if (error) {
         throw new Error(error);
@@ -309,7 +314,7 @@ export function AdminPage() {
         throw new Error(error);
       }
       
-      setDeletionStats(data || null);
+      setDeletionStats((data || null) as DeletionStats | null);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load deletion statistics';
       notifications.show({

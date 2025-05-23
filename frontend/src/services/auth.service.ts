@@ -1,4 +1,23 @@
 import { api } from '@/api';
+import type { User } from '@track-it/shared';
+
+// Type definitions for API responses
+interface AuthResponse {
+  token?: string;
+  user?: User;
+}
+
+interface GoogleTokenVerificationResponse {
+  valid?: boolean;
+  email?: string;
+  name?: string;
+  picture?: string;
+}
+
+interface GoogleAccountsId {
+  revoke?: () => void;
+  disableAutoSelect: () => void;
+}
 
 /**
  * Authentication service
@@ -56,8 +75,9 @@ export const authService = {
     try {
       const result = await api.auth.login(email, password);
       
-      if (result.data && (result.data as any).token) {
-        this.setToken((result.data as any).token);
+      const authData = result.data as AuthResponse;
+      if (authData?.token) {
+        this.setToken(authData.token);
         return { data: result.data, error: null };
       }
       
@@ -80,8 +100,9 @@ export const authService = {
     try {
       const result = await api.auth.loginWithGoogle(idToken);
       
-      if (result.data && (result.data as any).token) {
-        this.setToken((result.data as any).token);
+      const authData = result.data as AuthResponse;
+      if (authData?.token) {
+        this.setToken(authData.token);
         return { data: result.data, error: null };
       }
       
@@ -104,13 +125,14 @@ export const authService = {
     try {
       const result = await api.auth.verifyGoogleToken(credential);
       
-      if (result.data && (result.data as any).valid) {
+      const verificationData = result.data as GoogleTokenVerificationResponse;
+      if (verificationData?.valid) {
         return { 
           data: { 
             valid: true, 
-            email: (result.data as any).email, 
-            name: (result.data as any).name,
-            picture: (result.data as any).picture
+            email: verificationData.email, 
+            name: verificationData.name,
+            picture: verificationData.picture
           }, 
           error: null 
         };
@@ -137,8 +159,9 @@ export const authService = {
       // This method only exists in newer versions of the Google Identity Services
       try {
         // This method might not exist in all versions
-        if (typeof (window.google.accounts.id as any).revoke === 'function') {
-          (window.google.accounts.id as any).revoke();
+        const googleId = window.google.accounts.id as GoogleAccountsId;
+        if (typeof googleId.revoke === 'function') {
+          googleId.revoke();
         }
         window.google.accounts.id.disableAutoSelect();
       } catch (e) {

@@ -6,46 +6,6 @@ import { describe, it, expect, afterEach } from '@jest/globals';
 import { jest } from '@jest/globals';
 import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared/types/errors';
 
-// Mock the shared types since they may not be available in test
-const ErrorCode = {
-  VALIDATION_ERROR: 'VALIDATION_ERROR',
-  NOT_FOUND: 'NOT_FOUND',
-  NETWORK_ERROR: 'NETWORK_ERROR',
-  API_UNAVAILABLE: 'API_UNAVAILABLE',
-  TIMEOUT_ERROR: 'TIMEOUT_ERROR',
-  UNAUTHORIZED: 'UNAUTHORIZED',
-  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
-  FORBIDDEN: 'FORBIDDEN',
-  INVALID_INPUT: 'INVALID_INPUT',
-  MISSING_FIELD: 'MISSING_FIELD',
-  GOOGLE_API_ERROR: 'GOOGLE_API_ERROR',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',
-} as const;
-
-const ErrorSeverity = {
-  INFO: 'INFO',
-  WARNING: 'WARNING',
-  ERROR: 'ERROR',
-  CRITICAL: 'CRITICAL',
-} as const;
-
-// Mock AppError class
-class AppError extends Error {
-  details: AppErrorDetails;
-  
-  constructor(details: AppErrorDetails) {
-    super(details.message);
-    this.details = details;
-    this.name = 'AppError';
-  }
-}
-
-interface AppErrorDetails {
-  code: string;
-  message: string;
-  severity?: string;
-  details?: Record<string, unknown>;
-}
 
 // Mock timer functions
 jest.useFakeTimers();
@@ -105,12 +65,11 @@ describe('ErrorAlert', () => {
 
   describe('error type handling', () => {
     it('should handle AppError instances', () => {
-      const appError = new AppError({
-        code: ErrorCode.VALIDATION_ERROR,
-        message: 'Validation failed',
-        severity: ErrorSeverity.WARNING,
-        retryable: true,
-      });
+      const appError = AppError.create(
+        ErrorCode.VALIDATION_ERROR,
+        'Validation failed',
+        { severity: ErrorSeverity.WARNING, retryable: true }
+      );
 
       renderWithWrapper(<ErrorAlert error={appError} />);
       
@@ -181,11 +140,11 @@ describe('ErrorAlert', () => {
     });
 
     it('should use red color for ERROR severity', () => {
-      const error = new AppError({
-        code: ErrorCode.INTERNAL_ERROR,
-        message: 'Error message',
-        severity: ErrorSeverity.ERROR,
-      });
+      const error = AppError.create(
+        ErrorCode.INTERNAL_SERVER_ERROR,
+        'Error message',
+        { severity: ErrorSeverity.ERROR }
+      );
 
       renderWithWrapper(<ErrorAlert error={error} />);
       
@@ -194,11 +153,11 @@ describe('ErrorAlert', () => {
     });
 
     it('should use red color for CRITICAL severity', () => {
-      const criticalError = new AppError({
-        code: ErrorCode.INTERNAL_ERROR,
-        message: 'Critical error',
-        severity: ErrorSeverity.CRITICAL,
-      });
+      const criticalError = AppError.create(
+        ErrorCode.INTERNAL_SERVER_ERROR,
+        'Critical error',
+        { severity: ErrorSeverity.CRITICAL }
+      );
 
       renderWithWrapper(<ErrorAlert error={criticalError} />);
       
@@ -209,10 +168,10 @@ describe('ErrorAlert', () => {
 
   describe('error code specific titles', () => {
     it('should use "Connection Error" title for network errors', () => {
-      const networkError = new AppError({
-        code: ErrorCode.NETWORK_ERROR,
-        message: 'Network failed',
-      });
+      const networkError = AppError.create(
+        ErrorCode.NETWORK_ERROR,
+        'Network failed'
+      );
 
       renderWithWrapper(<ErrorAlert error={networkError} />);
       
@@ -220,10 +179,10 @@ describe('ErrorAlert', () => {
     });
 
     it('should use "Authentication Required" title for auth errors', () => {
-      const authError = new AppError({
-        code: ErrorCode.UNAUTHORIZED,
-        message: 'Not authorized',
-      });
+      const authError = AppError.create(
+        ErrorCode.UNAUTHORIZED,
+        'Not authorized'
+      );
 
       renderWithWrapper(<ErrorAlert error={authError} />);
       
@@ -231,10 +190,10 @@ describe('ErrorAlert', () => {
     });
 
     it('should use "Access Denied" title for forbidden errors', () => {
-      const forbiddenError = new AppError({
-        code: ErrorCode.FORBIDDEN,
-        message: 'Access denied',
-      });
+      const forbiddenError = AppError.create(
+        ErrorCode.FORBIDDEN,
+        'Access denied'
+      );
 
       renderWithWrapper(<ErrorAlert error={forbiddenError} />);
       
@@ -256,11 +215,11 @@ describe('ErrorAlert', () => {
 
     it('should show retry button for retryable errors', () => {
       const onRetry = jest.fn();
-      const retryableError = new AppError({
-        code: ErrorCode.NETWORK_ERROR,
-        message: 'Network error',
-        retryable: true,
-      });
+      const retryableError = AppError.create(
+        ErrorCode.NETWORK_ERROR,
+        'Network error',
+        { retryable: true }
+      );
 
       renderWithWrapper(<ErrorAlert error={retryableError} onRetry={onRetry} />);
       
@@ -273,11 +232,11 @@ describe('ErrorAlert', () => {
 
     it('should not show retry button for non-retryable errors', () => {
       const onRetry = jest.fn();
-      const nonRetryableError = new AppError({
-        code: ErrorCode.VALIDATION_ERROR,
-        message: 'Validation error',
-        retryable: false,
-      });
+      const nonRetryableError = AppError.create(
+        ErrorCode.VALIDATION_ERROR,
+        'Validation error',
+        { retryable: false }
+      );
 
       renderWithWrapper(<ErrorAlert error={nonRetryableError} onRetry={onRetry} />);
       
@@ -364,11 +323,11 @@ describe('ValidationErrorAlert', () => {
   });
 
   it('should show field information when available', () => {
-    const errorWithField = new AppError({
-      code: ErrorCode.VALIDATION_ERROR,
-      message: 'Invalid email',
-      field: 'email',
-    });
+    const errorWithField = AppError.create(
+      ErrorCode.VALIDATION_ERROR,
+      'Invalid email',
+      { field: 'email' }
+    );
 
     renderWithWrapper(
       <ValidationErrorAlert error={errorWithField} />

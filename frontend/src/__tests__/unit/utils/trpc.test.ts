@@ -87,7 +87,7 @@ describe('apiHandler', () => {
 
   it('should return data on successful API call', async () => {
     const mockData = { id: 1, name: 'Test' };
-    const mockApiCall = jest.fn().mockResolvedValue(mockData);
+    const mockApiCall = jest.fn<() => Promise<typeof mockData>>().mockResolvedValue(mockData);
 
     const result = await apiHandler(mockApiCall);
 
@@ -97,20 +97,20 @@ describe('apiHandler', () => {
 
   it('should handle TRPCClientError with connection issues', async () => {
     const mockError = new TRPCClientError('Failed to fetch');
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 
     expect(result.data).toBeNull();
     expect(result.error).toBe('Cannot connect to the server. Please ensure the backend is running.');
     expect(window.dispatchEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'api_connection_error' }) as CustomEvent
+      expect.objectContaining({ type: 'api_connection_error' })
     );
   });
 
   it('should handle TRPCClientError with authorization issues', async () => {
     const mockError = new TRPCClientError('UNAUTHORIZED');
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 
@@ -126,7 +126,7 @@ describe('apiHandler', () => {
 
   it('should handle TRPCClientError with input too large', async () => {
     const mockError = new TRPCClientError('Input is too big for a single dispatch');
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 
@@ -136,7 +136,7 @@ describe('apiHandler', () => {
 
   it('should handle TRPCClientError with transform issues', async () => {
     const mockError = new TRPCClientError('Unable to transform response');
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 
@@ -151,7 +151,7 @@ describe('apiHandler', () => {
 
   it('should handle TRPCClientError with not found issues', async () => {
     const mockError = new TRPCClientError('No procedure found');
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 
@@ -161,7 +161,7 @@ describe('apiHandler', () => {
 
   it('should handle generic JavaScript errors', async () => {
     const mockError = new Error('Generic error');
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 
@@ -171,7 +171,7 @@ describe('apiHandler', () => {
 
   it('should handle non-Error objects', async () => {
     const mockError = 'String error';
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 
@@ -180,9 +180,10 @@ describe('apiHandler', () => {
   });
 
   it('should handle TRPCClientError with data containing error code', async () => {
-    const mockError = new TRPCClientError('Server error');
-    mockError.data = { code: 'INTERNAL_SERVER_ERROR', httpStatus: 500 };
-    const mockApiCall = jest.fn().mockRejectedValue(mockError);
+    const mockError = Object.assign(new TRPCClientError('Server error'), {
+      data: { code: 'INTERNAL_SERVER_ERROR', httpStatus: 500 }
+    });
+    const mockApiCall = jest.fn<() => Promise<never>>().mockRejectedValue(mockError);
 
     const result = await apiHandler(mockApiCall);
 

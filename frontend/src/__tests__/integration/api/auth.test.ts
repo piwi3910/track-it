@@ -7,7 +7,7 @@
 
 import crossFetch from 'cross-fetch';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Mock global objects for testing
@@ -75,7 +75,7 @@ const isBackendRunning = async (): Promise<boolean> => {
   try {
     const response = await crossFetch('http://localhost:3001/');
     return response.status === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -83,7 +83,6 @@ const isBackendRunning = async (): Promise<boolean> => {
 describe('Authentication API Integration Tests', () => {
   let client: ReturnType<typeof createClient>;
   let testUser: ReturnType<typeof generateTestUser>;
-  let userId: string;
   
   // Before all tests, check if backend is running
   beforeAll(async () => {
@@ -121,7 +120,6 @@ describe('Authentication API Integration Tests', () => {
       const result = await client.users.register.mutate(testUser);
       
       // Store user ID for later tests
-      userId = result.id;
       
       // Save this email as registered
       registeredEmails.add(testUser.email);
@@ -219,9 +217,8 @@ describe('Authentication API Integration Tests', () => {
       
       // Try to register but ignore errors since the user might already exist
       try {
-        const result = await client.users.register.mutate(testUser);
-        userId = result.id;
-      } catch (error) {
+        await client.users.register.mutate(testUser);
+      } catch {
         console.log('Demo user already exists, will use for login tests');
       }
     });
@@ -284,7 +281,7 @@ describe('Authentication API Integration Tests', () => {
   });
   
   describe('User Profile Management', () => {
-    let token = null;
+    let token: string | null = null;
     
     beforeEach(async () => {
       // Use the demo user for consistent testing
@@ -304,7 +301,6 @@ describe('Authentication API Integration Tests', () => {
         
         token = loginResult.token;
         localStorageMock.setItem('token', token);
-        userId = loginResult.id;
       } catch (error) {
         console.error('Failed to login for profile tests:', error);
       }

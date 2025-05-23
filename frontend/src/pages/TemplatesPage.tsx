@@ -34,7 +34,7 @@ import {
   IconClock
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/hooks/useTheme';;
 import { TaskTemplate, TaskPriority } from '@/types/task';
 
 // Template card component to display template information

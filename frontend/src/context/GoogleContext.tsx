@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { api } from '@/api';
 import { GoogleCalendarEvent, GoogleDriveFile, Task } from '@/types/task';
 import { authService } from '@/services/auth.service';
@@ -288,12 +288,4 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       {children}
     </GoogleContext.Provider>
   );
-}
-
-export function useGoogle() {
-  const context = useContext(GoogleContext);
-  if (context === undefined) {
-    throw new Error('useGoogle must be used within a GoogleProvider');
-  }
-  return context;
 }

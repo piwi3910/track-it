@@ -1,5 +1,5 @@
 import { Alert, Group, Stack, Text, Button } from '@mantine/core';
-import { IconAlertCircle, IconInfoCircle, IconExclamationMark, IconX } from '@tabler/icons-react';
+import { IconAlertCircle, IconInfoCircle, IconExclamationMark } from '@tabler/icons-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared';
 
@@ -52,7 +52,7 @@ export function ErrorAlert({
   // Determine the error details to display
   let errorMessage: string;
   let errorCode: ErrorCode | undefined;
-  let errorDetails: Record<string, any> | undefined;
+  let errorDetails: Record<string, unknown> | undefined;
   let severity: ErrorSeverity = ErrorSeverity.ERROR;
   let isRetryable = false;
   
@@ -70,8 +70,8 @@ export function ErrorAlert({
     errorMessage = error.message;
     errorCode = error.code as ErrorCode;
     errorDetails = error.details;
-    severity = (error as any).severity || ErrorSeverity.ERROR;
-    isRetryable = (error as any).retryable || false;
+    severity = (error as AppErrorDetails).severity || ErrorSeverity.ERROR;
+    isRetryable = (error as AppErrorDetails).retryable || false;
   } else if (error instanceof Error) {
     errorMessage = error.message;
   } else {

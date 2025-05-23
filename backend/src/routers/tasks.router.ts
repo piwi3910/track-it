@@ -165,9 +165,9 @@ const createFromTemplateSchema = z.object({
 
 export const tasksRouter = router({
   getAll: protectedProcedure
-    .query(({ ctx }) => safeProcedure(async () => {
+    .query(() => safeProcedure(async () => {
       try {
-        const tasks = await taskService.getAllTasks(ctx.user.id);
+        const tasks = await taskService.getAllTasks();
         return tasks.map(normalizeTaskData);
       } catch (error) {
         return handleError(error);
@@ -369,9 +369,9 @@ export const tasksRouter = router({
     
   search: protectedProcedure
     .input(searchTasksSchema)
-    .query(({ input, ctx }) => safeProcedure(async () => {
+    .query(({ input }) => safeProcedure(async () => {
       try {
-        const tasks = await taskService.searchTasks(input.query, ctx.user.id);
+        const tasks = await taskService.searchTasks(input.query);
         return tasks.map(normalizeTaskData);
       } catch (error) {
         return handleError(error);

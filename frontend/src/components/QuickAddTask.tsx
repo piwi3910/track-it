@@ -24,6 +24,7 @@ import {
 import { useApp } from '@/hooks/useApp';
 import { api } from '@/api';
 import type { Task, TaskPriority, TaskStatus } from '@/types/task';
+import type { User } from '@track-it/shared/types/trpc';
 
 interface QuickAddTaskProps {
   defaultStatus?: TaskStatus;
@@ -47,7 +48,7 @@ export default function QuickAddTask({
   const [tags, setTags] = useState<string[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [estimatedHours, setEstimatedHours] = useState<number | undefined>(undefined);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   // Helper function to highlight today's date
   const getTodayHighlightProps = (date: Date) => {

@@ -36,7 +36,7 @@ import {
   IconPlus
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/hooks/useTheme';;
 import type { Task, TaskPriority, TaskRecurrence } from '@/types/task';
 import { api } from '@/api';
 
@@ -244,7 +244,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
       
       setTrackingInterval(interval);
     }
-  }, [task]);
+  }, [task, trackingInterval, updateTask]);
   
   // Calculate subtask completion
   const subtaskCount = localTask.subtasks?.length || 0;
@@ -382,7 +382,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         }
       }
     };
-  }, [trackingInterval, isTimeTrackingActive, trackingTime, localTask.id]);
+  }, [trackingInterval, isTimeTrackingActive, trackingTime, localTask.id, updateTask]);
 
   const renderCardContent = () => (
     <div className="task-card-content">

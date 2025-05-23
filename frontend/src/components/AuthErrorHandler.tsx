@@ -89,7 +89,7 @@ export function AuthErrorHandler() {
       clearInterval(intervalId);
       window.removeEventListener('auth_error', handleAuthError);
     };
-  }, [api.error, api.recentErrors, auth, navigate, location]);
+  }, [api.error, api.recentErrors, api, auth, navigate, location]);
   
   // This component doesn't render anything
   return null;

@@ -4,7 +4,6 @@
 
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import fetch from 'cross-fetch';
-import { jest } from '@jest/globals';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Configure global fetch for Node.js environment
@@ -75,7 +74,7 @@ export const isBackendAvailable = async (): Promise<boolean> => {
   try {
     const response = await fetch('http://localhost:3001/');
     return response.ok;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

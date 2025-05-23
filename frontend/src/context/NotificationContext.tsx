@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '@/api';
 import { Notification } from '@/types/task';
 
@@ -129,7 +129,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         timestamp: new Date()
       });
     }
-  }, [notifications]);  // Include notifications as dependency
+  }, []);  // Don't include notifications as it's updated by setNotifications
   
   // Clear error state
   const clearError = useCallback(() => {
@@ -155,12 +155,4 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       {children}
     </NotificationContext.Provider>
   );
-}
-
-export function useNotifications() {
-  const context = useContext(NotificationContext);
-  if (context === undefined) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
-  }
-  return context;
 }

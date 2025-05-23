@@ -21,7 +21,7 @@ import {
   IconClock,
   IconStatusChange
 } from '@tabler/icons-react';
-import { useNotifications } from '@/context/NotificationContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Notification } from '@/types/task';
 
 export function NotificationMenu() {
@@ -31,8 +31,7 @@ export function NotificationMenu() {
     loading, 
     error,
     markAsRead, 
-    markAllAsRead,
-    clearError
+    markAllAsRead
   } = useNotifications();
   
   const navigate = useNavigate();

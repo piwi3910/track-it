@@ -86,9 +86,9 @@ const searchTemplatesSchema = z.object({
 
 export const templatesRouter = router({
   getAll: protectedProcedure
-    .query(({ ctx }) => safeProcedure(async () => {
+    .query(() => safeProcedure(async () => {
       try {
-        const templates = await templateService.getAllTemplates(ctx.user.id);
+        const templates = await templateService.getAllTemplates();
         return templates.map(normalizeTemplateData);
       } catch (error) {
         return handleError(error);
@@ -118,9 +118,9 @@ export const templatesRouter = router({
     
   getByCategory: protectedProcedure
     .input(getByCategorySchema)
-    .query(({ input, ctx }) => safeProcedure(async () => {
+    .query(({ input }) => safeProcedure(async () => {
       try {
-        const templates = await templateService.getTemplatesByCategory(input.category, ctx.user.id);
+        const templates = await templateService.getTemplatesByCategory(input.category);
         return templates.map(normalizeTemplateData);
       } catch (error) {
         return handleError(error);
@@ -246,9 +246,9 @@ export const templatesRouter = router({
     
   search: protectedProcedure
     .input(searchTemplatesSchema)
-    .query(({ input, ctx }) => safeProcedure(async () => {
+    .query(({ input }) => safeProcedure(async () => {
       try {
-        const templates = await templateService.searchTemplates(input.query, ctx.user.id);
+        const templates = await templateService.searchTemplates(input.query);
         return templates.map(normalizeTemplateData);
       } catch (error) {
         return handleError(error);

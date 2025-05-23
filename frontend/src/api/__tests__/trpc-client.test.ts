@@ -5,10 +5,9 @@
  * including error handling, retries, and response formatting.
  */
 
-import { trpcClient, apiHandler } from '@/utils/trpc';
+import { trpcClient } from '@/utils/trpc';
 import { auth, tasks } from '@/api/trpc-api-client';
 import { 
-  createTestTrpcClient, 
   createLocalStorageMock, 
   isBackendRunning,
   generateTestUser 
@@ -149,7 +148,7 @@ describe('tRPC API Client', () => {
       (trpcClient.users.login.mutate as jest.Mock).mockResolvedValueOnce(mockLoginResponse);
       
       // Setup spy to check if localStorage is used
-      const setItemSpy = jest.spyOn(localStorageMock, 'setItem');
+      jest.spyOn(localStorageMock, 'setItem');
       
       // Test login
       const result = await auth.login('user@example.com', 'password');

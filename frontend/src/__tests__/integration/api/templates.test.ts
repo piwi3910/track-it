@@ -7,7 +7,7 @@
 
 import crossFetch from 'cross-fetch';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Mock global objects for testing
@@ -100,7 +100,7 @@ const isBackendRunning = async (): Promise<boolean> => {
   try {
     const response = await crossFetch('http://localhost:3001/');
     return response.status === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -119,8 +119,8 @@ describe('Task Templates API Integration Tests', () => {
   let client: ReturnType<typeof createClient>;
   let testTaskId: string;
   let testTemplateId: string;
-  let createdTaskIds: string[] = [];
-  let createdTemplateIds: string[] = [];
+  const createdTaskIds: string[] = [];
+  const createdTemplateIds: string[] = [];
   
   // Before all tests, check if backend is running and authenticate
   beforeAll(async () => {
@@ -154,7 +154,7 @@ describe('Task Templates API Integration Tests', () => {
         try {
           await client.tasks.delete.mutate({ id: taskId });
           console.log(`Cleaned up test task ${taskId}`);
-        } catch (error) {
+        } catch {
           console.warn(`Failed to clean up test task ${taskId}`);
         }
       }
@@ -164,11 +164,11 @@ describe('Task Templates API Integration Tests', () => {
         try {
           await client.templates.delete.mutate({ id: templateId });
           console.log(`Cleaned up test template ${templateId}`);
-        } catch (error) {
+        } catch {
           console.warn(`Failed to clean up test template ${templateId}`);
         }
       }
-    } catch (error) {
+    } catch {
       console.warn('Failed to authenticate for test cleanup');
     }
   });
@@ -278,7 +278,7 @@ describe('Task Templates API Integration Tests', () => {
           const result = await client.templates.create.mutate(templateData);
           testTemplateId = result.id;
           createdTemplateIds.push(testTemplateId);
-        } catch (error) {
+        } catch {
           // Try saving task as template
           const templateData = {
             taskId: testTaskId,
@@ -403,7 +403,7 @@ describe('Task Templates API Integration Tests', () => {
           const result = await client.templates.create.mutate(templateData);
           testTemplateId = result.id;
           createdTemplateIds.push(testTemplateId);
-        } catch (error) {
+        } catch {
           // Try saving task as template
           const templateData = {
             taskId: testTaskId,

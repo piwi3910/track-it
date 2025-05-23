@@ -26,7 +26,7 @@ import {
 import { GoogleIntegrationPanel } from './settings/GoogleIntegrationPanel';
 import { ProfilePictureUpload } from '@/components/ProfilePictureUpload';
 import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/hooks/useTheme';;
 import { api } from '@/api';
 
 export function SettingsPage() {

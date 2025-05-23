@@ -151,7 +151,7 @@ export async function createUser(data: Prisma.UserCreateInput) {
     let userCreateData: Prisma.UserCreateInput = { ...data };
     
     // Remove non-database fields
-    const { password, passwordConfirm, ...cleanedData } = userCreateData as { password?: string; passwordConfirm?: string } & Prisma.UserCreateInput;
+    const { password, ...cleanedData } = userCreateData as { password?: string; passwordConfirm?: string } & Prisma.UserCreateInput;
     userCreateData = cleanedData;
     
     // If no passwordHash is provided but password is, hash the password

@@ -1,14 +1,6 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { isApiAvailable } from '@/utils/api-utils';
-
-interface ApiContextType {
-  apiAvailable: boolean;
-  isApiLoading: boolean;
-  apiError: string | null;
-  checkApiAvailability: () => Promise<boolean>;
-}
-
-export const ApiContext = createContext<ApiContextType | undefined>(undefined);
+import { ApiContext } from './ApiContext.types';
 
 export function ApiProvider({ children }: { children: ReactNode }) {
   const [apiAvailable, setApiAvailable] = useState<boolean>(false);

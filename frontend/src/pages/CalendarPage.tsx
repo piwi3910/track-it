@@ -40,9 +40,9 @@ import QuickAddTask from '@/components/QuickAddTask';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import TaskModal from '@/components/TaskModal';
 import type { Task } from '@/types/task';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/hooks/useTheme';;
 import { useApp } from '@/hooks/useApp';
-import { useGoogle } from '@/context/GoogleContext';
+import { useGoogle } from '@/hooks/useGoogle';
 
 
 // Extended Task interface with multi-day display properties

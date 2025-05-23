@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { ErrorAlert, ConnectionErrorAlert, ValidationErrorAlert } from '../../../components/error/ErrorAlert';
+import { describe, it, expect, afterEach } from '@jest/globals';
+import { jest } from '@jest/globals';
 
 // Mock the shared types since they may not be available in test
 const ErrorCode = {

@@ -50,7 +50,7 @@ const createClient = () => {
               statusText: response.statusText,
               headers: response.headers
             });
-          } catch (e) {
+          } catch {
             console.log('Response Text:', text);
             return response;
           }

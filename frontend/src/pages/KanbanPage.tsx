@@ -17,7 +17,7 @@ import TaskModal from '@/components/TaskModal';
 import TaskCard from '@/components/TaskCard';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task, TaskStatus } from '@/types/task';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/hooks/useTheme';;
 import { useApp } from '@/hooks/useApp';
 
 // Column definitions

@@ -33,11 +33,11 @@ import {
   IconDownload
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
-import { useGoogle } from '@/context/GoogleContext';
+import { useGoogle } from '@/hooks/useGoogle';
 import { api } from '@/api';
 import { Comment, Attachment, User } from '@/types/task';
 import { notifications } from '@mantine/notifications';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/hooks/useTheme';;
 
 interface TaskChatProps {
   taskId: string;
@@ -353,7 +353,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     
     // First, handle markdown-style links
     let textWithProcessedLinks = text;
-    let linkMatches = [...text.matchAll(linkRegex)];
+    const linkMatches = [...text.matchAll(linkRegex)];
     
     if (linkMatches.length > 0) {
       let offset = 0;

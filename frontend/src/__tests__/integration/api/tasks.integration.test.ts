@@ -6,7 +6,7 @@
  */
 
 import { createTestClient, mockLocalStorage, isBackendAvailable, loginTestUser, generators } from '../testHelpers';
-import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 
 // Before running tests, check if the backend server is available and log in
 beforeAll(async () => {
@@ -25,7 +25,7 @@ beforeAll(async () => {
   // Login as default test user
   try {
     await loginTestUser();
-  } catch (error) {
+  } catch {
     console.error('\x1b[31m%s\x1b[0m', '⛔ Login failed!');
     console.error('\x1b[33m%s\x1b[0m', 'Make sure the demo user exists in the database.');
     throw new Error('Authentication failed. Tests will be skipped.');
@@ -45,7 +45,7 @@ describe('Tasks API Integration', () => {
     if (taskId) {
       try {
         await client.tasks.delete.mutate({ id: taskId });
-      } catch (error) {
+      } catch {
         // Ignore errors during cleanup
       }
     }

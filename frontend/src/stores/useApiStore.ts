@@ -27,7 +27,7 @@ interface ApiState {
   
   // Mock API functionality
   isMockApi: boolean;
-  useMockApi: (useMock: boolean) => void;
+  setMockApi: (useMock: boolean) => void;
   
   // Actions
   setApiAvailable: (available: boolean) => void;
@@ -54,7 +54,7 @@ export const useApiStore = create<ApiState>((set, get) => ({
   isMockApi: false,
   
   // Mock API toggle
-  useMockApi: (useMock) => set({ 
+  setMockApi: (useMock) => set({ 
     isMockApi: useMock,
     // Clear errors when switching to mock mode
     ...(useMock ? { 

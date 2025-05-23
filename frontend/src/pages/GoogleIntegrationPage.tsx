@@ -27,7 +27,7 @@ import {
   IconRefresh,
   IconCheck
 } from '@tabler/icons-react';
-import { useGoogle } from '@/context/GoogleContext';
+import { useGoogle } from '@/hooks/useGoogle';;
 import { useApp } from '@/hooks/useApp';
 import { notifications } from '@mantine/notifications';
 import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';

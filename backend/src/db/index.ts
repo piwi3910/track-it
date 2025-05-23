@@ -22,9 +22,11 @@ export async function connectToDatabase() {
   try {
     // Test connection
     await prisma.$connect();
+    // eslint-disable-next-line no-console
     console.log('Database connected successfully');
     return true;
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Failed to connect to database:', error);
     return false;
   }
@@ -34,9 +36,11 @@ export async function connectToDatabase() {
 export async function disconnectFromDatabase() {
   try {
     await prisma.$disconnect();
+    // eslint-disable-next-line no-console
     console.log('Database disconnected successfully');
     return true;
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Failed to disconnect from database:', error);
     return false;
   }

@@ -104,7 +104,7 @@ export async function getUnreadCount(userId: string) {
 /**
  * Create task assignment notification
  */
-export async function createTaskAssignedNotification(taskId: string, taskTitle: string, assigneeId: string, _assignerId: string) {
+export async function createTaskAssignedNotification(taskId: string, taskTitle: string, assigneeId: string) {
   try {
     return await prisma.notification.create({
       data: {

@@ -112,7 +112,7 @@ export const isBackendRunning = async (): Promise<boolean> => {
   try {
     const response = await crossFetch('http://localhost:3001/');
     return response.status === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

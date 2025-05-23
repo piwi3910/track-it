@@ -7,7 +7,7 @@
 
 import crossFetch from 'cross-fetch';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Mock global objects for testing
@@ -70,7 +70,7 @@ const isBackendRunning = async (): Promise<boolean> => {
   try {
     const response = await crossFetch('http://localhost:3001/');
     return response.status === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -92,7 +92,7 @@ describe('Task Lifecycle Workflow', () => {
   let client: ReturnType<typeof createClient>;
   let taskId: string;
   let templateId: string;
-  let commentIds: string[] = [];
+  const commentIds: string[] = [];
   
   // Before all tests, check if backend is running and authenticate
   beforeAll(async () => {

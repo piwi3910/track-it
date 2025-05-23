@@ -23,11 +23,11 @@ import {
   IconFlag
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/hooks/useTheme';;
 import { Task } from '@/types/task';
 
 export function GlobalSearch() {
-  const { searchTasks, getTaskById, tasks } = useApp();
+  const { searchTasks } = useApp();
   const { getPriorityColor } = useTheme();
   const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);

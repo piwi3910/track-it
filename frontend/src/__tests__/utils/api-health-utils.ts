@@ -70,11 +70,11 @@ export const checkApiHealth = async (verbose = false): Promise<{
           // Try to extract version if available
           const data = await rootResponse.json();
           version = data.version || data.apiVersion;
-        } catch (e) {
+        } catch {
           // Ignore JSON parsing errors
         }
       }
-    } catch (error) {
+    } catch {
       endpoints['/'] = {
         status: 0,
         ok: false,
@@ -101,7 +101,7 @@ export const checkApiHealth = async (verbose = false): Promise<{
         healthy = true;
         available = true;
       }
-    } catch (error) {
+    } catch {
       endpoints['/health'] = {
         status: 0,
         ok: false,
@@ -128,7 +128,7 @@ export const checkApiHealth = async (verbose = false): Promise<{
         // tRPC endpoint typically returns 404 on GET requests, which is normal
         available = true;
       }
-    } catch (error) {
+    } catch {
       endpoints['/trpc'] = {
         status: 0,
         ok: false,

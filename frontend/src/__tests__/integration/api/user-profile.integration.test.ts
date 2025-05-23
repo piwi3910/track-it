@@ -6,7 +6,7 @@
  */
 
 import { createTestClient, mockLocalStorage, isBackendAvailable, loginTestUser } from '../testHelpers';
-import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import type { User } from '@track-it/shared/types/trpc';
 
 // Before running tests, check if the backend server is available and log in
@@ -26,7 +26,7 @@ beforeAll(async () => {
   // Login as default test user
   try {
     await loginTestUser();
-  } catch (error) {
+  } catch {
     console.error('\x1b[31m%s\x1b[0m', '⛔ Login failed!');
     console.error('\x1b[33m%s\x1b[0m', 'Make sure the demo user exists in the database.');
     throw new Error('Authentication failed. Tests will be skipped.');

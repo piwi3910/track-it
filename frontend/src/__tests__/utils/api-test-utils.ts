@@ -73,7 +73,7 @@ export const isBackendRunning = async (
         if (response.ok) {
           return true;
         }
-      } catch (error) {
+      } catch {
         clearTimeout(timeoutId);
         console.warn(`Backend connection attempt ${currentAttempt + 1} failed`);
       }
@@ -434,7 +434,7 @@ export const testTeardown = {
       for (const commentId of cleanupItems.commentIds) {
         try {
           await client.comments.delete.mutate({ id: commentId });
-        } catch (error) {
+        } catch {
           console.warn(`Failed to clean up comment ${commentId}`);
         }
       }

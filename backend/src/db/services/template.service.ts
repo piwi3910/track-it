@@ -8,7 +8,7 @@ import { createDatabaseError } from '../../utils/error-handler';
 /**
  * Get all templates
  */
-export async function getAllTemplates(_userId: string) {
+export async function getAllTemplates() {
   try {
     return await prisma.taskTemplate.findMany({
       where: {
@@ -39,7 +39,7 @@ export async function getTemplateById(id: string) {
 /**
  * Get templates by category
  */
-export async function getTemplatesByCategory(category: string, _userId: string) {
+export async function getTemplatesByCategory(category: string) {
   try {
     return await prisma.taskTemplate.findMany({
       where: {
@@ -77,7 +77,7 @@ export async function getTemplateCategories() {
 /**
  * Search templates
  */
-export async function searchTemplates(query: string, _userId: string) {
+export async function searchTemplates(query: string) {
   try {
     return await prisma.taskTemplate.findMany({
       where: {

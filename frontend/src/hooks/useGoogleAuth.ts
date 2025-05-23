@@ -77,7 +77,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
       setConnected(googleStore.connected);
       setConnectedEmail(googleStore.connectedEmail);
     }
-  }, [googleStore?.connected, googleStore?.connectedEmail]);
+  }, [googleStore?.connected, googleStore?.connectedEmail, googleStore]);
 
   // Initialize Google Identity Services
   useEffect(() => {
@@ -113,7 +113,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
         // document.body.removeChild(scriptElement);
       }
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize Google Auth after script is loaded
   const initializeGoogleAuth = useCallback(() => {
@@ -132,7 +132,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
       console.error('Error initializing Google Identity Services:', err);
       setError('Failed to initialize Google authentication');
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle the response from Google Identity Services
   const handleCredentialResponse = useCallback(async (response: GoogleCredentialResponse) => {
@@ -201,7 +201,7 @@ export function useGoogleAuth(): UseGoogleAuthResult {
           try {
             await originalCallback(response);
             resolve(true);
-          } catch (error) {
+          } catch {
             resolve(false);
           }
         };

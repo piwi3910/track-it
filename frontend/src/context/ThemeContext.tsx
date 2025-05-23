@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useEffect } from 'react';
 import { useMantineColorScheme, useMantineTheme, MantineColorScheme } from '@mantine/core';
 import '../styles/theme/index.css';
 
@@ -308,12 +308,4 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       {children}
     </ThemeContext.Provider>
   );
-}
-
-export function useTheme(): ThemeContextType {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
 }

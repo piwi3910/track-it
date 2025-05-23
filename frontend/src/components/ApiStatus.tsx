@@ -1,5 +1,5 @@
 import { Badge, Button, Group, Popover, Stack, Text, Tooltip, ActionIcon, Progress } from '@mantine/core';
-import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconAlertCircle, IconDatabase, IconClock } from '@tabler/icons-react';
+import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconDatabase, IconClock } from '@tabler/icons-react';
 import { useApiStore } from '@/stores/useApiStore';
 import { useState, useMemo } from 'react';
 
@@ -14,7 +14,7 @@ export function ApiStatus() {
     isApiLoading, 
     checkApiAvailability,
     isMockApi,
-    useMockApi,
+    setMockApi,
     connectionAttempts,
     maxConnectionAttempts,
     recentErrors,
@@ -194,7 +194,7 @@ export function ApiStatus() {
                   variant="light"
                   color="blue" 
                   size="xs"
-                  onClick={() => useMockApi(true)}
+                  onClick={() => setMockApi(true)}
                 >
                   Switch to Mock API
                 </Button>
@@ -227,7 +227,7 @@ export function ApiStatus() {
                 color="blue" 
                 size="xs"
                 onClick={() => {
-                  useMockApi(false);
+                  setMockApi(false);
                   resetConnectionAttempts();
                   checkApiAvailability(true);
                 }}

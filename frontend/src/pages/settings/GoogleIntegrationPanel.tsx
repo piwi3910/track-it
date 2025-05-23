@@ -32,7 +32,7 @@ import {
   IconAlertCircle,
   IconSettings
 } from '@tabler/icons-react';
-import { useGoogle } from '@/context/GoogleContext';
+import { useGoogle } from '@/hooks/useGoogle';;
 import { useApp } from '@/hooks/useApp';
 import { useStore } from '@/hooks/useStore';
 import { notifications } from '@mantine/notifications';

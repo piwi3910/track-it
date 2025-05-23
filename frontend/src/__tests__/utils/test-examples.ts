@@ -212,7 +212,7 @@ describe('Authentication API Example', () => {
 describe('Advanced Testing Example', () => {
   let testState: {
     client: ReturnType<typeof createTestClient>;
-    auth?: { token: string; user: Partial<User> };
+    auth?: { token: string; user: { id: string; name: string; email: string } };
     testTaskId?: string;
     createdItemIds: {
       tasks: string[];

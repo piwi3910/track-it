@@ -48,7 +48,7 @@ export async function apiCall<T>(
 ): Promise<{ data: T | null; error: AppError | null; statusCode?: number }> {
   const retryOptions = { ...defaultRetryOptions, ...options };
   let attemptCount = 0;
-  let lastError: any = null;
+  let lastError: unknown = null;
 
   const startTime = Date.now();
   
@@ -393,7 +393,7 @@ export const enhancedApi = {
     /**
      * Update a task
      */
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Partial<Task>) => {
       return apiCall(
         () => trpcClient.tasks.update.mutate({ id, data }),
         { endpoint: 'tasks.update', method: 'mutate' }
@@ -433,7 +433,7 @@ export const enhancedApi = {
     /**
      * Create a task from a template
      */
-    createFromTemplate: async (templateId: string, taskData: any) => {
+    createFromTemplate: async (templateId: string, taskData: Partial<Task>) => {
       return apiCall(
         () => trpcClient.tasks.createFromTemplate.mutate({ templateId, taskData }),
         { endpoint: 'tasks.createFromTemplate', method: 'mutate' }

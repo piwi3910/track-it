@@ -7,11 +7,12 @@
 
 import { createTestClient, mockLocalStorage, isBackendAvailable, loginTestUser } from '../testHelpers';
 import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import type { User } from '@track-it/shared/types/trpc';
 
 // Before running tests, check if the backend server is available and log in
 beforeAll(async () => {
   // Set up global localStorage mock
-  (global as any).localStorage = mockLocalStorage;
+  (global as typeof globalThis & { localStorage: typeof mockLocalStorage }).localStorage = mockLocalStorage;
   
   // Check if backend is available
   const serverAvailable = await isBackendAvailable();
@@ -34,7 +35,7 @@ beforeAll(async () => {
 
 describe('User Profile API Integration', () => {
   let client: ReturnType<typeof createTestClient>;
-  let originalProfile: any;
+  let originalProfile: User | undefined;
   
   beforeEach(() => {
     client = createTestClient();

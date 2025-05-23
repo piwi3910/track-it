@@ -6,7 +6,7 @@
  */
 
 import { createTestClient, mockLocalStorage, isBackendAvailable, generators } from '../testHelpers';
-import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
 
 // Before running tests, check if the backend server is available
 beforeAll(async () => {
@@ -20,7 +20,7 @@ beforeAll(async () => {
   }
   
   // Set up global localStorage mock
-  (global as any).localStorage = mockLocalStorage;
+  (global as unknown as { localStorage: typeof mockLocalStorage }).localStorage = mockLocalStorage;
 });
 
 describe('Authentication API Integration', () => {

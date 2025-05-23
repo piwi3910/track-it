@@ -4,7 +4,7 @@
 import { Prisma, NotificationType as PrismaNotificationType } from '../../generated/prisma';
 import prisma from '../client';
 import { createDatabaseError } from '../../utils/error-handler';
-import { NOTIFICATION_TYPE } from '../../utils/constants';
+// NOTIFICATION_TYPE import removed - not used
 
 /**
  * Get all notifications for a user
@@ -104,7 +104,7 @@ export async function getUnreadCount(userId: string) {
 /**
  * Create task assignment notification
  */
-export async function createTaskAssignedNotification(taskId: string, taskTitle: string, assigneeId: string, assignerId: string) {
+export async function createTaskAssignedNotification(taskId: string, taskTitle: string, assigneeId: string, _assignerId: string) {
   try {
     return await prisma.notification.create({
       data: {

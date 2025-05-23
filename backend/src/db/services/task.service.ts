@@ -8,7 +8,7 @@ import { createDatabaseError } from '../../utils/error-handler';
 /**
  * Get all tasks
  */
-export async function getAllTasks(userId: string) {
+export async function getAllTasks(_userId: string) {
   try {
     return await prisma.task.findMany({
       where: {
@@ -147,7 +147,7 @@ export async function getTasksByStatus(status: string, userId: string) {
 /**
  * Search tasks
  */
-export async function searchTasks(query: string, userId: string) {
+export async function searchTasks(query: string, _userId: string) {
   try {
     return await prisma.task.findMany({
       where: {

@@ -27,9 +27,9 @@ const ErrorSeverity = {
 
 // Mock AppError class
 class AppError extends Error {
-  details: any;
+  details: AppErrorDetails;
   
-  constructor(details: any) {
+  constructor(details: AppErrorDetails) {
     super(details.message);
     this.details = details;
     this.name = 'AppError';
@@ -40,7 +40,7 @@ interface AppErrorDetails {
   code: string;
   message: string;
   severity?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Mock timer functions
@@ -141,7 +141,7 @@ describe('ErrorAlert', () => {
     it('should handle unknown error types', () => {
       const unknownError = { unknown: 'error' };
 
-      renderWithWrapper(<ErrorAlert error={unknownError as any} />);
+      renderWithWrapper(<ErrorAlert error={unknownError as unknown as Error} />);
       
       expect(screen.getByText('An unknown error occurred')).toBeInTheDocument();
     });

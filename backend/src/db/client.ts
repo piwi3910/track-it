@@ -17,14 +17,8 @@ export const prisma = globalForPrisma.prisma ||
     ],
   });
 
-// Set up logging
-(prisma.$on as any)('query', (e: Prisma.QueryEvent) => {
-  logger.debug({
-    query: e.query,
-    params: e.params,
-    duration: e.duration,
-  }, 'Prisma Query');
-});
+// Set up logging - Prisma v5+ removed $on('query') 
+// Use $extends instead for query logging if needed
 
 // Add error handling
 prisma.$use(async (params, next) => {

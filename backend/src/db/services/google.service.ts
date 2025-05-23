@@ -88,7 +88,28 @@ export async function getCalendarEvents(userId: string) {
  * @param eventData Event data to create
  * @returns The created event
  */
-export async function createCalendarEvent(userId: string, eventData: any) {
+interface CalendarEventData {
+  summary: string;
+  description?: string;
+  location?: string;
+  start: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  };
+  end: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  };
+  attendees?: Array<{ email: string }>;
+  reminders?: {
+    useDefault?: boolean;
+    overrides?: Array<{ method: string; minutes: number }>;
+  };
+}
+
+export async function createCalendarEvent(userId: string, eventData: CalendarEventData) {
   try {
     // First check if user has Google connection
     const connectionStatus = await getConnectionStatus(userId);
@@ -137,7 +158,7 @@ export async function createCalendarEvent(userId: string, eventData: any) {
  * @param eventData Updated event data
  * @returns The updated event
  */
-export async function updateCalendarEvent(userId: string, eventId: string, eventData: any) {
+export async function updateCalendarEvent(userId: string, eventId: string, eventData: Partial<CalendarEventData>) {
   try {
     // First check if user has Google connection
     const connectionStatus = await getConnectionStatus(userId);
@@ -280,7 +301,15 @@ export async function syncCalendar(userId: string) {
  * @param taskData Additional task data
  * @returns The created task
  */
-export async function importGoogleTaskAsTask(userId: string, googleTaskId: string, taskData: any = {}) {
+interface GoogleTaskData {
+  title?: string;
+  notes?: string;
+  due?: string;
+  completed?: string;
+  status?: string;
+}
+
+export async function importGoogleTaskAsTask(userId: string, googleTaskId: string, taskData: GoogleTaskData = {}) {
   try {
     // First check if user has Google connection
     const connectionStatus = await getConnectionStatus(userId);

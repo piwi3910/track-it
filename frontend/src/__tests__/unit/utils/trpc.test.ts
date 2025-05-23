@@ -102,7 +102,7 @@ describe('apiHandler', () => {
     expect(result.data).toBeNull();
     expect(result.error).toBe('Cannot connect to the server. Please ensure the backend is running.');
     expect(window.dispatchEvent).toHaveBeenCalledWith(
-      expect.any(CustomEvent)
+      expect.objectContaining({ type: 'api_connection_error' }) as CustomEvent
     );
   });
 

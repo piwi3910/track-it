@@ -2,11 +2,26 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
 import * as templateService from '../db/services/template.service';
-import { TASK_PRIORITY, formatEnumForApi } from '../utils/constants';
-import { TaskPriority } from '../generated/prisma';
+import { formatEnumForApi } from '../utils/constants';
+import { TaskPriority, Prisma } from '../generated/prisma';
 
 // Define helper function to normalize template data for API response
-const normalizeTemplateData = (template: any) => {
+export interface TemplateData {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  priority: TaskPriority;
+  estimatedHours: number | null;
+  tags: string[];
+  isPublic: boolean;
+  category: string | null;
+  templateData: unknown;
+  usageCount: number;
+}
+
+const normalizeTemplateData = (template: TemplateData): TemplateData & { priority: string } => {
   // Ensure consistent casing of priority
   return {
     ...template,
@@ -124,7 +139,7 @@ export const templatesRouter = router({
     
   create: protectedProcedure
     .input(createTemplateSchema)
-    .mutation(({ input, ctx }) => safeProcedure(async () => {
+    .mutation(({ input }) => safeProcedure(async () => {
       try {
         // Process subtasks for template data
         const subtasks = input.subtasks?.map(subtask => ({
@@ -173,7 +188,7 @@ export const templatesRouter = router({
         const currentTemplateData = template.templateData as { subtasks: Array<{ title: string, completed: boolean }> };
         
         // Prepare update data
-        const updateData: any = {
+        const updateData: Prisma.TaskTemplateUpdateInput = {
           ...(input.data.name && { name: input.data.name }),
           ...(input.data.description !== undefined && { description: input.data.description }),
           ...(input.data.priority && { priority: input.data.priority }),

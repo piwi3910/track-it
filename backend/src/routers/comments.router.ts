@@ -12,7 +12,7 @@ type CommentAuthor = {
   avatarUrl: string | null;
 };
 
-type CommentWithAuthor = {
+interface CommentWithAuthor {
   id: string;
   text: string;
   createdAt: Date;
@@ -22,10 +22,10 @@ type CommentWithAuthor = {
   parentId: string | null;
   author?: CommentAuthor;
   replies?: Array<Omit<CommentWithAuthor, 'author'> & { author?: Omit<CommentAuthor, 'email'> }>;
-};
+}
 
 // Helper function to normalize comment data for API response
-const normalizeCommentData = (comment: any): {
+const normalizeCommentData = (comment: CommentWithAuthor): {
   id: string;
   text: string;
   createdAt: string;
@@ -39,7 +39,7 @@ const normalizeCommentData = (comment: any): {
     email: string;
     avatarUrl: string | null;
   };
-  replies?: Array<any>;
+  replies?: Array<ReturnType<typeof normalizeCommentData>>;
 } => {
   return {
     ...comment,
@@ -89,7 +89,7 @@ export const commentsRouter = router({
         email: string;
         avatarUrl: string | null;
       };
-      replies?: Array<any>;
+      replies?: Array<ReturnType<typeof normalizeCommentData>>;
     }>> => {
       try {
         // Verify task exists
@@ -146,7 +146,7 @@ export const commentsRouter = router({
         email: string;
         avatarUrl: string | null;
       };
-      replies?: Array<any>;
+      replies?: Array<ReturnType<typeof normalizeCommentData>>;
     }> => {
       try {
         // Verify task exists
@@ -202,7 +202,7 @@ export const commentsRouter = router({
         email: string;
         avatarUrl: string | null;
       };
-      replies?: Array<any>;
+      replies?: Array<ReturnType<typeof normalizeCommentData>>;
     }> => {
       try {
         // Get comment by ID

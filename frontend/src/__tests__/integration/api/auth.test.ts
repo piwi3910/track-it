@@ -7,10 +7,11 @@
 
 import crossFetch from 'cross-fetch';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
+import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Mock global objects for testing
-global.fetch = crossFetch as any;
+global.fetch = crossFetch as typeof fetch;
 
 // Create localStorage mock
 const localStorageMock = {
@@ -29,19 +30,19 @@ const BASE_URL = 'http://localhost:3001/trpc';
 
 // Create tRPC client for testing
 const createClient = () => {
-  return createTRPCClient<any>({
+  return createTRPCClient<AppRouter>({
     links: [
       httpBatchLink({
         url: BASE_URL,
         // Important: disable batching for tests
         batch: false,
         fetch: (url, options = {}) => {
-          const fetchOptions = { ...options } as any;
-          const headers = fetchOptions.headers || {};
+          const fetchOptions = { ...options } as RequestInit;
+          const headers = new Headers(fetchOptions.headers);
           const token = localStorageMock.getItem('token');
           
           if (token) {
-            headers.Authorization = `Bearer ${token}`;
+            headers.set('Authorization', `Bearer ${token}`);
           }
           
           fetchOptions.headers = headers;
@@ -149,7 +150,7 @@ describe('Authentication API Integration Tests', () => {
       } catch (error) {
         // The error should be a TRPCClientError with the expected message
         // Don't continue if it's our own error
-        if (error.message === "Registration with duplicate email should have failed but succeeded") {
+        if (error instanceof Error && error.message === "Registration with duplicate email should have failed but succeeded") {
           console.error("Backend accepted duplicate email registration");
           // Re-throw to fail the test
           throw error;
@@ -158,8 +159,8 @@ describe('Authentication API Integration Tests', () => {
         console.log('Duplicate email registration error:', error);
         
         // Handle different error formats - either directly in message or in data.message
-        const errorMessage = error.message?.toLowerCase() || '';
-        const errorDataMessage = error.data?.message?.toLowerCase() || '';
+        const errorMessage = error instanceof Error ? error.message?.toLowerCase() || '' : '';
+        const errorDataMessage = (error as { data?: { message?: string } }).data?.message?.toLowerCase() || '';
         
         // Check if either property contains the expected message
         const containsExpectedMessage = 

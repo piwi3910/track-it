@@ -8,9 +8,10 @@
 import crossFetch from 'cross-fetch';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
+import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Mock global objects for testing
-global.fetch = crossFetch as any;
+global.fetch = crossFetch as typeof fetch;
 
 // Create localStorage mock
 const localStorageMock = {
@@ -29,14 +30,14 @@ const BASE_URL = 'http://localhost:3001/trpc';
 
 // Create tRPC client for testing
 const createClient = () => {
-  return createTRPCClient<any>({
+  return createTRPCClient<AppRouter>({
     links: [
       httpBatchLink({
         url: BASE_URL,
         // Important: disable batching for tests
         batch: false,
         fetch: (url, options = {}) => {
-          const fetchOptions = { ...options } as any;
+          const fetchOptions = { ...options } as RequestInit;
           const headers = fetchOptions.headers || {};
           const token = localStorageMock.getItem('token');
           

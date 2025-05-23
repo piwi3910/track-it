@@ -80,7 +80,7 @@ export function ErrorAlert({
   
   // Determine the alert color and icon based on severity
   let color: string;
-  let Icon: any;
+  let Icon: React.ComponentType<{ size?: number }> | null = null;
   
   switch (severity) {
     case ErrorSeverity.INFO:
@@ -191,7 +191,7 @@ export function ConnectionErrorAlert({
   onRetry, 
   onClose 
 }: { 
-  error: any; 
+  error: unknown; 
   onRetry: () => void; 
   onClose?: () => void;
 }) {
@@ -216,7 +216,7 @@ export function ValidationErrorAlert({
   error, 
   onClose 
 }: { 
-  error: any; 
+  error: unknown; 
   onClose?: () => void;
 }) {
   // Extract field information from the error if available

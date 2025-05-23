@@ -8,6 +8,7 @@ import {
   handleError
 } from '../utils/error-handler';
 import * as userService from '../db/services/user.service';
+import { Prisma } from '../generated/prisma';
 import { USER_ROLE, formatEnumForApi, formatEnumForDb } from '../utils/constants';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
@@ -431,17 +432,16 @@ export const usersRouter = router({
         if (input.name) updateData.name = input.name;
         
         // Handle avatar update with validation if provided
-        let updatedUser;
         if (input.avatarUrl !== undefined) {
           // Use the specialized avatar update service for validation
-          updatedUser = await userService.updateUserAvatar(ctx.user.id, input.avatarUrl);
+          await userService.updateUserAvatar(ctx.user.id, input.avatarUrl);
         } else {
           // Update other fields only
           if (Object.keys(updateData).length > 0) {
-            updatedUser = await userService.updateUser(ctx.user.id, updateData);
+            await userService.updateUser(ctx.user.id, updateData);
           } else {
             // No updates needed, just get current user
-            updatedUser = await userService.getUserById(ctx.user.id);
+            await userService.getUserById(ctx.user.id);
           }
         }
         
@@ -477,13 +477,14 @@ export const usersRouter = router({
           googleConnected: !!normalized.googleId,
           googleEmail: normalized.googleId ? normalized.email : null
         };
-      } catch (error: any) {
+      } catch (error) {
         // Handle validation errors specifically for avatar updates
-        if (error.message?.includes('Unsupported image format') || 
-            error.message?.includes('Image size too large')) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Unsupported image format') || 
+            errorMessage.includes('Image size too large')) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: error.message
+            message: errorMessage
           });
         }
         
@@ -527,13 +528,14 @@ export const usersRouter = router({
           googleConnected: !!normalized.googleId,
           googleEmail: normalized.googleId ? normalized.email : null
         };
-      } catch (error: any) {
+      } catch (error) {
         // Handle validation errors specifically
-        if (error.message?.includes('Unsupported image format') || 
-            error.message?.includes('Image size too large')) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Unsupported image format') || 
+            errorMessage.includes('Image size too large')) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: error.message
+            message: errorMessage
           });
         }
         
@@ -667,7 +669,7 @@ export const usersRouter = router({
         }
 
         // Prepare update data
-        const updateData: any = {};
+        const updateData: Prisma.UserUpdateInput = {};
         if (input.name) updateData.name = input.name;
         if (input.email) updateData.email = input.email;
         if (input.role) updateData.role = input.role;
@@ -731,9 +733,10 @@ export const usersRouter = router({
           id: input.userId,
           deleted: true
         };
-      } catch (error: any) {
-        if (error.message?.includes('cannot delete')) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('cannot delete')) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessage });
         }
         return handleError(error);
       }
@@ -779,7 +782,7 @@ export const usersRouter = router({
         }
         
         // Update Google integration settings
-        const updateData: any = {};
+        const updateData: Prisma.UserUpdateInput = {};
         
         // If we're enabling integration and a refresh token is provided
         if (input.googleEnabled && input.googleRefreshToken) {

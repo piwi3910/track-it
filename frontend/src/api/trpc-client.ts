@@ -23,7 +23,7 @@ export const apiHandler = async <T>(
   const retryDelay = options?.retryDelay ?? 1000; // Default to 1 second
   const silentError = options?.silentError ?? false; // Default to showing errors
   
-  let lastError: any = null;
+  let lastError: unknown = null;
   let attempts = 0;
   
   // Try the API call with retries
@@ -141,7 +141,7 @@ export const apiHandler = async <T>(
 /**
  * Determines if an error should trigger a retry
  */
-function isRetriableError(error: any): boolean {
+function isRetriableError(error: unknown): boolean {
   // Network/connection errors should be retried
   if (error instanceof TRPCClientError) {
     // Network errors

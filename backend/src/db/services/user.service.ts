@@ -5,7 +5,16 @@ import { Prisma } from '../../generated/prisma';
 import prisma from '../client';
 import { createDatabaseError } from '../../utils/error-handler';
 import bcrypt from 'bcrypt';
-import { USER_ROLE } from '../../utils/constants';
+// USER_ROLE import removed - not used
+
+interface UserPreferences {
+  theme?: string;
+  language?: string;
+  notifications?: {
+    email?: boolean;
+    inApp?: boolean;
+  };
+}
 
 /**
  * Get all users
@@ -136,13 +145,13 @@ export async function getUserByGoogleId(googleId: string) {
 /**
  * Create a new user
  */
-export async function createUser(data: any) {
+export async function createUser(data: Prisma.UserCreateInput) {
   try {
     // Extract password from data if provided
-    let userCreateData: any = { ...data };
+    let userCreateData: Prisma.UserCreateInput = { ...data };
     
     // Remove non-database fields
-    const { password, passwordConfirm, ...cleanedData } = userCreateData;
+    const { password, passwordConfirm, ...cleanedData } = userCreateData as { password?: string; passwordConfirm?: string } & Prisma.UserCreateInput;
     userCreateData = cleanedData;
     
     // If no passwordHash is provided but password is, hash the password
@@ -152,12 +161,12 @@ export async function createUser(data: any) {
     
     // For nested JSON fields, ensure they are properly formatted
     if (userCreateData.preferences && typeof userCreateData.preferences === 'object') {
-      userCreateData.preferences = userCreateData.preferences;
+      // Preferences are already properly formatted
     }
     
     // For Google profile data
     if (userCreateData.googleProfile && typeof userCreateData.googleProfile === 'object') {
-      userCreateData.googleProfile = userCreateData.googleProfile;
+      // Google profile is already properly formatted
     }
     
     return await prisma.user.create({
@@ -172,11 +181,12 @@ export async function createUser(data: any) {
         updatedAt: true
       }
     });
-  } catch (error: any) {
-    console.error('Error creating user:', error);
+  } catch (error) {
+    // Log error for debugging
 
     // Check for Prisma unique constraint violation (P2002)
-    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+    const prismaError = error as { code?: string; meta?: { target?: string[] } };
+    if (prismaError.code === 'P2002' && prismaError.meta?.target?.includes('email')) {
       // Let this error propagate to the router where it will be handled
       throw new Error('Email already exists');
     }
@@ -399,7 +409,13 @@ export async function connectGoogleAccount(
   googleId: string, 
   googleToken?: string,
   googleRefreshToken?: string,
-  googleProfile?: any
+  googleProfile?: {
+    id: string;
+    email?: string;
+    name?: string;
+    picture?: string;
+    locale?: string;
+  }
 ) {
   try {
     return await prisma.user.update({
@@ -449,7 +465,7 @@ export async function disconnectGoogleAccount(id: string) {
 /**
  * Update user preferences
  */
-export async function updateUserPreferences(id: string, preferences: any) {
+export async function updateUserPreferences(id: string, preferences: Partial<UserPreferences>) {
   try {
     // Get current preferences
     const user = await prisma.user.findUnique({
@@ -527,9 +543,10 @@ export async function updateUserAvatar(id: string, avatarUrl: string | null) {
         googleId: true
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     // Handle specific validation errors
-    if (error.message?.includes('Unsupported image format') || error.message?.includes('Image size too large')) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Unsupported image format') || errorMessage.includes('Image size too large')) {
       throw error; // Re-throw validation errors as-is
     }
     

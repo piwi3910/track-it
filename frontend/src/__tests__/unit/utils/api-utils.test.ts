@@ -64,8 +64,8 @@ describe('isApiAvailable', () => {
   const originalFetch = global.fetch;
   const originalViteApiUrlDescriptor = Object.getOwnPropertyDescriptor(import.meta.env, 'VITE_API_URL');
 
-  let consoleLogSpy: any;
-  let consoleErrorSpy: any;
+  let consoleLogSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
 
   beforeAll(() => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -116,7 +116,7 @@ describe('isApiAvailable', () => {
 
     const result = await isApiAvailable();
     expect(result).toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/health'), expect.any(Object));
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/health'), expect.objectContaining({}) as RequestInit);
   });
 
   it('should return false if API is not available (response.ok is false)', async () => {
@@ -182,7 +182,7 @@ describe('isApiAvailable', () => {
     );
 
     await isApiAvailable();
-    expect(global.fetch).toHaveBeenCalledWith('http://localhost:4000/health', expect.any(Object));
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:4000/health', expect.objectContaining({}) as RequestInit);
   });
 
   it('should handle VITE_API_URL with /trpc suffix', async () => {
@@ -203,7 +203,7 @@ describe('isApiAvailable', () => {
     );
 
     await isApiAvailable();
-    expect(global.fetch).toHaveBeenCalledWith('http://localhost:3001/health', expect.any(Object));
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:3001/health', expect.objectContaining({}) as RequestInit);
   });
 
   it('should use default localhost:3001 if VITE_API_URL is not set', async () => {
@@ -224,6 +224,6 @@ describe('isApiAvailable', () => {
     );
 
     await isApiAvailable();
-    expect(global.fetch).toHaveBeenCalledWith('http://localhost:3001/health', expect.any(Object));
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:3001/health', expect.objectContaining({}) as RequestInit);
   });
 });

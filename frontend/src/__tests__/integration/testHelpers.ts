@@ -5,6 +5,7 @@
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import fetch from 'cross-fetch';
 import { jest } from '@jest/globals';
+import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Configure global fetch for Node.js environment
 global.fetch = fetch;
@@ -37,7 +38,7 @@ export const mockLocalStorage: MockStorage = {
 
 // Create a tRPC client for testing
 export const createTestClient = () => {
-  return createTRPCClient<any>({
+  return createTRPCClient<AppRouter>({
     links: [
       httpBatchLink({
         url: 'http://localhost:3001/trpc',
@@ -45,7 +46,7 @@ export const createTestClient = () => {
         batch: false,
         // Configure fetch with auth headers if token exists
         fetch: (url, options = {}) => {
-          const fetchOptions = { ...options } as any;
+          const fetchOptions = { ...options } as RequestInit;
           const headers = fetchOptions.headers || {};
           const token = mockLocalStorage.getItem('token');
           

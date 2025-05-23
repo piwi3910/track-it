@@ -5,7 +5,7 @@ import { logger } from '../server';
 import * as taskService from '../db/services/task.service';
 import * as templateService from '../db/services/template.service';
 import { formatEnumForApi } from '../utils/constants';
-import { TaskStatus, TaskPriority } from '../generated/prisma';
+import { TaskStatus, TaskPriority, Prisma } from '../generated/prisma';
 
 // Define helper function to normalize task data for API response
 const normalizeTaskData = (task: {
@@ -123,7 +123,7 @@ const updateTaskSchema = z.object({
     // Alternative field names that frontend might send
     assignee: z.string().nullable().optional(), // Frontend sometimes sends 'assignee' instead of 'assigneeId'
   })
-}).superRefine((val, ctx) => {
+}).superRefine((val) => {
   // Add debug logging for validation
   logger.info('Validating task update schema:', JSON.stringify(val, null, 2));
   return true;
@@ -269,7 +269,7 @@ export const tasksRouter = router({
         const assigneeId = input.data.assigneeId ?? input.data.assignee;
         
         // Only include database-supported fields to avoid Prisma errors
-        const updateData: any = {
+        const updateData: Prisma.TaskUpdateInput = {
           // Core database fields
           ...(input.data.title && { title: input.data.title }),
           ...(input.data.description !== undefined && { description: input.data.description }),

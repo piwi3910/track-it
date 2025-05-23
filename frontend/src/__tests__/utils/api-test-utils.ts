@@ -13,6 +13,7 @@ import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import fetch from 'cross-fetch';
 import { TRPCClientError } from '@trpc/client';
 import { Task, TaskPriority, TaskStatus, User, Comment, Attachment, TaskTemplate } from '@/types/task';
+import type { AppRouter } from '@track-it/shared/types/trpc';
 
 // Configure global fetch for Node.js environment
 global.fetch = fetch;
@@ -96,7 +97,7 @@ export const isBackendRunning = async (
  * @returns Configured tRPC client
  */
 export const createTestClient = () => {
-  return createTRPCClient<any>({
+  return createTRPCClient<AppRouter>({
     links: [
       httpBatchLink({
         url: API_CONFIG.trpcUrl,
@@ -104,7 +105,7 @@ export const createTestClient = () => {
         batch: false,
         // Configure fetch with auth headers if token exists
         fetch: (url, options = {}) => {
-          const fetchOptions = options as any;
+          const fetchOptions = options as RequestInit;
           const headers = fetchOptions.headers || {};
           const token = mockStorage.getItem('token');
           
@@ -181,7 +182,7 @@ export const generators = {
     email: string; 
     password: string; 
     role: string;
-  }> = {}): any => {
+  }> = {}) => {
     const timestamp = Date.now();
     return {
       name: overrides.name || `Test User ${timestamp}`,
@@ -461,7 +462,7 @@ export const assertions = {
    * @param task - Task object to validate
    * @param expectedData - Expected task data
    */
-  assertValidTask: (task: any, expectedData: Partial<Task> = {}) => {
+  assertValidTask: (task: Task, expectedData: Partial<Task> = {}) => {
     // Basic structure validations
     expect(task).toBeDefined();
     expect(task.id).toBeDefined();
@@ -480,7 +481,7 @@ export const assertions = {
     if (task.subtasks) {
       expect(Array.isArray(task.subtasks)).toBe(true);
       
-      task.subtasks.forEach((subtask: any) => {
+      task.subtasks.forEach((subtask) => {
         expect(subtask.title).toBeDefined();
         expect(typeof subtask.completed).toBe('boolean');
       });
@@ -492,7 +493,7 @@ export const assertions = {
    * @param template - Template object to validate
    * @param expectedData - Expected template data
    */
-  assertValidTemplate: (template: any, expectedData: Partial<TaskTemplate> = {}) => {
+  assertValidTemplate: (template: TaskTemplate, expectedData: Partial<TaskTemplate> = {}) => {
     // Basic structure validations
     expect(template).toBeDefined();
     expect(template.id).toBeDefined();
@@ -512,7 +513,7 @@ export const assertions = {
    * @param user - User object to validate
    * @param expectedData - Expected user data
    */
-  assertValidUser: (user: any, expectedData: Partial<User> = {}) => {
+  assertValidUser: (user: User, expectedData: Partial<User> = {}) => {
     // Basic structure validations
     expect(user).toBeDefined();
     expect(user.id).toBeDefined();

@@ -3,7 +3,7 @@
  */
 import prisma from '../client';
 import { createDatabaseError } from '../../utils/error-handler';
-import { Prisma } from '../../generated/prisma';
+// Prisma import removed - not used
 import { formatEnumForApi } from '../../utils/constants';
 
 /**
@@ -191,7 +191,7 @@ export async function getCompletionTimeByPriority() {
       const completedTimestamp = task.updatedAt.getTime();
       const completionTime = (completedTimestamp - createdTimestamp) / (24 * 60 * 60 * 1000);
       
-      (completionTimes as any)[priority].push(completionTime);
+      completionTimes[priority as keyof typeof completionTimes].push(completionTime);
     });
     
     // Calculate averages

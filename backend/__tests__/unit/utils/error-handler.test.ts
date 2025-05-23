@@ -11,7 +11,7 @@ import {
   createGoogleApiError,
 } from '../../../src/utils/error-handler';
 import { TRPCError } from '@trpc/server';
-import { ZodError, z } from 'zod';
+import { ZodError } from 'zod';
 import { logger } from '../../../src/server'; // Assuming logger is exported from server.ts
 
 // Mock the logger to prevent actual logging during tests
@@ -190,10 +190,6 @@ describe('handleError', () => {
   });
 
   it('should convert ZodError to TRPCError with BAD_REQUEST code', () => {
-    const schema = z.object({
-      name: z.string().min(1, 'Name is required'),
-      email: z.string().email('Invalid email'),
-    });
     const zodError = new ZodError([
       { code: 'too_small', minimum: 1, type: 'string', inclusive: true, exact: false, path: ['name'], message: 'Name is required' },
       { code: 'invalid_string', validation: 'email', path: ['email'], message: 'Invalid email' },

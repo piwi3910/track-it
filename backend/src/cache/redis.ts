@@ -7,7 +7,7 @@ const redisOptions = {
   host: config.redis.host,
   port: config.redis.port,
   password: config.redis.password || undefined,
-  retryStrategy: (times: number) => {
+  retryStrategy: (times: number): number => {
     const delay = Math.min(times * 50, 2000);
     return delay;
   },
@@ -17,9 +17,11 @@ const redisOptions = {
 // Create a singleton Redis client instance
 export class RedisClient {
   private static instance: Redis | null = null;
-  private static connected: boolean = false;
+  private static connected = false;
   
-  private constructor() {}
+  private constructor() {
+    // Private constructor to enforce singleton pattern
+  }
   
   public static getInstance(): Redis {
     if (!RedisClient.instance) {

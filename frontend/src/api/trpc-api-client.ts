@@ -4,8 +4,12 @@
  * This file provides a type-safe API client for interacting with the backend.
  * It uses the trpc client and handles errors in a consistent way.
  */
-import { trpcClient, setAuthToken, clearAuthToken, apiHandler } from '@/utils/trpc';
-import type { RouterInputs } from '@track-it/shared/types/trpc';
+import { createTRPCProxyClient } from '@trpc/client';
+import { trpcClientConfig, setAuthToken, clearAuthToken, apiHandler } from '@/utils/trpc';
+import type { RouterInputs, AppRouter } from '@track-it/shared/types/trpc';
+
+// Create the actual tRPC client instance
+const trpcClient = createTRPCProxyClient<AppRouter>(trpcClientConfig) as any;
 
 /**
  * Authentication service

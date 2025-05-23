@@ -123,7 +123,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       const fetchCommentCount = async () => {
         try {
           const { data: count } = await api.comments.getCommentCount(task.id);
-          if (count !== null) {
+          if (count !== null && typeof count === 'number') {
             setCommentCount(count);
           }
         } catch (error) {
@@ -244,7 +244,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
     onSubmit(taskData);
   };
 
-  const handleChange = (field: string, value: string | string[] | TaskStatus | TaskPriority | null | Subtask[] | number | undefined) => {
+  const handleChange = (field: string, value: string | string[] | TaskStatus | TaskPriority | null | Subtask[] | number | undefined | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -597,7 +597,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                 nothingFoundMessage="No matching user found"
                 renderOption={({ option }) => (
                   <Group gap="xs">
-                    <Avatar src={option.image} size="sm" radius="xl" />
+                    <Avatar src={(option as any).image} size="sm" radius="xl" />
                     <div>
                       <Text size="sm">{option.label.split(' (')[0]}</Text>
                       <Text size="xs" c="dimmed">{option.label.match(/\((.*?)\)/)?.[1] || ''}</Text>

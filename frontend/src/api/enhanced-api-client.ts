@@ -1,7 +1,8 @@
 /**
  * Enhanced API client with improved error handling and retry logic
  */
-import { trpcClient } from '@/utils/trpc';
+import { createTRPCProxyClient } from '@trpc/client';
+import { trpcClientConfig } from '@/utils/trpc';
 import { TRPCClientError } from '@trpc/client';
 import { 
   AppError, 
@@ -11,7 +12,11 @@ import {
   parseErrorResponse
 } from '@track-it/shared';
 import type { Task } from '@/types/task';
+import type { AppRouter } from '@track-it/shared/types/trpc';
 import { errorLoggingService } from '@/services/error-logging.service';
+
+// Create the actual tRPC client instance
+const trpcClient = createTRPCProxyClient<AppRouter>(trpcClientConfig) as any;
 
 // Retry options
 interface RetryOptions {

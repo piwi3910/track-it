@@ -9,15 +9,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && \
-    npm cache clean --force
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci
 
 # Copy all frontend files
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application using Vite
+RUN npm run build:check
 
 # Stage 2: Production image with nginx
 FROM nginx:alpine

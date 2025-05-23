@@ -8,7 +8,7 @@ import {
   handleError
 } from '../utils/error-handler';
 import * as userService from '../db/services/user.service';
-import { Prisma, UserRole } from '../generated/prisma';
+import { Prisma, UserRole } from '@prisma/client';
 import { USER_ROLE } from '../utils/constants';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';

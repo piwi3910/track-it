@@ -5,7 +5,7 @@ import { logger } from '../server';
 import * as taskService from '../db/services/task.service';
 import * as templateService from '../db/services/template.service';
 import { formatEnumForApi } from '../utils/constants';
-import { TaskStatus, TaskPriority, Prisma } from '../generated/prisma';
+import { TaskStatus, TaskPriority, Prisma } from '@prisma/client';
 
 // Define helper function to normalize task data for API response
 const normalizeTaskData = (task: {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
 import * as templateService from '../db/services/template.service';
-import { TaskPriority, Prisma } from '../generated/prisma';
+import { TaskPriority, Prisma } from '@prisma/client';
 
 // Define helper function to normalize template data for API response
 export interface TemplateData {

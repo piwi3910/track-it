@@ -2,7 +2,7 @@
  * Prisma client singleton for database access
  * This ensures a single connection to the database throughout the application
  */
-import { PrismaClient, Prisma } from '../generated/prisma';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '../server';
 
 // Create Prisma client with logging

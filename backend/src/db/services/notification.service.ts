@@ -1,7 +1,7 @@
 /**
  * Notification service for database operations on Notification model
  */
-import { Prisma, NotificationType as PrismaNotificationType } from '../../generated/prisma';
+import { Prisma, NotificationType as PrismaNotificationType } from '@prisma/client';
 import prisma from '../client';
 import { createDatabaseError } from '../../utils/error-handler';
 // NOTIFICATION_TYPE import removed - not used

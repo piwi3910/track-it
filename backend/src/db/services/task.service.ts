@@ -1,7 +1,7 @@
 /**
  * Task service for database operations on Task model
  */
-import { Prisma, $Enums } from '../../generated/prisma';
+import { Prisma, $Enums } from '@prisma/client';
 import prisma from '../client';
 import { createDatabaseError } from '../../utils/error-handler';
 

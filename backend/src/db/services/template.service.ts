@@ -1,7 +1,7 @@
 /**
  * Template service for database operations on TaskTemplate model
  */
-import { Prisma } from '../../generated/prisma';
+import { Prisma } from '@prisma/client';
 import prisma from '../client';
 import { createDatabaseError } from '../../utils/error-handler';
 

@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { api } from '@/api';
-import type { RouterOutputs, RouterInputs } from '@track-it/shared';
+import type { Task, TaskStatus, TaskPriority } from '@track-it/shared';
+import type { RouterInputs } from '@track-it/shared';
 
 // Types
-type TaskArray = RouterOutputs['tasks']['getAll'];
-type Task = TaskArray extends (infer T)[] ? T : never;
 type CreateTaskInput = RouterInputs['tasks']['create'];
 type UpdateTaskInput = RouterInputs['tasks']['update']['data'];
 
@@ -126,7 +125,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           // First check if we already have the task with full details
           const existingTask = get().selectedTask;
-          if (existingTask && existingTask.id === id) {
+          if (existingTask && (existingTask as Task).id === id) {
             set({ isLoading: false });
             return existingTask;
           }
@@ -191,8 +190,8 @@ export const useTaskStore = create<TaskState>()(
           
           const updatedTask = response.data as Task;
           set(state => ({
-            tasks: state.tasks.map(t => t.id === id ? { ...t, ...updatedTask } : t),
-            selectedTask: state.selectedTask?.id === id ? { ...state.selectedTask, ...updatedTask } : state.selectedTask,
+            tasks: state.tasks.map(t => (t as Task).id === id ? { ...t, ...updatedTask } : t),
+            selectedTask: state.selectedTask && (state.selectedTask as Task).id === id ? { ...state.selectedTask, ...updatedTask } : state.selectedTask,
             isUpdating: false
           }));
           

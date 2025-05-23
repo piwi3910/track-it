@@ -11,9 +11,7 @@ WORKDIR /app
 COPY shared/package*.json ./shared/
 WORKDIR /app/shared
 RUN npm ci
-COPY shared/tsconfig.json ./
-COPY shared/types ./types
-COPY shared/index.ts ./
+COPY shared/ ./
 RUN npm run build
 
 # Now build the frontend

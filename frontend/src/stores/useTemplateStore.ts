@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { api } from '@/api';
-import type { RouterOutputs, RouterInputs } from '@track-it/shared';
+import type { TaskTemplate } from '@track-it/shared';
+import type { RouterInputs } from '@track-it/shared';
 
 // Types
-type TemplateArray = RouterOutputs['templates']['getAll'];
-type Template = TemplateArray extends (infer T)[] ? T : never;
+type Template = TaskTemplate;
 type CreateTemplateInput = RouterInputs['templates']['create'];
 type UpdateTemplateInput = RouterInputs['templates']['update']['data'];
 

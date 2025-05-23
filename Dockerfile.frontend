@@ -1,4 +1,5 @@
 # Multi-stage Dockerfile for Track-It Frontend
+# This Dockerfile should be built from the repository root
 
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
@@ -6,11 +7,13 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# First, build the shared package
+# First, set up and build the shared package
 COPY shared/package*.json ./shared/
 WORKDIR /app/shared
 RUN npm ci
-COPY shared/ .
+COPY shared/tsconfig.json ./
+COPY shared/types ./types
+COPY shared/index.ts ./
 RUN npm run build
 
 # Now build the frontend
@@ -19,7 +22,7 @@ WORKDIR /app/frontend
 # Copy package files
 COPY frontend/package*.json ./
 
-# Install all dependencies (including dev dependencies for build)
+# Install dependencies (the shared package will be linked via file:)
 RUN npm ci
 
 # Copy all frontend files
@@ -32,10 +35,10 @@ RUN npm run build:check
 FROM nginx:alpine
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
 # Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80

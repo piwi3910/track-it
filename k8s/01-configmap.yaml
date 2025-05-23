@@ -14,7 +14,10 @@ data:
   # Backend configuration
   NODE_ENV: "production"
   PORT: "3001"
-  DATABASE_URL: "postgresql://trackit:$(POSTGRES_PASSWORD)@postgres-service:5432/trackit?schema=public"
+  DATABASE_HOST: "postgres-service"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "trackit"
+  DATABASE_USER: "trackit"
   REDIS_URL: "redis://redis-service:6379"
   CORS_ORIGIN: "https://trackit.azrty.com"
   

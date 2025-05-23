@@ -22,12 +22,14 @@ spec:
       - name: migrate
         image: ghcr.io/piwi3910/trackit-backend:latest
         imagePullPolicy: IfNotPresent
-        command: ["npm", "run", "migrate:deploy"]
+        command: 
+        - /bin/sh
+        - -c
+        - |
+          export DATABASE_URL="postgresql://${DATABASE_USER}:${POSTGRES_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}?schema=public"
+          npm run migrate:deploy
         envFrom:
         - configMapRef:
             name: trackit-config
         - secretRef:
             name: trackit-secrets
-        env:
-        - name: DATABASE_URL
-          value: "postgresql://$(DATABASE_USER):$(POSTGRES_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(DATABASE_NAME)?schema=public"

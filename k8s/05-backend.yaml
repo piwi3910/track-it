@@ -29,14 +29,17 @@ spec:
         ports:
         - containerPort: 3001
           name: http
+        command:
+        - /bin/sh
+        - -c
+        - |
+          export DATABASE_URL="postgresql://${DATABASE_USER}:${POSTGRES_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}?schema=public"
+          npm start
         envFrom:
         - configMapRef:
             name: trackit-config
         - secretRef:
             name: trackit-secrets
-        env:
-        - name: DATABASE_URL
-          value: "postgresql://$(DATABASE_USER):$(POSTGRES_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(DATABASE_NAME)?schema=public"
         resources:
           limits:
             memory: "1Gi"

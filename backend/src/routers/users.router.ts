@@ -13,6 +13,28 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { logger } from '../server';
 
+// Type for normalized user data
+export interface NormalizedUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatarUrl?: string | null;
+  preferences?: {
+    theme?: string;
+    defaultView?: string;
+    notifications?: {
+      email?: boolean;
+      inApp?: boolean;
+    };
+  };
+  googleId?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  lastLogin?: string | Date | null;
+  [key: string]: unknown;
+}
+
 // Helper function to normalize user data for API response
 const normalizeUserData = (user: { 
   role: string;
@@ -20,7 +42,7 @@ const normalizeUserData = (user: {
   updatedAt: Date | string;
   lastLogin?: Date | string | null;
   [key: string]: unknown;
-}): Record<string, unknown> => {
+}): NormalizedUser => {
   return {
     ...user,
     role: formatEnumForApi(user.role),
@@ -28,7 +50,7 @@ const normalizeUserData = (user: {
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
     updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
     lastLogin: user.lastLogin instanceof Date ? user.lastLogin.toISOString() : user.lastLogin
-  };
+  } as NormalizedUser;
 };
 
 // Input validation schemas
@@ -60,6 +82,7 @@ const googleTokenVerificationSchema = z.object({
 async function verifyGoogleIdToken(idToken: string): Promise<{
   sub: string;
   email: string;
+  email_verified?: boolean;
   name: string;
   picture?: string;
 } | null> {

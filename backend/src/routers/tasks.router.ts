@@ -241,11 +241,6 @@ export const tasksRouter = router({
     })),
     
   update: protectedProcedure
-    .use(({ next, rawInput }) => {
-      // Log the raw input before validation
-      logger.info('Raw task update input received:', JSON.stringify(rawInput, null, 2));
-      return next();
-    })
     .input(updateTaskSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
@@ -340,8 +335,8 @@ export const tasksRouter = router({
       } catch (error) {
         logger.error('Task update failed:', {
           taskId: input.id,
-          error: error.message,
-          stack: error.stack
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
         });
         return handleError(error);
       }

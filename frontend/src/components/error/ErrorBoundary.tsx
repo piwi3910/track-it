@@ -78,11 +78,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Otherwise, render the default error UI
     return (
       <Card shadow="sm" p="lg" radius="md" withBorder>
-        <Stack align="center" spacing="md">
+        <Stack align="center" gap="md">
           <IconAlertTriangle size={48} color="red" />
           <Title order={3}>Something went wrong</Title>
           
-          <Text c="dimmed" size="sm" align="center">
+          <Text c="dimmed" size="sm" ta="center">
             {this.state.error?.message || 
               'An error occurred while rendering this component.'}
           </Text>
@@ -125,10 +125,10 @@ export function PageErrorBoundary({ children, onReset }: { children: ReactNode; 
   };
   
   const pageFallback = (
-    <Stack align="center" spacing="xl" py="xl" maw={500} mx="auto" mt={50}>
+    <Stack align="center" gap="xl" py="xl" maw={500} mx="auto" mt={50}>
       <IconAlertTriangle size={80} color="red" />
-      <Title order={2} align="center">Oops! Something went wrong</Title>
-      <Text c="dimmed" align="center">
+      <Title order={2} ta="center">Oops! Something went wrong</Title>
+      <Text c="dimmed" ta="center">
         We've encountered an error while loading this page. Our team has been notified.
       </Text>
       <Group>
@@ -142,7 +142,7 @@ export function PageErrorBoundary({ children, onReset }: { children: ReactNode; 
         </Button>
       </Group>
       {import.meta.env.DEV && (
-        <Text size="xs" c="dimmed" align="center">
+        <Text size="xs" c="dimmed" ta="center">
           Check the console for more details about this error.
         </Text>
       )}

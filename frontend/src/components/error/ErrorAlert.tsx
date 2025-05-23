@@ -158,7 +158,7 @@ export function ErrorAlert({
       }}
       {...alertAttributes}
     >
-      <Stack spacing="xs">
+      <Stack gap="xs">
         <Text>{errorMessage}</Text>
         
         {children}
@@ -172,7 +172,7 @@ export function ErrorAlert({
         )}
         
         {onRetry && isRetryable && (
-          <Group position="right">
+          <Group justify="flex-end">
             <Button size="xs" variant="light" color={color} onClick={onRetry}>
               Retry
             </Button>

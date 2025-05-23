@@ -66,7 +66,11 @@ export const googleIntegrationRouter = router({
     .input(createEventSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.createCalendarEvent(ctx.user.id, input);
+        return await googleService.createCalendarEvent(ctx.user.id, {
+          ...input,
+          start: { dateTime: input.start },
+          end: { dateTime: input.end }
+        });
       } catch (error) {
         return handleError(error);
       }
@@ -76,7 +80,16 @@ export const googleIntegrationRouter = router({
     .input(updateEventSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.updateCalendarEvent(ctx.user.id, input.eventId, input.data);
+        const updateData: any = {
+          ...input.data
+        };
+        if (input.data.start) {
+          updateData.start = { dateTime: input.data.start };
+        }
+        if (input.data.end) {
+          updateData.end = { dateTime: input.data.end };
+        }
+        return await googleService.updateCalendarEvent(ctx.user.id, input.eventId, updateData);
       } catch (error) {
         return handleError(error);
       }

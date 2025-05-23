@@ -21,11 +21,11 @@ export interface TemplateData {
   usageCount: number;
 }
 
-const normalizeTemplateData = (template: TemplateData): TemplateData & { priority: string } => {
+const normalizeTemplateData = (template: TemplateData): TemplateData => {
   // Ensure consistent casing of priority
   return {
     ...template,
-    priority: formatEnumForApi(template.priority),
+    priority: template.priority as TaskPriority,
     // Format dates as ISO strings if they exist as Date objects
     createdAt: template.createdAt instanceof Date ? template.createdAt.toISOString() : template.createdAt,
     updatedAt: template.updatedAt instanceof Date ? template.updatedAt.toISOString() : template.updatedAt

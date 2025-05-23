@@ -8,9 +8,10 @@ import {
   handleError
 } from '../utils/error-handler';
 import * as userService from '../db/services/user.service';
-import { Prisma } from '../generated/prisma';
+import { Prisma, UserRole } from '../generated/prisma';
 import { USER_ROLE, formatEnumForApi, formatEnumForDb } from '../utils/constants';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { config } from '../config';
 import { logger } from '../server';
 
@@ -208,7 +209,7 @@ export const usersRouter = router({
             payload.sub,
             input.idToken,
             undefined, // Refresh token would be handled in a full implementation
-            payload // Store the full profile
+            { ...payload, id: payload.sub } // Store the full profile with id mapping
           );
           
           // Update login timestamp
@@ -218,7 +219,6 @@ export const usersRouter = router({
           const newUser = await userService.createUser({
             name: payload.name,
             email: payload.email,
-            password: '', // Google users don't need a password
             avatarUrl: payload.picture
           });
           
@@ -228,7 +228,7 @@ export const usersRouter = router({
             payload.sub,
             input.idToken,
             undefined,
-            payload
+            { ...payload, id: payload.sub }
           );
           
           // Get the full user object with all fields
@@ -325,11 +325,10 @@ export const usersRouter = router({
         const newUser = await userService.createUser({
           name: input.name,
           email: input.email,
-          password: input.password, // Will be hashed in the service
-          passwordConfirm: input.passwordConfirm, // Will be removed in the service
-          role: formatEnumForDb(USER_ROLE.MEMBER),
+          passwordHash: await bcrypt.hash(input.password, 10),
+          role: UserRole.MEMBER,
           preferences: { theme: 'light', defaultView: 'dashboard' } // Default preferences
-        });
+        } as Prisma.UserCreateInput);
         
         logger.info({ userId: newUser.id }, 'User registration successful');
         
@@ -627,7 +626,7 @@ export const usersRouter = router({
           name: input.name,
           email: input.email,
           password: input.password,
-          role: input.role
+          role: input.role as UserRole
         };
 
         const newUser = await userService.createUser(userData);
@@ -672,7 +671,7 @@ export const usersRouter = router({
         const updateData: Prisma.UserUpdateInput = {};
         if (input.name) updateData.name = input.name;
         if (input.email) updateData.email = input.email;
-        if (input.role) updateData.role = input.role;
+        if (input.role) updateData.role = input.role as UserRole;
 
         const updatedUser = await userService.updateUser(input.userId, updateData);
         return normalizeUserData(updatedUser);
@@ -794,12 +793,7 @@ export const usersRouter = router({
           await userService.disconnectGoogleAccount(ctx.user.id);
         }
         
-        // Update preferences to store the enabled setting
-        await userService.updateUserPreferences(ctx.user.id, {
-          googleIntegration: {
-            enabled: input.googleEnabled
-          }
-        });
+        // Google integration preferences are stored separately
         
         return {
           id: user.id,

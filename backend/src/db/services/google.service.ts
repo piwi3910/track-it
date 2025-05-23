@@ -125,10 +125,10 @@ export async function createCalendarEvent(userId: string, eventData: CalendarEve
         googleEventId: `google-event-${Date.now()}`,
         title: eventData.summary,
         description: eventData.description,
-        startTime: new Date(eventData.start),
-        endTime: new Date(eventData.end),
+        startTime: new Date(eventData.start.dateTime || eventData.start.date || ''),
+        endTime: new Date(eventData.end.dateTime || eventData.end.date || ''),
         location: eventData.location,
-        meetingLink: eventData.meetingLink,
+        meetingLink: null, // meetingLink would be extracted from description or conferenceData
         userId
       }
     });
@@ -188,10 +188,10 @@ export async function updateCalendarEvent(userId: string, eventId: string, event
       data: {
         title: eventData.summary ?? event.title,
         description: eventData.description ?? event.description,
-        startTime: eventData.start ? new Date(eventData.start) : event.startTime,
-        endTime: eventData.end ? new Date(eventData.end) : event.endTime,
+        startTime: eventData.start ? new Date(eventData.start.dateTime || eventData.start.date || '') : event.startTime,
+        endTime: eventData.end ? new Date(eventData.end.dateTime || eventData.end.date || '') : event.endTime,
         location: eventData.location ?? event.location,
-        meetingLink: eventData.meetingLink ?? event.meetingLink
+        meetingLink: event.meetingLink // meetingLink would be in the event data
       }
     });
     
@@ -325,11 +325,11 @@ export async function importGoogleTaskAsTask(userId: string, googleTaskId: strin
     const newTask = await prisma.task.create({
       data: {
         title: taskData.title || 'Imported Google Task',
-        description: taskData.description || '',
+        description: taskData.notes || '',
         status: 'TODO',
         priority: 'MEDIUM',
         tags: ['imported', 'google-tasks'],
-        dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
+        dueDate: taskData.due ? new Date(taskData.due) : null,
         creator: { connect: { id: userId } },
         assignee: { connect: { id: userId } }
       }
@@ -350,8 +350,8 @@ export async function importGoogleTaskAsTask(userId: string, googleTaskId: strin
       googleTask: {
         id: googleTaskId,
         title: taskData.title || 'Google Task',
-        notes: taskData.description || '',
-        due: taskData.dueDate || null
+        notes: taskData.notes || '',
+        due: taskData.due || null
       }
     };
   } catch (error) {

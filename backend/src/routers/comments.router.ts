@@ -24,8 +24,8 @@ interface CommentWithAuthor {
   replies?: Array<Omit<CommentWithAuthor, 'author'> & { author?: Omit<CommentAuthor, 'email'> }>;
 }
 
-// Helper function to normalize comment data for API response
-const normalizeCommentData = (comment: CommentWithAuthor): {
+// Type for normalized comment data
+type NormalizedComment = {
   id: string;
   text: string;
   createdAt: string;
@@ -39,8 +39,11 @@ const normalizeCommentData = (comment: CommentWithAuthor): {
     email: string;
     avatarUrl: string | null;
   };
-  replies?: Array<ReturnType<typeof normalizeCommentData>>;
-} => {
+  replies?: Array<NormalizedComment>;
+};
+
+// Helper function to normalize comment data for API response
+const normalizeCommentData = (comment: CommentWithAuthor): NormalizedComment => {
   return {
     ...comment,
     // Format dates as ISO strings if they exist as Date objects

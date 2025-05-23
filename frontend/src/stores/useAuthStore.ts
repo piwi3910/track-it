@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
           }
           
           set({ 
-            user: response.data, 
+            user: response.data as User, 
             isLoading: false,
             isAuthenticated: true
           });
@@ -88,7 +88,7 @@ export const useAuthStore = create<AuthState>()(
           }
           
           set({ 
-            user: response.data, 
+            user: response.data as User, 
             isLoading: false,
             isAuthenticated: true
           });
@@ -118,7 +118,7 @@ export const useAuthStore = create<AuthState>()(
       },
       
       // Load current user
-      loadUser: async () => {
+      loadUser: async (): Promise<User | null> => {
         // Only attempt to get the user if tokens exist
         if (!localStorage.getItem('token')) {
           set({ 
@@ -145,7 +145,7 @@ export const useAuthStore = create<AuthState>()(
           }
           
           set({ 
-            user: response.data, 
+            user: response.data as User, 
             isLoading: false,
             isAuthenticated: true
           });

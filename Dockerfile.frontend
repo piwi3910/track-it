@@ -26,6 +26,11 @@ RUN npm ci
 # Copy all frontend files
 COPY frontend/ .
 
+# Fix for Rollup native module issue
+# Install the correct native module for the platform
+RUN cd node_modules && \
+    npm install @rollup/rollup-linux-x64-gnu --no-save
+
 # Build the application using Vite
 RUN npm run build:check
 

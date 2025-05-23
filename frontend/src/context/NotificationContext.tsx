@@ -39,8 +39,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Notification API error:', error);
         setError({
-          message: typeof error === 'string' ? error : error.message || 'Failed to fetch notifications',
-          code: typeof error === 'object' && error.code ? error.code : undefined,
+          message: typeof error === 'string' ? error : (error as any)?.message || 'Failed to fetch notifications',
+          code: typeof error === 'object' && error ? (error as any).code : undefined,
           timestamp: new Date()
         });
       } else if (data && Array.isArray(data)) {
@@ -79,8 +79,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error marking notification as read:', error);
         setError({
-          message: typeof error === 'string' ? error : error.message || 'Failed to mark notification as read',
-          code: typeof error === 'object' && error.code ? error.code : undefined,
+          message: typeof error === 'string' ? error : (error as any)?.message || 'Failed to mark notification as read',
+          code: typeof error === 'object' && error ? (error as any).code : undefined,
           timestamp: new Date()
         });
         return; // Exit early on error
@@ -111,8 +111,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error marking all notifications as read:', error);
         setError({
-          message: typeof error === 'string' ? error : error.message || 'Failed to mark all notifications as read',
-          code: typeof error === 'object' && error.code ? error.code : undefined,
+          message: typeof error === 'string' ? error : (error as any)?.message || 'Failed to mark all notifications as read',
+          code: typeof error === 'object' && error ? (error as any).code : undefined,
           timestamp: new Date()
         });
         return;

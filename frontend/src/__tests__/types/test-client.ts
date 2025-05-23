@@ -39,7 +39,11 @@ export interface Task {
   estimatedHours?: number | null;
   assigneeId?: string | null;
   creatorId: string;
+  createdById?: string;
   subtasks?: Array<{ title: string; completed: boolean }>;
+  timeTrackingActive?: boolean;
+  trackingTimeSeconds?: number;
+  deleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -102,7 +106,7 @@ export interface TestTaskProcedures {
   create: { mutate: (input: { title: string; description?: string; status?: string; priority?: string; assigneeId?: string; tags?: string[]; dueDate?: string; estimatedHours?: number; subtasks?: Array<{ title: string; completed: boolean }> }) => TestResponse<Task> };
   getById: { query: (input: { id: string }) => TestResponse<Task> };
   update: { mutate: (input: { id: string; data: { title?: string; description?: string; status?: string; priority?: string; assigneeId?: string; tags?: string[]; dueDate?: string | null; estimatedHours?: number | null; subtasks?: Array<{ title: string; completed: boolean }> } }) => TestResponse<Task> };
-  delete: { mutate: (input: { id: string }) => TestResponse<{ success: boolean }> };
+  delete: { mutate: (input: { id: string }) => TestResponse<{ success: boolean; id?: string; deleted?: boolean }> };
   getMy: { query: () => TestResponse<Task[]> };
   getAll: { query: (input?: { status?: string; priority?: string; assigneeId?: string; tags?: string[]; search?: string; sortBy?: string; sortOrder?: string; limit?: number; offset?: number }) => TestResponse<Task[]> };
   getByStatus: { query: (input: { status: string }) => TestResponse<Task[]> };
@@ -113,14 +117,19 @@ export interface TestTaskProcedures {
   bulkUpdate: { mutate: (input: { taskIds: string[]; updates: { status?: string; priority?: string; assigneeId?: string | null; tags?: string[] } }) => TestResponse<{ updated: number }> };
   getDeleted: { query: () => TestResponse<Task[]> };
   getDueSoon: { query: () => TestResponse<Task[]> };
+  saveAsTemplate: { mutate: (input: { taskId: string; name: string; description?: string }) => TestResponse<Template> };
+  createFromTemplate: { mutate: (input: { templateId: string; assigneeId?: string }) => TestResponse<Task> };
 }
 
 export interface TestCommentProcedures {
   create: { mutate: (input: { taskId: string; text: string; parentId?: string }) => TestResponse<Comment> };
   getByTask: { query: (input: { taskId: string }) => TestResponse<Comment[]> };
+  getByTaskId: { query: (input: { taskId: string }) => TestResponse<Comment[]> };
   update: { mutate: (input: { id: string; text: string }) => TestResponse<Comment> };
   delete: { mutate: (input: { id: string }) => TestResponse<{ success: boolean }> };
   getCount: { query: (input: { taskId: string }) => TestResponse<{ count: number }> };
+  getCommentCount: { query: (input: { taskId: string }) => TestResponse<{ count: number }> };
+  getCommentReplies: { query: (input: { commentId: string }) => TestResponse<Comment[]> };
 }
 
 export interface TestTemplateProcedures {

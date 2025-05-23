@@ -28,8 +28,8 @@ const normalizeAttachmentData = (attachment: {
   taskId: string;
   googleDriveId: string | null;
   googleDriveUrl: string | null;
-  url?: string;
-  thumbnailUrl?: string | null;
+  url: string;
+  thumbnailUrl: string | null;
   size: number;
 } => {
   return {
@@ -38,8 +38,11 @@ const normalizeAttachmentData = (attachment: {
     fileType: attachment.fileType,
     createdAt: attachment.uploadedAt instanceof Date ? 
       attachment.uploadedAt.toISOString() : attachment.uploadedAt,
-    // Format sizes
-    size: typeof attachment.fileSize === 'number' ? attachment.fileSize : attachment.size
+    // Format sizes - ensure we always return a number
+    size: typeof attachment.fileSize === 'number' ? attachment.fileSize : (attachment.size || 0),
+    // Ensure url is always present
+    url: attachment.url || attachment.googleDriveUrl || `/api/attachments/${attachment.id}/download`,
+    thumbnailUrl: attachment.thumbnailUrl || null
   };
 };
 

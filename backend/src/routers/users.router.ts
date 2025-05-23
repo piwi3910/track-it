@@ -105,10 +105,7 @@ async function verifyGoogleIdToken(idToken: string): Promise<{
       email: 'user@example.com',
       email_verified: true,
       name: 'Test User',
-      picture: 'https://i.pravatar.cc/150?u=google-user',
-      given_name: 'Test',
-      family_name: 'User',
-      locale: 'en'
+      picture: 'https://i.pravatar.cc/150?u=google-user'
     };
   } catch (error) {
     logger.error({ error }, 'Google token verification failed');
@@ -156,8 +153,8 @@ export const usersRouter = router({
             id: user.id,
             role: formatEnumForApi(user.role)
           },
-          config.jwtSecret as string, // Ensure jwtSecret is a string
-          { expiresIn: String(config.jwtExpiresIn) } // Ensure expiresIn is a string or number
+          config.jwtSecret,
+          { expiresIn: config.jwtExpiresIn } as jwt.SignOptions
         );
         
         // Log successful login
@@ -186,6 +183,10 @@ export const usersRouter = router({
         // Verify the Google ID token
         const payload = await verifyGoogleIdToken(input.idToken);
         
+        if (!payload) {
+          throw createUnauthorizedError('Invalid Google token');
+        }
+        
         if (!payload.email_verified) {
           throw createUnauthorizedError('Email not verified with Google');
         }
@@ -213,18 +214,28 @@ export const usersRouter = router({
           await userService.updateLoginTimestamp(user.id);
         } else {
           // If user doesn't exist, create a new user
-          user = await userService.createUser({
+          const newUser = await userService.createUser({
             name: payload.name,
             email: payload.email,
-            avatarUrl: payload.picture,
-            role: USER_ROLE.MEMBER, // Use USER_ROLE directly
-            googleId: payload.sub,
-            googleToken: input.idToken,
-            googleProfile: payload,
-            preferences: { theme: 'light', defaultView: 'dashboard' }, // Add missing properties
-            googleRefreshToken: null, // Add missing properties
-            lastLogin: null, // Add missing properties
+            password: '', // Google users don't need a password
+            avatarUrl: payload.picture
           });
+          
+          // Then connect Google account
+          await userService.connectGoogleAccount(
+            newUser.id,
+            payload.sub,
+            input.idToken,
+            undefined,
+            payload
+          );
+          
+          // Get the full user object with all fields
+          user = await userService.getUserById(newUser.id);
+        }
+        
+        if (!user) {
+          throw createUnauthorizedError('Failed to create or update user');
         }
         
         // Generate JWT token
@@ -233,8 +244,8 @@ export const usersRouter = router({
             id: user.id,
             role: formatEnumForApi(user.role)
           },
-          config.jwtSecret as string, // Ensure jwtSecret is a string
-          { expiresIn: String(config.jwtExpiresIn) } // Ensure expiresIn is a string or number
+          config.jwtSecret,
+          { expiresIn: config.jwtExpiresIn } as jwt.SignOptions
         );
         
         return {
@@ -257,6 +268,10 @@ export const usersRouter = router({
       try {
         // Verify the Google ID token
         const payload = await verifyGoogleIdToken(input.credential);
+        
+        if (!payload) {
+          return { valid: false };
+        }
         
         if (!payload.email_verified) {
           return { valid: false };
@@ -342,9 +357,10 @@ export const usersRouter = router({
         }
         
         // Pass through validation errors
-        if (error.message.includes("don't match") || 
+        if (error instanceof Error && (
+            error.message.includes("don't match") || 
             error.message.includes("invalid") || 
-            error.message.includes("password")) {
+            error.message.includes("password"))) {
           throw error;
         }
         
@@ -436,6 +452,11 @@ export const usersRouter = router({
         
         // Get fresh user data with updated preferences
         const refreshedUser = await userService.getUserById(ctx.user.id);
+        
+        if (!refreshedUser) {
+          throw createNotFoundError('User', ctx.user.id);
+        }
+        
         const normalized = normalizeUserData(refreshedUser);
         
         // Return exact structure as specified in API specification

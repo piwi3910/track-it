@@ -5,6 +5,13 @@ import * as commentService from '../db/services/comment.service';
 import * as taskService from '../db/services/task.service';
 
 // Define the Comment type from the service response
+type CommentAuthor = {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+};
+
 type CommentWithAuthor = {
   id: string;
   text: string;
@@ -13,17 +20,12 @@ type CommentWithAuthor = {
   taskId: string;
   authorId: string;
   parentId: string | null;
-  author?: {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-  };
-  replies?: Array<CommentWithAuthor>;
+  author?: CommentAuthor;
+  replies?: Array<Omit<CommentWithAuthor, 'author'> & { author?: Omit<CommentAuthor, 'email'> }>;
 };
 
 // Helper function to normalize comment data for API response
-const normalizeCommentData = (comment: CommentWithAuthor): {
+const normalizeCommentData = (comment: any): {
   id: string;
   text: string;
   createdAt: string;

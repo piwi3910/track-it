@@ -3,7 +3,7 @@
  * This uses the newer tRPC v11 API without the deprecated proxy client
  */
 
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpLink } from '@trpc/client';
 import { TRPCClientError } from '@trpc/client';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
@@ -13,9 +13,10 @@ function getAuthToken(): string | null {
 }
 
 // Create a vanilla tRPC client for use outside React
+// Using httpLink instead of httpBatchLink to avoid batch format issues
 export const trpcVanillaClient = createTRPCClient<AppRouter>({
   links: [
-    httpBatchLink({
+    httpLink({
       url: import.meta.env.VITE_API_URL || 'http://localhost:3001/trpc',
       headers() {
         const token = getAuthToken();

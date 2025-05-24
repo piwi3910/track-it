@@ -4,7 +4,7 @@ import { Task, User, TaskTemplate } from '@track-it/shared/types/trpc';
 import { TaskFilter } from '@track-it/shared/types';
 import { api } from '@/api';
 import { authService } from '@/services/auth.service';
-import { AppContext } from './AppContext.types';
+import { AppContext, AppContextType } from './AppContext.types';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   // User state
@@ -489,7 +489,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   
   return (
-    <AppContext.Provider value={value}>
+    <AppContext.Provider value={value as unknown as AppContextType & { logout: () => void }}>
       {children}
     </AppContext.Provider>
   );

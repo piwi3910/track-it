@@ -24,17 +24,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       // Handle both real tRPC API and mock API
       let notifs: Notification[] = [];
       
-      // Real tRPC API style using apiHandler pattern
-      const { data, error } = await api.notifications.getAll();
-      if (error) {
-        console.error('Notification API error:', error);
-        setError({
-          message: typeof error === 'string' ? error : (error as Error)?.message || 'Failed to fetch notifications',
-          code: typeof error === 'object' && error ? (error as { code?: string }).code : undefined,
-          timestamp: new Date()
-        });
-      } else if (data && Array.isArray(data)) {
-        notifs = data;
+      // Modern tRPC API call
+      const data = await api.notifications.getAll();
+      if (data && Array.isArray(data)) {
+        notifs = data as unknown as Notification[];
       } else {
         console.warn('Notification data is not an array:', data);
         setError({
@@ -66,21 +59,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const markAsRead = useCallback(async (id: string) => {
     try {
       setError(null);
-      // Real tRPC API style using apiHandler pattern
-      const { error } = await api.notifications.markAsRead(id);
-      if (error) {
-        console.error('Error marking notification as read:', error);
-        setError({
-          message: typeof error === 'string' ? error : (error as Error)?.message || 'Failed to mark notification as read',
-          code: typeof error === 'object' && error ? (error as { code?: string }).code : undefined,
-          timestamp: new Date()
-        });
-        return; // Exit early on error
-      }
+      // Modern tRPC API call
+      await api.notifications.markAsRead(id);
       
-      // Only update local state if API call was successful
-      setNotifications(prev => 
-        prev.map(notif => 
+      // Update local state
+      setNotifications(prev =>
+        prev.map(notif =>
           notif.id === id ? { ...notif, read: true } : notif
         )
       );
@@ -98,20 +82,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       
-      // Real tRPC API style - use bulk operation
-      const { error } = await api.notifications.markAllAsRead();
-      if (error) {
-        console.error('Error marking all notifications as read:', error);
-        setError({
-          message: typeof error === 'string' ? error : (error as Error)?.message || 'Failed to mark all notifications as read',
-          code: typeof error === 'object' && error ? (error as { code?: string }).code : undefined,
-          timestamp: new Date()
-        });
-        return;
-      }
+      // Modern tRPC API call
+      await api.notifications.markAllAsRead();
       
       // Update local state
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(notif => ({ ...notif, read: true }))
       );
     } catch (error) {

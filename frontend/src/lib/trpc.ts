@@ -4,7 +4,7 @@
  */
 
 import { createTRPCReact } from '@trpc/react-query';
-import { createTRPCClient, httpBatchLink, loggerLink } from '@trpc/client';
+import { createTRPCClient, httpBatchLink, httpLink, loggerLink } from '@trpc/client';
 import { QueryClient } from '@tanstack/react-query';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
@@ -34,8 +34,8 @@ export const createTRPCClientConfig = () => ({
       })
     ] : []),
     
-    // HTTP batch link for efficient requests
-    httpBatchLink({
+    // HTTP link (non-batched for debugging)
+    httpLink({
       url: getApiUrl(),
       
       // Headers function for authentication

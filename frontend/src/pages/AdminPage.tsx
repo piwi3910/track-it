@@ -314,7 +314,7 @@ export function AdminPage() {
         throw new Error(error);
       }
       
-      setDeletionStats((data || null) as DeletionStats | null);
+      setDeletionStats((data || null) as unknown as DeletionStats | null);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load deletion statistics';
       notifications.show({

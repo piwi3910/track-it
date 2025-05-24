@@ -35,7 +35,6 @@ import {
 import { useApp } from '@/hooks/useApp';
 import { useGoogle } from '@/hooks/useGoogle';
 import { api } from '@/api';
-import { apiHandler } from '@/utils/trpc';
 import { Comment, Attachment, User } from '@/types/task';
 import { notifications } from '@mantine/notifications';
 import { useTheme } from '@/hooks/useTheme';;
@@ -72,14 +71,14 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
       setLoading(true);
       try {
         const [commentsRes, attachmentsRes, usersRes] = await Promise.all([
-          apiHandler(() => api.comments.getByTaskId(taskId)),
-          apiHandler(() => api.attachments.getByTaskId(taskId)),
-          apiHandler(() => api.admin.getAllUsers())
+          api.comments.getByTaskId(taskId),
+          api.attachments.getByTaskId(taskId),
+          api.admin.getAllUsers()
         ]);
         
-        if (commentsRes.data) setComments(commentsRes.data as unknown as Comment[]);
-        if (attachmentsRes.data) setAttachments(attachmentsRes.data as unknown as Attachment[]);
-        if (usersRes.data) setUsers(usersRes.data as unknown as User[]);
+        if (commentsRes) setComments(commentsRes as unknown as Comment[]);
+        if (attachmentsRes) setAttachments(attachmentsRes as unknown as Attachment[]);
+        if (usersRes) setUsers(usersRes as unknown as User[]);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -132,11 +131,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
       //   .map(user => user.id);
       
       // Create new comment
-      const { data, error } = await apiHandler(() => 
-        api.comments.create(taskId, message)
-      );
-      
-      if (error) throw new Error(error);
+      const data = await api.comments.create(taskId, message);
       
       if (data) {
         setComments(prev => [...prev, data as unknown as Comment]);
@@ -157,15 +152,11 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     if (!editText.trim()) return;
     
     try {
-      const { data, error } = await apiHandler(() => 
-        api.comments.update(commentId, editText)
-      );
-      
-      if (error) throw new Error(error);
+      const data = await api.comments.update(commentId, editText);
       
       if (data) {
-        setComments(prev => 
-          prev.map(comment => 
+        setComments(prev =>
+          prev.map(comment =>
             comment.id === commentId ? data as unknown as Comment : comment
           )
         );
@@ -185,7 +176,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
   // Handle comment delete
   const handleDeleteComment = async (commentId: string) => {
     try {
-      await apiHandler(() => api.comments.delete(commentId));
+      await api.comments.delete(commentId);
       setComments(prev => prev.filter(comment => comment.id !== commentId));
     } catch (error) {
       console.error('Failed to delete comment:', error);
@@ -203,24 +194,16 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     
     setUploadLoading(true);
     try {
-      const { data, error } = await apiHandler(() => 
-        api.attachments.upload(taskId, file)
-      );
-      
-      if (error) throw new Error(error);
+      const data = await api.attachments.upload(taskId, file);
       
       if (data) {
         setAttachments(prev => [...prev, data as unknown as Attachment]);
         
         // Automatically add a comment about the file
-        await apiHandler(() => 
-          api.comments.create(taskId, `Uploaded file: ${file.name}`)
-        );
+        await api.comments.create(taskId, `Uploaded file: ${file.name}`);
         
         // Reload comments
-        const { data: commentsData } = await apiHandler(() => 
-          api.comments.getByTaskId(taskId)
-        );
+        const commentsData = await api.comments.getByTaskId(taskId);
         
         if (commentsData) {
           setComments(commentsData as unknown as Comment[]);
@@ -244,11 +227,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
     
     try {
       // Create a comment with the Google Drive link
-      const { data, error } = await apiHandler(() => 
-        api.comments.create(taskId, `Attached Google Drive file: [${driveFile.name}](${driveFile.url})`)
-      );
-      
-      if (error) throw new Error(error);
+      const data = await api.comments.create(taskId, `Attached Google Drive file: [${driveFile.name}](${driveFile.url})`);
       
       if (data) {
         setComments(prev => [...prev, data as unknown as Comment]);

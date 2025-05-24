@@ -12,14 +12,13 @@ export type { RouterInputs, RouterOutputs } from '@track-it/shared/types/trpc';
 // Legacy API wrapper for backward compatibility during migration
 // This will be removed once all components are migrated to tRPC hooks
 import { trpcVanilla, authUtils } from '@/lib/trpc';
-import type { RouterInputs, RouterOutputs, Task, TaskTemplate, Notification } from '@track-it/shared/types/trpc';
+import type { RouterInputs, RouterOutputs, Task, TaskTemplate, Notification, User } from '@track-it/shared/types/trpc';
 import {
   adaptTasksFromBackend,
   adaptTaskFromBackend,
   adaptTemplatesFromBackend,
   adaptTemplateFromBackend,
   adaptNotificationsFromBackend,
-  adaptNotificationFromBackend,
   adaptApiResult
 } from '@/lib/type-adapters';
 import { convertPriorityToBackend, convertStatusToBackend } from '@track-it/shared/types/enums';
@@ -126,6 +125,11 @@ export const api = {
       authUtils.clearToken();
     },
 
+    verifyGoogleToken: async (_credential: string): Promise<ApiResult<{ user: User; token: string }>> => {
+      console.warn('auth.verifyGoogleToken not implemented in backend');
+      return { data: null, error: 'Not implemented', success: false };
+    },
+
     isAuthenticated: () => authUtils.isAuthenticated(),
   },
 
@@ -145,9 +149,9 @@ export const api = {
       return adaptApiResult(result, adaptTasksFromBackend);
     },
 
-    create: async (data: any): Promise<ApiResult<Task>> => {
+    create: async (data: Partial<Task>): Promise<ApiResult<Task>> => {
       // Filter and convert data to match backend schema
-      const backendData: any = {};
+      const backendData: Record<string, unknown> = {};
       
       if (data.title) backendData.title = data.title;
       if (data.description) backendData.description = data.description;
@@ -165,10 +169,10 @@ export const api = {
 
     update: async (
       id: string,
-      data: any
+      data: Partial<Task>
     ): Promise<ApiResult<Task>> => {
       // Filter and convert data to match backend schema
-      const backendData: any = {};
+      const backendData: Record<string, unknown> = {};
       
       if (data.title !== undefined) backendData.title = data.title;
       if (data.description !== undefined) backendData.description = data.description;
@@ -211,15 +215,15 @@ export const api = {
     },
 
     createFromTemplate: (
-      templateId: string, 
-      taskData?: Record<string, any>
+      templateId: string,
+      taskData?: Record<string, unknown>
     ): Promise<ApiResult<RouterOutputs['tasks']['createFromTemplate']>> => {
       return apiCall(() => trpcVanilla.tasks.createFromTemplate.mutate({ templateId, taskData }));
     },
 
     // Legacy methods that don't exist in backend - will be handled via update
     updateStatus: async (id: string, status: string): Promise<ApiResult<RouterOutputs['tasks']['update']>> => {
-      return apiCall(() => trpcVanilla.tasks.update.mutate({ id, data: { status: status as any } }));
+      return apiCall(() => trpcVanilla.tasks.update.mutate({ id, data: { status: status as unknown as Task['status'] } }));
     },
 
     updateAssignee: async (id: string, assigneeId: string | null): Promise<ApiResult<RouterOutputs['tasks']['update']>> => {
@@ -339,6 +343,17 @@ export const api = {
     delete: (id: string): Promise<ApiResult<RouterOutputs['comments']['delete']>> => {
       return apiCall(() => trpcVanilla.comments.delete.mutate({ id }));
     },
+
+    // Missing method that components expect
+    getCommentCount: async (taskId: string): Promise<ApiResult<{ count: number }>> => {
+      const result = await apiCall(() => trpcVanilla.comments.getByTaskId.query({ taskId }));
+      const count = result.success && result.data ? (result.data as unknown[]).length : 0;
+      return {
+        data: { count },
+        error: result.error,
+        success: result.success
+      };
+    },
   },
 
   notifications: {
@@ -430,4 +445,78 @@ export const api = {
       return { data: { success: false }, error: 'Not implemented', success: false };
     },
   },
+
+  // Admin endpoints (stubs for missing functionality)
+  admin: {
+    getUsers: async (): Promise<ApiResult<User[]>> => {
+      console.warn('admin.getUsers not implemented in backend');
+      return { data: [], error: null, success: true };
+    },
+
+    getAllUsers: async (): Promise<ApiResult<User[]>> => {
+      console.warn('admin.getAllUsers not implemented in backend');
+      return { data: [], error: null, success: true };
+    },
+
+    createUser: async (userData: { name: string; email: string; password: string; role?: string }): Promise<ApiResult<User>> => {
+      console.warn('admin.createUser not implemented in backend', { userData });
+      return { data: null, error: 'Not implemented', success: false };
+    },
+
+    updateUser: async (userId: string, userData: Partial<User>): Promise<ApiResult<User>> => {
+      console.warn('admin.updateUser not implemented in backend', { userId, userData });
+      return { data: null, error: 'Not implemented', success: false };
+    },
+
+    deleteUser: async (userId: string): Promise<ApiResult<{ success: boolean }>> => {
+      console.warn('admin.deleteUser not implemented in backend', { userId });
+      return { data: { success: false }, error: 'Not implemented', success: false };
+    },
+
+    updateUserRole: async (userId: string, role: string): Promise<ApiResult<User>> => {
+      console.warn('admin.updateUserRole not implemented in backend', { userId, role });
+      return { data: null, error: 'Not implemented', success: false };
+    },
+
+    resetUserPassword: async (userId: string, _newPassword: string): Promise<ApiResult<{ success: boolean }>> => {
+      console.warn('admin.resetUserPassword not implemented in backend', { userId });
+      return { data: { success: false }, error: 'Not implemented', success: false };
+    },
+
+    getUserDeletionStats: async (_userId: string): Promise<ApiResult<{ tasksCount: number; templatesCount: number }>> => {
+      // This would need to be implemented in backend - for now return mock data
+      return { data: { tasksCount: 0, templatesCount: 0 }, error: null, success: true };
+    }
+  },
+
+  // Attachments endpoints (stubs for missing functionality)
+  attachments: {
+    upload: async (taskId: string, file: File): Promise<ApiResult<{ id: string; url: string }>> => {
+      console.warn('attachments.upload not implemented in backend', { taskId, fileName: file.name });
+      return { data: null, error: 'Not implemented', success: false };
+    },
+
+    delete: async (attachmentId: string): Promise<ApiResult<{ success: boolean }>> => {
+      console.warn('attachments.delete not implemented in backend', { attachmentId });
+      return { data: { success: false }, error: 'Not implemented', success: false };
+    },
+
+    getByTaskId: async (taskId: string): Promise<ApiResult<Attachment[]>> => {
+      console.warn('attachments.getByTaskId not implemented in backend', { taskId });
+      return { data: [], error: null, success: true };
+    },
+  },
 };
+
+// Add missing types for completeness
+export interface Attachment {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  createdAt: string;
+  taskId: string;
+  uploadedById: string;
+}

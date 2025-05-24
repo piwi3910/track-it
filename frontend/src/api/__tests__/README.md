@@ -1,12 +1,12 @@
 # API Integration Tests for Track-It Frontend
 
-This directory contains integration tests for the Track-It API client implementation. These tests validate the behavior of our tRPC API client, ensuring it correctly interacts with the backend and handles responses and errors properly.
+This directory contains integration tests for the Track-It API client implementation. These tests validate the behavior of our modern tRPC API client, ensuring it correctly interacts with the backend and handles responses and errors properly.
 
 ## Test Structure
 
 - `helpers/` - Utility functions and test helpers
-  - `trpc-test-utils.ts` - Helper functions for creating test tRPC clients and related utilities
-- `trpc-client.test.ts` - Tests for our main tRPC client implementation
+  - `api-test-utils.ts` - Helper functions for creating test API clients and related utilities
+- `api-client.test.ts` - Tests for our main API client implementation
 - Additional test files for specific API endpoints
 
 ## Running Tests
@@ -32,7 +32,7 @@ npm run test:integration:workflows
 
 ### Unit Tests
 
-Unit tests mock the tRPC client and don't require a backend to be running. These tests validate the client-side behavior, error handling, and retry logic.
+Unit tests mock the API client and don't require a backend to be running. These tests validate the client-side behavior, error handling, and retry logic.
 
 ### Integration Tests
 
@@ -55,12 +55,12 @@ To run integration tests:
 When adding new tests:
 
 1. For unit tests:
-   - Mock the tRPC client responses
+   - Mock the API client responses
    - Test error handling and response processing
    - Focus on the client-side logic
 
 2. For integration tests:
-   - Use the helpers in `trpc-test-utils.ts`
+   - Use the helpers in `api-test-utils.ts`
    - Create isolated test data to prevent test interference
    - Check for backend availability before running tests
 
@@ -78,6 +78,14 @@ Example of mocking localStorage:
 const localStorageMock = createLocalStorageMock();
 Object.defineProperty(global, 'localStorage', { value: localStorageMock });
 ```
+
+## API Client Architecture
+
+The current API client uses:
+- Modern tRPC client with type safety
+- Centralized API wrapper in `/api/index.ts`
+- Type adapters for backend/frontend compatibility
+- Simplified error handling
 
 ## Debugging
 

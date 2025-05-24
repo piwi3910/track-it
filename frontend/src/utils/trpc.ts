@@ -141,15 +141,20 @@ export const trpcClientConfig = {
         // Add debugging for API requests
         console.log(`Making API request to: ${url}`);
         
-        // Log request body for debugging
-        if (options.body) {
-          console.log('Request body (raw):', options.body);
-          if (typeof options.body === 'string') {
-            try {
-              console.log('Request body (parsed):', JSON.parse(options.body));
-            } catch {
-              console.log('Request body is not valid JSON');
+        // For mutations, tRPC v11 wraps the input in { json: input }
+        // But our server expects plain JSON, so we need to unwrap it
+        if (options?.body && typeof options.body === 'string') {
+          try {
+            const parsed = JSON.parse(options.body);
+            console.log('Request body (parsed):', parsed);
+            
+            // If it's wrapped in the tRPC v11 format, unwrap it
+            if (parsed.json !== undefined) {
+              options.body = JSON.stringify(parsed.json);
+              console.log('Unwrapped body:', parsed.json);
             }
+          } catch {
+            console.log('Request body is not valid JSON');
           }
         } else {
           console.log('Request body is empty/undefined');

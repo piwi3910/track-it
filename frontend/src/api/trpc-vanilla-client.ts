@@ -13,7 +13,7 @@ function getAuthToken(): string | null {
 }
 
 // Create a vanilla tRPC client for use outside React
-// Using httpLink instead of httpBatchLink to avoid batch format issues
+// Custom fetch to handle the request format issue
 export const trpcVanillaClient = createTRPCClient<AppRouter>({
   links: [
     httpLink({
@@ -24,6 +24,23 @@ export const trpcVanillaClient = createTRPCClient<AppRouter>({
           Authorization: token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json',
         };
+      },
+      fetch: async (url, options) => {
+        // For mutations, tRPC v11 wraps the input in { json: input }
+        // But our server expects plain JSON, so we need to unwrap it
+        if (options?.body && typeof options.body === 'string') {
+          try {
+            const parsed = JSON.parse(options.body);
+            // If it's wrapped in the tRPC v11 format, unwrap it
+            if (parsed.json !== undefined) {
+              options.body = JSON.stringify(parsed.json);
+            }
+          } catch {
+            // If parsing fails, leave as is
+          }
+        }
+        
+        return fetch(url, options);
       },
     }),
   ],

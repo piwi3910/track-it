@@ -5,11 +5,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { MantineProvider, createTheme, ColorSchemeScript } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { ThemeProvider, ApiProvider, AuthProvider, AppProvider, NotificationProvider, GoogleProvider } from './components/providers';
+import { TRPCProvider } from './components/TRPCProvider';
 import App from './App';
-
-// Import for query client configuration
-import { trpc, trpcClient, queryClient } from './utils/trpc';
-import { QueryClientProvider } from '@tanstack/react-query';
 
 // Import all required styles
 import '@mantine/core/styles.css';
@@ -26,28 +23,26 @@ const theme = createTheme({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <ColorSchemeScript defaultColorScheme="light" />
-        <MantineProvider theme={theme} defaultColorScheme="light">
-          <ThemeProvider>
-            <ApiProvider>
-              <AuthProvider>
-                <GoogleProvider>
-                  <NotificationProvider>
-                    <AppProvider>
-                      <Notifications position="top-right" />
-                      <BrowserRouter>
-                        <App />
-                      </BrowserRouter>
-                    </AppProvider>
-                  </NotificationProvider>
-                </GoogleProvider>
-              </AuthProvider>
-            </ApiProvider>
-          </ThemeProvider>
-        </MantineProvider>
-      </trpc.Provider>
-    </QueryClientProvider>
+    <TRPCProvider>
+      <ColorSchemeScript defaultColorScheme="light" />
+      <MantineProvider theme={theme} defaultColorScheme="light">
+        <ThemeProvider>
+          <ApiProvider>
+            <AuthProvider>
+              <GoogleProvider>
+                <NotificationProvider>
+                  <AppProvider>
+                    <Notifications position="top-right" />
+                    <BrowserRouter>
+                      <App />
+                    </BrowserRouter>
+                  </AppProvider>
+                </NotificationProvider>
+              </GoogleProvider>
+            </AuthProvider>
+          </ApiProvider>
+        </ThemeProvider>
+      </MantineProvider>
+    </TRPCProvider>
   </StrictMode>,
 );

@@ -6,8 +6,7 @@ import { expressjwt } from 'express-jwt';
 import pino from 'pino';
 import pinoHttp from 'pino-http';
 import { config } from './config';
-import { appRouter } from './trpc/router';
-import { createContext } from './trpc/context';
+import { appRouter, createContext } from './trpc';
 import { RedisClient } from './cache/redis';
 import { connectToDatabase, disconnectFromDatabase, healthCheck } from './db';
 

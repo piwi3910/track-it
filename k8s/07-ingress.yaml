@@ -36,15 +36,7 @@ spec:
   - host: trackit.azrty.com
     http:
       paths:
-      # Health check
-      - path: /health
-        pathType: Exact
-        backend:
-          service:
-            name: backend-service
-            port:
-              number: 3001
-      # Frontend routes (catch-all)
+      # All traffic goes to frontend nginx
       - path: /
         pathType: Prefix
         backend:

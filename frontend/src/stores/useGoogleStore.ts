@@ -222,10 +222,5 @@ export const useGoogleStore = create<GoogleState>()(
   )
 );
 
-// Initialize Google status when the store is first created
-if (typeof window !== 'undefined') {
-  // Wait for auth to be loaded first
-  setTimeout(() => {
-    useGoogleStore.getState().getAccountStatus();
-  }, 1000);
-}
+// Don't automatically initialize - let components decide when to check status
+// This prevents infinite loops on app startup

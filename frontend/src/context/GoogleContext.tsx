@@ -1,4 +1,4 @@
-import { useState, useCallback, ReactNode, useEffect } from 'react';
+import { useState, useCallback, ReactNode, useEffect, useMemo } from 'react';
 import { api } from '@/api';
 import { GoogleCalendarEvent, GoogleDriveFile, Task } from '@/types/task';
 import { authService } from '@/services/auth.service';
@@ -29,13 +29,26 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
   const [driveSyncing, setDriveSyncing] = useState(false);
   const [driveFiles, setDriveFiles] = useState<GoogleDriveFile[]>([]);
 
-  // Sync state with Zustand store
+  // Sync state with Zustand store - memoize to prevent infinite loops
+  const googleConnected = google?.connected ?? false;
+  const googleLastSyncTime = google?.lastSyncTime;
+  const googleDriveFiles = useMemo(() => google?.driveFiles ?? [], [google?.driveFiles]);
+  
   useEffect(() => {
-    if (google) {
-      setIsAuthenticated(google.connected);
-      
+    setIsAuthenticated(googleConnected);
+  }, [googleConnected]);
+  
+  useEffect(() => {
+    if (googleLastSyncTime) {
+      setCalendarSynced(true);
+    }
+  }, [googleLastSyncTime]);
+  
+  // Sync drive files separately to avoid unnecessary re-renders
+  useEffect(() => {
+    if (googleDriveFiles.length > 0) {
       // Convert driveFiles from store format to GoogleDriveFile format
-      const convertedFiles: GoogleDriveFile[] = google.driveFiles.map(file => ({
+      const convertedFiles: GoogleDriveFile[] = googleDriveFiles.map(file => ({
         id: file.id,
         name: file.name,
         mimeType: file.mimeType,
@@ -43,12 +56,8 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
         iconLink: file.iconUrl || `https://drive-thirdparty.googleusercontent.com/16/type/${file.mimeType}`
       }));
       setDriveFiles(convertedFiles);
-      
-      if (google.lastSyncTime) {
-        setCalendarSynced(true);
-      }
     }
-  }, [google]);
+  }, [googleDriveFiles]);
   
   // Create a stable reference for the auth state change handler
   const handleAuthStateChange = useCallback(() => {

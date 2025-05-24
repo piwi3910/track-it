@@ -33,9 +33,13 @@ spec:
         - /bin/sh
         - -c
         - |
+          echo "Starting backend server..."
+          echo "DATABASE_HOST: ${DATABASE_HOST}"
+          echo "Redis URL: ${REDIS_URL}"
           # URL encode the password to handle special characters
           ENCODED_PASSWORD=$(echo -n "${POSTGRES_PASSWORD}" | sed 's/\//%2F/g' | sed 's/:/%3A/g' | sed 's/@/%40/g')
           export DATABASE_URL="postgresql://${DATABASE_USER}:${ENCODED_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}?schema=public"
+          echo "DATABASE_URL configured (password hidden)"
           cd /app/backend && node dist/server.js
         envFrom:
         - configMapRef:
@@ -47,22 +51,32 @@ spec:
             memory: "1Gi"
             cpu: "1000m"
           requests:
-            memory: "512Mi"
-            cpu: "250m"
+            memory: "768Mi"
+            cpu: "500m"
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
         livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 90
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
           httpGet:
             path: /health
             port: 3001
           initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3001
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 3
+          failureThreshold: 6
         lifecycle:
           preStop:
             exec:

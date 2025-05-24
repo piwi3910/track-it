@@ -1,12 +1,11 @@
 import { create } from 'zustand';
 import { api } from '@/api';
-import type { TaskTemplate } from '@track-it/shared';
-import type { RouterInputs } from '@track-it/shared';
+import type { TaskTemplate } from '@track-it/shared/types/trpc';
 
 // Types
 type Template = TaskTemplate;
-type CreateTemplateInput = RouterInputs['templates']['create'];
-type UpdateTemplateInput = RouterInputs['templates']['update']['data'];
+type CreateTemplateInput = Partial<TaskTemplate>;
+type UpdateTemplateInput = Partial<TaskTemplate>;
 
 interface TemplateState {
   // Templates data
@@ -59,7 +58,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return [];
       }
       
-      const templates = (response.data as Template[]) || [];
+      const templates = (response.data || []) as unknown as Template[];
       set({ templates, isLoading: false });
       
       return templates;
@@ -112,7 +111,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return null;
       }
       
-      const template = response.data as Template;
+      const template = response.data as unknown as Template;
       set({ selectedTemplate: template, isLoading: false });
       return template;
     } catch (err) {
@@ -135,7 +134,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       }
       
       set({ isLoading: false });
-      return (response.data as Template[]) || [];
+      return (response.data || []) as unknown as Template[];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get templates by category';
       set({ isLoading: false, error: errorMessage });
@@ -155,7 +154,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return null;
       }
       
-      const newTemplate = response.data as Template;
+      const newTemplate = response.data as unknown as Template;
       set(state => ({
         templates: [...state.templates, newTemplate],
         isCreating: false
@@ -188,7 +187,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         return null;
       }
       
-      const updatedTemplate = response.data as Template;
+      const updatedTemplate = response.data as unknown as Template;
       set(state => ({
         templates: state.templates.map(t => t.id === id ? { ...t, ...updatedTemplate } : t),
         selectedTemplate: state.selectedTemplate?.id === id ? { ...state.selectedTemplate, ...updatedTemplate } : state.selectedTemplate,
@@ -254,7 +253,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       }
       
       set({ isLoading: false });
-      return (response.data as Template[]) || [];
+      return (response.data || []) as unknown as Template[];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to search templates';
       set({ isLoading: false, error: errorMessage });

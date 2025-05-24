@@ -1,6 +1,6 @@
 // Properly typed Context for the Track-It application
 import { useState, useCallback, useEffect, ReactNode } from 'react';
-import { Task, User, TaskTemplate } from '@track-it/shared';
+import { Task, User, TaskTemplate } from '@track-it/shared/types/trpc';
 import { TaskFilter } from '@track-it/shared/types';
 import { api } from '@/api';
 import { authService } from '@/services/auth.service';
@@ -79,7 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Failed to fetch tasks:', error);
       } else if (data) {
-        setTasks(data as Task[]);
+        setTasks(data as unknown as Task[]);
       }
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
@@ -157,7 +157,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('Failed to get task by ID:', error);
         return null;
       }
-      return data as Task;
+      return data as unknown as Task;
     } catch (error) {
       console.error('Failed to get task:', error);
       return null;
@@ -175,9 +175,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local tasks state
       if (data) {
-        setTasks(prev => [...prev, data as Task]);
+        setTasks(prev => [...prev, data as unknown as Task]);
       }
-      return data as Task;
+      return data as unknown as Task;
     } catch (error) {
       console.error('Failed to create task:', error);
       return null;
@@ -195,14 +195,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local tasks state
       if (data) {
-        setTasks(prev => prev.map(t => t.id === id ? (data as Task) : t));
+        setTasks(prev => prev.map(t => t.id === id ? (data as unknown as Task) : t));
 
         // Update selectedTask if it's the one being edited
         if (selectedTask?.id === id) {
-          setSelectedTask(data as Task);
+          setSelectedTask(data as unknown as Task);
         }
       }
-      return data as Task;
+      return data as unknown as Task;
     } catch (error) {
       console.error('Failed to update task:', error);
       return null;
@@ -290,7 +290,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await api.templates.getById(id);
       if (error) return null;
-      return data as TaskTemplate;
+      return data as unknown as TaskTemplate;
     } catch (error) {
       console.error('Failed to get template:', error);
       return null;
@@ -305,9 +305,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local templates state
       if (data) {
-        setTemplates(prev => [...prev, data as TaskTemplate]);
+        setTemplates(prev => [...prev, data as unknown as TaskTemplate]);
       }
-      return data as TaskTemplate;
+      return data as unknown as TaskTemplate;
     } catch (error) {
       console.error('Failed to create template:', error);
       return null;
@@ -322,14 +322,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local templates state
       if (data) {
-        setTemplates(prev => prev.map(t => t.id === id ? (data as TaskTemplate) : t));
+        setTemplates(prev => prev.map(t => t.id === id ? (data as unknown as TaskTemplate) : t));
 
         // Update selectedTemplate if it's the one being edited
         if (selectedTemplate?.id === id) {
-          setSelectedTemplate(data as TaskTemplate);
+          setSelectedTemplate(data as unknown as TaskTemplate);
         }
       }
-      return data as TaskTemplate;
+      return data as unknown as TaskTemplate;
     } catch (error) {
       console.error('Failed to update template:', error);
       return null;
@@ -387,9 +387,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Update local tasks state
       if (data) {
-        setTasks(prev => [...prev, data as Task]);
+        setTasks(prev => [...prev, data as unknown as Task]);
       }
-      return data as Task;
+      return data as unknown as Task;
     } catch (error) {
       console.error('Failed to create task from template:', error);
       return null;

@@ -170,7 +170,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
         } as Task));
       } else {
         const response = await api.googleIntegration.importGoogleTasks();
-        tasks = (response.data as Task[]) || [];
+        tasks = (response.data || []) as unknown as Task[];
       }
       
       setTasksSynced(true);

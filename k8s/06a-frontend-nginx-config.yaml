@@ -69,8 +69,8 @@ data:
 
             # API proxy - forwards frontend API calls to internal backend service
             # This ensures the backend is not directly exposed to the internet
-            location /api {
-                proxy_pass http://backend-service:3001;
+            location /api/ {
+                proxy_pass http://backend-service:3001/;
                 proxy_http_version 1.1;
                 proxy_set_header Upgrade $http_upgrade;
                 proxy_set_header Connection 'upgrade';

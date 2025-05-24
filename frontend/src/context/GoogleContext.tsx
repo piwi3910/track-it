@@ -50,41 +50,36 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
     }
   }, [google]);
   
-  // Handle auth state changes
-  useEffect(() => {
-    const checkGoogleAuth = async () => {
-      try {
-        // Only check if google store exists and has the method
-        if (google?.getAccountStatus) {
-          const response = await google.getAccountStatus();
+  // Create a stable reference for the auth state change handler
+  const handleAuthStateChange = useCallback(() => {
+    if (google?.getAccountStatus) {
+      google.getAccountStatus()
+        .then(response => {
           if (response?.connected) {
             setIsAuthenticated(true);
           } else {
             setIsAuthenticated(false);
           }
-        } else {
-          // Default to not authenticated if no store
+        })
+        .catch(() => {
+          // Silently handle auth errors - user is not authenticated
           setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('Error checking Google authentication status:', error);
-        setIsAuthenticated(false);
-      }
-    };
-    
-    // Check auth status on mount
-    checkGoogleAuth();
-    
-    // Listen for auth state changes
-    const handleAuthStateChange = () => {
-      checkGoogleAuth();
-    };
+        });
+    }
+  }, [google]);
+  
+  // Handle auth state changes - run only once on mount
+  useEffect(() => {
+    // We don't need to check Google auth status here since this is handled
+    // by the main auth context. This context is only for Google-specific features.
+    // The infinite loop was caused by trying to check auth status repeatedly.
     
     window.addEventListener('auth_state_change', handleAuthStateChange);
+    
     return () => {
       window.removeEventListener('auth_state_change', handleAuthStateChange);
     };
-  }, [google]);
+  }, [handleAuthStateChange]); // Dependency on the stable callback
   
   // Authenticate with Google
   const authenticate = useCallback(async () => {

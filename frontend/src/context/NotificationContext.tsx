@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '@/api';
 import { Notification } from '@/types/task';
 import { NotificationContext } from './NotificationContextDefinition';
+import { authService } from '@/services/auth.service';
 
 export { NotificationContext, type NotificationContextType } from './NotificationContextDefinition';
 
@@ -54,9 +55,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, []);  // No dependencies as this function doesn't rely on state
   
-  // Fetch notifications on mount
+  // Fetch notifications on mount only if authenticated
   useEffect(() => {
-    fetchNotifications();
+    if (authService.isAuthenticated()) {
+      fetchNotifications();
+    }
   }, [fetchNotifications]);
   
   // Mark a notification as read

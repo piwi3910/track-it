@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { api } from '@/api';
-import type { Task, TaskStatus, TaskPriority } from '@track-it/shared';
+import type { Task, TaskStatus } from '@track-it/shared';
 import type { RouterInputs } from '@track-it/shared';
 
 // Types
@@ -61,7 +61,7 @@ interface TaskState {
   stopTimeTracking: (id: string) => Promise<Task | null>;
   
   // Template actions
-  saveAsTemplate: (taskId: string, templateName: string, isPublic?: boolean) => Promise<any | null>;
+  saveAsTemplate: (taskId: string, templateName: string, isPublic?: boolean) => Promise<{ id: string; name: string; template: unknown } | null>;
   createFromTemplate: (templateId: string, taskData: Partial<Task>) => Promise<Task | null>;
   
   // Filter actions
@@ -568,10 +568,5 @@ export const useTaskStore = create<TaskState>()(
   )
 );
 
-// Initialize tasks when the store is first created
-if (typeof window !== 'undefined') {
-  // Run on next tick to avoid SSR issues and after auth is loaded
-  setTimeout(() => {
-    useTaskStore.getState().fetchTasks();
-  }, 100);
-}
+// Don't automatically initialize - let components decide when to fetch
+// This prevents unauthorized API calls on app startup

@@ -184,10 +184,5 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   }
 }));
 
-// Initialize notifications when the store is first created
-if (typeof window !== 'undefined') {
-  // Run after auth is loaded
-  setTimeout(() => {
-    useNotificationStore.getState().fetchNotifications();
-  }, 500);
-}
+// Don't automatically initialize - let components decide when to fetch
+// This prevents unauthorized API calls on app startup

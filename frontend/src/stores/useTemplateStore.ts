@@ -268,14 +268,5 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   }
 }));
 
-// Initialize templates when the store is first created
-if (typeof window !== 'undefined') {
-  // Run after auth is loaded
-  setTimeout(() => {
-    const store = useTemplateStore.getState();
-    Promise.all([
-      store.fetchTemplates(),
-      store.fetchCategories()
-    ]).catch(console.error);
-  }, 600);
-}
+// Don't automatically initialize - let components decide when to fetch
+// This prevents unauthorized API calls on app startup

@@ -109,14 +109,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Fetch templates on mount
+  // Fetch templates on mount only if authenticated
   useEffect(() => {
-    fetchTemplates();
+    if (authService.isAuthenticated()) {
+      fetchTemplates();
+    }
   }, [fetchTemplates]);
 
-  // Fetch tasks on mount
+  // Fetch tasks on mount only if authenticated
   useEffect(() => {
-    fetchTasks();
+    if (authService.isAuthenticated()) {
+      fetchTasks();
+    }
   }, [fetchTasks]);
 
   // Listen for auth state changes - separate effect after functions are defined

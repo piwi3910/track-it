@@ -25,8 +25,8 @@ RUN npm ci
 # Copy all frontend files
 COPY frontend/ .
 
-# Build the application using Vite
-RUN npm run build:check
+# Fix rollup ARM64 issue and build
+RUN npm install @rollup/rollup-linux-arm64-gnu && npx vite build
 
 # Stage 2: Production image with nginx
 FROM nginx:stable

@@ -18,13 +18,21 @@ spec:
         app: trackit
         component: frontend
     spec:
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: frontend-nginx-config
       containers:
       - name: frontend
         image: ghcr.io/piwi3910/trackit-frontend:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
           name: http
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
         env:
         - name: NGINX_ENVSUBST_OUTPUT_DIR
           value: /etc/nginx

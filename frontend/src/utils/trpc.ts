@@ -143,7 +143,16 @@ export const trpcClientConfig = {
         
         // Log request body for debugging
         if (options.body) {
-          console.log('Request body:', options.body);
+          console.log('Request body (raw):', options.body);
+          if (typeof options.body === 'string') {
+            try {
+              console.log('Request body (parsed):', JSON.parse(options.body));
+            } catch {
+              console.log('Request body is not valid JSON');
+            }
+          }
+        } else {
+          console.log('Request body is empty/undefined');
         }
         
         // URL is already a string in httpLink

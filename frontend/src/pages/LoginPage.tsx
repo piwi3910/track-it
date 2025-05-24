@@ -150,6 +150,7 @@ export default function LoginPage() {
             mt="md"
             loading={loading}
             onClick={handlePasswordLogin}
+            disabled={!email || !password}
           >
             Sign in
           </Button>

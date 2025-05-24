@@ -37,6 +37,11 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         
         try {
+          // Validate parameters before making the request
+          if (!email || !password) {
+            throw new Error('Email and password are required');
+          }
+          
           const response = await api.auth.login(email, password);
           
           if (response.error) {

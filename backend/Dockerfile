@@ -1,10 +1,9 @@
 # Multi-stage Dockerfile for Track-It Backend
 
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
+# Build dependencies are already included in the full node image
 
 # Set working directory
 WORKDIR /app
@@ -26,14 +25,14 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production image
-FROM node:20-alpine
+FROM node:20-slim
 
 # Install runtime dependencies
-RUN apk add --no-cache curl
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -g nodejs -s /bin/bash -m nodejs
 
 # Set working directory
 WORKDIR /app
@@ -52,8 +51,9 @@ RUN npx prisma generate
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy generated Prisma client to match the import paths
-COPY --from=builder /app/src/generated ./generated
+# Copy generated Prisma client from node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Change ownership to nodejs user
 RUN chown -R nodejs:nodejs /app

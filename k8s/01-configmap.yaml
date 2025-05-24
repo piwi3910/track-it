@@ -13,6 +13,7 @@ data:
   
   # Backend configuration
   NODE_ENV: "production"
+  HOST: "0.0.0.0"
   PORT: "3001"
   DATABASE_HOST: "postgres-service"
   DATABASE_PORT: "5432"

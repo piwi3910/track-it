@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Track-It Frontend
 
 # Stage 1: Build the application
-FROM node:20-alpine AS builder
+FROM node:20 AS builder
 
 # Set working directory
 WORKDIR /app
@@ -29,7 +29,7 @@ COPY frontend/ .
 RUN npm run build:check
 
 # Stage 2: Production image with nginx
-FROM nginx:alpine
+FROM nginx:stable
 
 # Copy nginx configuration
 COPY frontend/nginx.conf /etc/nginx/nginx.conf

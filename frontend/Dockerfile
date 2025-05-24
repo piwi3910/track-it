@@ -32,10 +32,10 @@ RUN npm run build:check
 FROM nginx:alpine
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY frontend/nginx.conf /etc/nginx/nginx.conf
 
 # Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80

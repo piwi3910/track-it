@@ -4,7 +4,6 @@ import {
   Container,
   Paper,
   Text,
-  Button,
   Group,
   Divider,
   Stack,
@@ -16,6 +15,7 @@ import {
 import { IconAlertCircle, IconAt, IconLock } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useStore } from '@/hooks/useStore';
+import { AppButton } from '@/components/ui/AppButton';
 
 export default function LoginPage() {
   const { auth } = useStore();
@@ -145,7 +145,7 @@ export default function LoginPage() {
             required
           />
           
-          <Button
+          <AppButton
             fullWidth
             mt="md"
             loading={loading}
@@ -153,7 +153,7 @@ export default function LoginPage() {
             disabled={!email || !password}
           >
             Sign in
-          </Button>
+          </AppButton>
           
           <Text size="xs" c="dimmed" ta="center">
             Default credentials: demo@example.com / password123

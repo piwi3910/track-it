@@ -1,14 +1,31 @@
-import { Button as MantineButton, TextInput as MantineTextInput, PasswordInput as MantinePasswordInput } from '@mantine/core';
+import { Button as MantineButton, TextInput as MantineTextInput, PasswordInput as MantinePasswordInput, Select as MantineSelect } from '@mantine/core';
 import { Button as ShadcnButton } from '@/components/ui/button';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppTextInput } from '@/components/ui/AppTextInput';
 import { AppPasswordInput } from '@/components/ui/AppPasswordInput';
+import { AppSelect } from '@/components/ui/AppSelect';
 import { IconCheck, IconX, IconAt, IconLock, IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 
 export function UIComparison() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedValue, setSelectedValue] = useState<string | null>(null);
+  
+  const selectData = [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'angular', label: 'Angular' },
+    { value: 'svelte', label: 'Svelte' },
+  ];
+  
+  const groupedSelectData = [
+    { value: 'apple', label: 'Apple', group: 'Fruits' },
+    { value: 'banana', label: 'Banana', group: 'Fruits' },
+    { value: 'orange', label: 'Orange', group: 'Fruits' },
+    { value: 'carrot', label: 'Carrot', group: 'Vegetables' },
+    { value: 'broccoli', label: 'Broccoli', group: 'Vegetables' },
+  ];
 
   return (
     <div className="p-8 space-y-8 max-w-6xl mx-auto">
@@ -162,6 +179,85 @@ export function UIComparison() {
               description="We'll never share your email"
               placeholder="your@email.com"
               leftSection={<IconAt size={16} />}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Select/Dropdown Section */}
+      <section className="space-y-4 border-b pb-8">
+        <h2 className="text-2xl font-semibold">Select/Dropdown</h2>
+        
+        <div className="grid grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Mantine Select</h3>
+            
+            <MantineSelect
+              label="Choose a framework"
+              placeholder="Pick one"
+              data={selectData}
+              value={selectedValue}
+              onChange={setSelectedValue}
+            />
+            
+            <MantineSelect
+              label="With description"
+              description="Select your favorite framework"
+              placeholder="Pick one"
+              data={selectData}
+              searchable
+              clearable
+            />
+            
+            <MantineSelect
+              label="Grouped options"
+              placeholder="Pick one"
+              data={groupedSelectData.map(item => ({
+                value: item.value,
+                label: item.label,
+                group: item.group
+              }))}
+            />
+            
+            <MantineSelect
+              label="With error"
+              placeholder="Pick one"
+              data={selectData}
+              error="Please select a framework"
+            />
+          </div>
+          
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Shadcn/App Select</h3>
+            
+            <AppSelect
+              label="Choose a framework"
+              placeholder="Pick one"
+              data={selectData}
+              value={selectedValue || ''}
+              onChange={setSelectedValue}
+            />
+            
+            <AppSelect
+              label="With description"
+              description="Select your favorite framework"
+              placeholder="Pick one"
+              data={selectData}
+              searchable
+              clearable
+            />
+            
+            <AppSelect
+              label="Grouped options"
+              placeholder="Pick one"
+              data={groupedSelectData}
+            />
+            
+            <AppSelect
+              label="With error"
+              placeholder="Pick one"
+              data={selectData}
+              error="Please select a framework"
             />
           </div>
         </div>

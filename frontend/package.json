@@ -35,6 +35,7 @@
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@tabler/icons-react": "^3.31.0",
+    "@tailwindcss/postcss": "^4.1.8",
     "@tanstack/react-query": "^5.75.6",
     "@track-it/shared": "file:../shared",
     "@trpc/client": "^11.1.2",

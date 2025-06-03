@@ -10,6 +10,8 @@ import {
 
 // Initialize tRPC with context type
 const t = initTRPC.context<Context>().create({
+  // No transformer - we'll use plain JSON
+  transformer: undefined,
   errorFormatter({ shape, error }) {
     // Get HTTP status code for internal use
     const httpStatus = getHttpStatusFromError(error);

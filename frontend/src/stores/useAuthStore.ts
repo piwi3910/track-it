@@ -34,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
       
       // Login function
       login: async (email, password) => {
+        console.log('[AuthStore] Login called with:', { email, password: password ? '***' : 'undefined' });
         set({ isLoading: true, error: null });
         
         try {
@@ -42,19 +43,12 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Email and password are required');
           }
           
-          const response = await api.auth.login(email, password);
+          console.log('[AuthStore] Calling api.auth.login with:', { email, password: '***' });
+          const response = await api.auth.login({ email, password });
+          console.log('[AuthStore] Login response:', response);
           
-          if (response.error) {
-            set({ 
-              isLoading: false, 
-              error: response.error,
-              isAuthenticated: false
-            });
-            return { success: false, error: response.error };
-          }
-          
-          set({ 
-            user: response.data as User, 
+          set({
+            user: response as User,
             isLoading: false,
             isAuthenticated: true
           });
@@ -66,6 +60,7 @@ export const useAuthStore = create<AuthState>()(
           
           return { success: true };
         } catch (err) {
+          console.error('[AuthStore] Login error:', err);
           const errorMessage = err instanceof Error ? err.message : 'Login failed';
           set({ 
             isLoading: false, 
@@ -81,19 +76,10 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         
         try {
-          const response = await api.auth.register(name, email, password);
+          const response = await api.auth.register({ name, email, password, passwordConfirm: password });
           
-          if (response.error) {
-            set({ 
-              isLoading: false, 
-              error: response.error,
-              isAuthenticated: false
-            });
-            return { success: false, error: response.error };
-          }
-          
-          set({ 
-            user: response.data as User, 
+          set({
+            user: response as User,
             isLoading: false,
             isAuthenticated: true
           });
@@ -139,23 +125,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await api.auth.getCurrentUser();
           
-          if (response.error) {
-            set({ 
-              user: null, 
-              isLoading: false, 
-              error: response.error,
-              isAuthenticated: false
-            });
-            return null;
-          }
-          
-          set({ 
-            user: response.data as User, 
+          set({
+            user: response as User,
             isLoading: false,
             isAuthenticated: true
           });
           
-          return response.data as User;
+          return response as User;
         } catch {
           set({ 
             user: null, 

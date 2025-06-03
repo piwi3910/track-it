@@ -96,12 +96,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.getAll();
           
-          if (response.error) {
-            set({ isLoading: false, error: response.error });
-            return [];
-          }
-          
-          const tasks = (response.data || []) as unknown as Task[];
+          const tasks = response as Task[];
           set({ tasks, filteredTasks: tasks, isLoading: false });
           
           // Apply filters if they exist
@@ -131,12 +126,7 @@ export const useTaskStore = create<TaskState>()(
           
           const response = await api.tasks.getById(id);
           
-          if (response.error) {
-            set({ isLoading: false, error: response.error });
-            return null;
-          }
-          
-          const task = response.data as unknown as Task;
+          const task = response as Task;
           set({ selectedTask: task, isLoading: false });
           return task;
         } catch (err) {
@@ -153,12 +143,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.create(task);
           
-          if (response.error) {
-            set({ isCreating: false, error: response.error });
-            return null;
-          }
-          
-          const newTask = response.data as unknown as Task;
+          const newTask = response as Task;
           set(state => ({
             tasks: [...state.tasks, newTask],
             isCreating: false
@@ -182,12 +167,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.update(id, task);
           
-          if (response.error) {
-            set({ isUpdating: false, error: response.error });
-            return null;
-          }
-          
-          const updatedTask = response.data as unknown as Task;
+          const updatedTask = response as Task;
           set(state => ({
             tasks: state.tasks.map(t => (t as Task).id === id ? { ...t, ...updatedTask } : t),
             selectedTask: state.selectedTask && (state.selectedTask as Task).id === id ? { ...state.selectedTask, ...updatedTask } : state.selectedTask,
@@ -210,12 +190,7 @@ export const useTaskStore = create<TaskState>()(
         set({ isDeleting: true, error: null });
         
         try {
-          const response = await api.tasks.delete(id);
-          
-          if (response.error) {
-            set({ isDeleting: false, error: response.error });
-            return false;
-          }
+          await api.tasks.delete(id);
           
           set(state => ({
             tasks: state.tasks.filter(t => t.id !== id),
@@ -244,12 +219,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.search(query);
           
-          if (response.error) {
-            set({ isLoading: false, error: response.error });
-            return [];
-          }
-          
-          const searchResults = response.data || [];
+          const searchResults = response as Task[];
           set({ isLoading: false });
           return searchResults;
         } catch (err) {
@@ -264,14 +234,9 @@ export const useTaskStore = create<TaskState>()(
         set({ isUpdating: true, error: null });
         
         try {
-          const response = await api.tasks.updateStatus(id, status);
+          const response = await api.tasks.updateStatus(id, status as TaskStatus);
           
-          if (response.error) {
-            set({ isUpdating: false, error: response.error });
-            return null;
-          }
-          
-          const updatedTask = response.data as unknown as Task;
+          const updatedTask = response as Task;
           set(state => ({
             tasks: state.tasks.map(t => t.id === id ? { ...t, status: status as TaskStatus, updatedAt: updatedTask.updatedAt || new Date().toISOString() } : t),
             selectedTask: state.selectedTask?.id === id ? { ...state.selectedTask, status: status as TaskStatus, updatedAt: updatedTask.updatedAt || new Date().toISOString() } : state.selectedTask,
@@ -296,12 +261,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.updateAssignee(id, assigneeId);
           
-          if (response.error) {
-            set({ isUpdating: false, error: response.error });
-            return null;
-          }
-          
-          const updatedTask = response.data as unknown as Task;
+          const updatedTask = response as Task;
           set(state => ({
             tasks: state.tasks.map(t => t.id === id ? { ...t, assigneeId, updatedAt: updatedTask.updatedAt } : t),
             selectedTask: state.selectedTask?.id === id ? { ...state.selectedTask, assigneeId, updatedAt: updatedTask.updatedAt } : state.selectedTask,
@@ -326,12 +286,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.startTimeTracking(id);
           
-          if (response.error) {
-            set({ isUpdating: false, error: response.error });
-            return null;
-          }
-          
-          const updatedTask = response.data as unknown as Task;
+          const updatedTask = response as Task;
           set(state => ({
             tasks: state.tasks.map(t => t.id === id ? { 
               ...t, 
@@ -361,12 +316,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.stopTimeTracking(id);
           
-          if (response.error) {
-            set({ isUpdating: false, error: response.error });
-            return null;
-          }
-          
-          const updatedTask = response.data as unknown as Task;
+          const updatedTask = response as Task;
           set(state => ({
             tasks: state.tasks.map(t => t.id === id ? { 
               ...t, 
@@ -398,13 +348,8 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.saveAsTemplate(taskId, templateName, isPublic);
           
-          if (response.error) {
-            set({ isUpdating: false, error: response.error });
-            return null;
-          }
-          
           set({ isUpdating: false });
-          return response.data;
+          return response;
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'Failed to save as template';
           set({ isUpdating: false, error: errorMessage });
@@ -419,12 +364,7 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await api.tasks.createFromTemplate(templateId, taskData);
           
-          if (response.error) {
-            set({ isCreating: false, error: response.error });
-            return null;
-          }
-          
-          const newTask = response.data as unknown as Task;
+          const newTask = response as Task;
           set(state => ({
             tasks: [...state.tasks, newTask],
             isCreating: false

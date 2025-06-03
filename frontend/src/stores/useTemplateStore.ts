@@ -53,12 +53,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     try {
       const response = await api.templates.getAll();
       
-      if (response.error) {
-        set({ isLoading: false, error: response.error });
-        return [];
-      }
-      
-      const templates = (response.data || []) as unknown as Template[];
+      const templates = response as unknown as Template[];
       set({ templates, isLoading: false });
       
       return templates;
@@ -76,12 +71,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     try {
       const response = await api.templates.getCategories();
       
-      if (response.error) {
-        set({ isLoading: false, error: response.error });
-        return [];
-      }
-      
-      const categories = (response.data as string[]) || [];
+      const categories = response as string[];
       set({ categories, isLoading: false });
       
       return categories;
@@ -106,12 +96,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       
       const response = await api.templates.getById(id);
       
-      if (response.error) {
-        set({ isLoading: false, error: response.error });
-        return null;
-      }
-      
-      const template = response.data as unknown as Template;
+      const template = response as unknown as Template;
       set({ selectedTemplate: template, isLoading: false });
       return template;
     } catch (err) {
@@ -128,13 +113,8 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     try {
       const response = await api.templates.getByCategory(category);
       
-      if (response.error) {
-        set({ isLoading: false, error: response.error });
-        return [];
-      }
-      
       set({ isLoading: false });
-      return (response.data || []) as unknown as Template[];
+      return response as unknown as Template[];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get templates by category';
       set({ isLoading: false, error: errorMessage });
@@ -149,12 +129,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     try {
       const response = await api.templates.create(template);
       
-      if (response.error) {
-        set({ isCreating: false, error: response.error });
-        return null;
-      }
-      
-      const newTemplate = response.data as unknown as Template;
+      const newTemplate = response as unknown as Template;
       set(state => ({
         templates: [...state.templates, newTemplate],
         isCreating: false
@@ -182,12 +157,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     try {
       const response = await api.templates.update(id, template);
       
-      if (response.error) {
-        set({ isUpdating: false, error: response.error });
-        return null;
-      }
-      
-      const updatedTemplate = response.data as unknown as Template;
+      const updatedTemplate = response as unknown as Template;
       set(state => ({
         templates: state.templates.map(t => t.id === id ? { ...t, ...updatedTemplate } : t),
         selectedTemplate: state.selectedTemplate?.id === id ? { ...state.selectedTemplate, ...updatedTemplate } : state.selectedTemplate,
@@ -214,12 +184,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     set({ isDeleting: true, error: null });
     
     try {
-      const response = await api.templates.delete(id);
-      
-      if (response.error) {
-        set({ isDeleting: false, error: response.error });
-        return false;
-      }
+      await api.templates.delete(id);
       
       set(state => ({
         templates: state.templates.filter(t => t.id !== id),
@@ -247,13 +212,8 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     try {
       const response = await api.templates.search(query);
       
-      if (response.error) {
-        set({ isLoading: false, error: response.error });
-        return [];
-      }
-      
       set({ isLoading: false });
-      return (response.data || []) as unknown as Template[];
+      return response as unknown as Template[];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to search templates';
       set({ isLoading: false, error: errorMessage });

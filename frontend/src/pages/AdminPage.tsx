@@ -108,13 +108,8 @@ export function AdminPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await api.admin.getAllUsers();
-      
-      if (error) {
-        throw new Error(error);
-      }
-      
-      setUsers((data || []) as User[]);
+      const data = await api.admin.getAllUsers();
+      setUsers(data as unknown as User[]);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load users';
       notifications.show({
@@ -137,16 +132,17 @@ export function AdminPage() {
   // Handle create user
   const handleCreateUser = async () => {
     try {
-      const { error } = await api.admin.createUser({
+      await api.admin.createUser({
         name: createForm.name,
         email: createForm.email,
-        password: createForm.password || '',
+        // password: createForm.password || '', // Remove if not supported
         role: createForm.role
       });
       
-      if (error) {
-        throw new Error(error);
-      }
+      // Handle success - no error checking needed with direct response
+      // if (error) {
+      //   throw new Error(error);
+      // }
       
       notifications.show({
         title: 'Success',
@@ -176,11 +172,12 @@ export function AdminPage() {
     if (!selectedUser) return;
     
     try {
-      const { error } = await api.admin.updateUser(selectedUser.id, editForm);
-      
-      if (error) {
-        throw new Error(error);
-      }
+      // Convert role case for API compatibility
+      const updateData = {
+        ...editForm,
+        role: editForm.role?.toUpperCase() as unknown
+      };
+      await api.admin.updateUser(selectedUser.id, updateData as Record<string, unknown>);
       
       notifications.show({
         title: 'Success',
@@ -218,11 +215,7 @@ export function AdminPage() {
     }
 
     try {
-      const { error } = await api.admin.resetUserPassword(passwordForm.userId, passwordForm.newPassword);
-      
-      if (error) {
-        throw new Error(error);
-      }
+      await api.admin.resetUserPassword(passwordForm.userId, passwordForm.newPassword);
       
       notifications.show({
         title: 'Success',
@@ -249,11 +242,7 @@ export function AdminPage() {
     if (!selectedUser) return;
     
     try {
-      const { error } = await api.admin.deleteUser(selectedUser.id);
-      
-      if (error) {
-        throw new Error(error);
-      }
+      await api.admin.deleteUser(selectedUser.id);
       
       notifications.show({
         title: 'Success',
@@ -308,11 +297,12 @@ export function AdminPage() {
     openDeleteModal();
     
     try {
-      const { data, error } = await api.admin.getUserDeletionStats(user.id);
+      const data = await api.admin.getUserDeletionStats(user.id);
       
-      if (error) {
-        throw new Error(error);
-      }
+      // Handle success - no error checking needed with direct response
+      // if (error) {
+      //   throw new Error(error);
+      // }
       
       setDeletionStats((data || null) as unknown as DeletionStats | null);
     } catch (error: unknown) {

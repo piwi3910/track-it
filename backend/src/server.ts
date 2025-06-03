@@ -99,10 +99,19 @@ app.use(
   createExpressMiddleware({
     router: appRouter,
     createContext,
-    onError({ error, path }) {
+    onError({ error, path, input, ctx }) {
+      logger.error({ 
+        path, 
+        error: error.message,
+        errorCode: error.code,
+        input,
+        body: (ctx.req as any).body,
+        headers: ctx.req.headers
+      }, 'tRPC Error - detailed');
+      
       if (error.code === 'INTERNAL_SERVER_ERROR') {
         // Log internal server errors
-        logger.error({ path, error }, 'tRPC Error');
+        logger.error({ path, error }, 'tRPC Internal Error');
       }
     },
   })

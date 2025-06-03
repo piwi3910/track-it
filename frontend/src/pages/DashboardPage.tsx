@@ -29,7 +29,7 @@ export function DashboardPage() {
   const { tasks: appTasks, currentUser, updateTask, createTask } = useApp();
   
   // Cast tasks to our frontend Task type which includes taskNumber
-  const tasks = appTasks as Task[];
+  const tasks = appTasks as unknown as Task[];
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -38,9 +38,9 @@ export function DashboardPage() {
 
   // Task counts for stats
   const totalMyTasks = myTasks.length;
-  const myCompletedTasks = myTasks.filter(task => task.status === 'done').length;
-  const myInProgressTasks = myTasks.filter(task => task.status === 'in_progress').length;
-  const myTodoTasks = myTasks.filter(task => task.status === 'todo').length;
+  const myCompletedTasks = myTasks.filter(task => task.status === 'DONE').length;
+  const myInProgressTasks = myTasks.filter(task => task.status === 'IN_PROGRESS').length;
+  const myTodoTasks = myTasks.filter(task => task.status === 'TODO').length;
 
   // Completion percentage (based on my tasks only)
   const completionPercentage = totalMyTasks > 0
@@ -61,11 +61,13 @@ export function DashboardPage() {
         // Extract id and pass the rest as data
         const { id, ...data } = task;
         console.log('Updating task with ID:', id);
+        // @ts-expect-error - Type conversion between shared types
         await updateTask(id, data);
       } else {
         // Create new task
         console.log('Creating new task');
-        await createTask(task as Omit<Task, 'id'>);
+        // @ts-expect-error - Type conversion between shared types
+        await createTask(task as unknown as Omit<Task, 'id'>);
       }
       setTaskModalOpen(false);
     } catch (error) {
@@ -151,8 +153,8 @@ export function DashboardPage() {
                 <Group justify="space-between" mb="xs">
                   <Text fw={500}>{task.title}</Text>
                   <Badge color={
-                    task.status === 'in_progress' ? 'yellow' :
-                    task.status === 'done' ? 'green' : 'blue'
+                    task.status === 'IN_PROGRESS' ? 'yellow' :
+                    task.status === 'DONE' ? 'green' : 'blue'
                   }>
                     {task.status.replace('_', ' ')}
                   </Badge>
@@ -178,7 +180,7 @@ export function DashboardPage() {
         ) : (
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
             {myTasks
-              .filter(task => task.status === 'in_progress')
+              .filter(task => task.status === 'IN_PROGRESS')
               .map(task => (
                 <Card
                   key={task.id}
@@ -210,7 +212,7 @@ export function DashboardPage() {
         ) : (
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
             {myTasks
-              .filter(task => task.status === 'todo')
+              .filter(task => task.status === 'TODO')
               .map(task => (
                 <Card
                   key={task.id}

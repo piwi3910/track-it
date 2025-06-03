@@ -1,10 +1,10 @@
 /**
  * tRPC Client Setup
- * Simplified and improved tRPC client configuration following best practices
+ * Standard tRPC v11 configuration following best practices
  */
 
 import { createTRPCReact } from '@trpc/react-query';
-import { createTRPCClient, httpBatchLink, httpLink, loggerLink } from '@trpc/client';
+import { createTRPCClient, httpLink, loggerLink } from '@trpc/client';
 import { QueryClient } from '@tanstack/react-query';
 import type { AppRouter } from '@track-it/shared/types/trpc';
 
@@ -22,19 +22,17 @@ const getAuthToken = () => {
   return localStorage.getItem('token');
 };
 
-// Create tRPC client configuration
+// Create standard tRPC client configuration
 export const createTRPCClientConfig = () => ({
   links: [
     // Logger link for development
     ...(import.meta.env.DEV ? [
       loggerLink({
-        enabled: (opts) =>
-          process.env.NODE_ENV === 'development' ||
-          (opts.direction === 'down' && opts.result instanceof Error),
+        enabled: () => process.env.NODE_ENV === 'development',
       })
     ] : []),
     
-    // HTTP link (non-batched for debugging)
+    // Standard HTTP link
     httpLink({
       url: getApiUrl(),
       
@@ -43,28 +41,9 @@ export const createTRPCClientConfig = () => ({
         const token = getAuthToken();
         return {
           ...(token && { Authorization: `Bearer ${token}` }),
-          'Content-Type': 'application/json',
         };
       },
       
-      // Custom fetch for error handling
-      fetch: async (url, options) => {
-        const response = await fetch(url, {
-          ...options,
-          credentials: 'include',
-        });
-        
-        // Handle authentication errors globally
-        if (response.status === 401) {
-          // Clear invalid token
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('token');
-            window.dispatchEvent(new CustomEvent('auth_error'));
-          }
-        }
-        
-        return response;
-      },
     }),
   ],
 });

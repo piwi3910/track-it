@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { Task } from '@track-it/shared';
+import { Task } from '@track-it/shared/types/trpc';
 import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';
 
 export interface GoogleContextType {

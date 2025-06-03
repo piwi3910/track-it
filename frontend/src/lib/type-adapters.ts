@@ -1,195 +1,138 @@
 /**
  * Type adapters for converting between backend and frontend data formats
+ * Simplified approach - use backend types directly with minimal conversion
  */
 
-import type { RouterOutputs } from '@track-it/shared/types/trpc';
-import type { Task, TaskTemplate, Notification } from '@track-it/shared/types/trpc';
 import { 
-  convertPriorityFromBackend, 
-  convertStatusFromBackend,
+  Task, 
+  TaskTemplate, 
+  User, 
+  Comment, 
+  Attachment, 
+  Notification,
   TaskStatus,
-  TaskPriority 
-} from '@track-it/shared/types/enums';
+  TaskPriority,
+  UserRole
+} from '../../../shared/types';
 
-// Type for backend task data (with optional properties)
-type BackendTask = Record<string, unknown>;
-type BackendTemplate = Record<string, unknown>;
-type BackendNotification = Record<string, unknown>;
+// Simple array adapters
+export const adaptTasksFromBackend = (backendTasks: unknown[]): Task[] => {
+  return (backendTasks || []).map(task => adaptTaskFromBackend(task));
+};
 
-/**
- * Convert backend task data to frontend Task interface
- */
-export const adaptTaskFromBackend = (backendTask: BackendTask): Task => {
+export const adaptTemplatesFromBackend = (backendTemplates: unknown[]): TaskTemplate[] => {
+  return (backendTemplates || []).map(template => adaptTemplateFromBackend(template));
+};
+
+export const adaptNotificationsFromBackend = (backendNotifications: unknown[]): Notification[] => {
+  return (backendNotifications || []).map(notification => adaptNotificationFromBackend(notification));
+};
+
+// Individual item adapters
+export const adaptTaskFromBackend = (backendTask: unknown): Task => {
+  const task = backendTask as Record<string, unknown>;
   return {
-    id: (backendTask.id as string) || '',
-    title: (backendTask.title as string) || '',
-    description: (backendTask.description as string) || null,
-    status: backendTask.status ? convertStatusFromBackend(backendTask.status as string) : TaskStatus.TODO,
-    priority: backendTask.priority ? convertPriorityFromBackend(backendTask.priority as string) : TaskPriority.MEDIUM,
-    createdAt: (backendTask.createdAt as string) || new Date().toISOString(),
-    updatedAt: (backendTask.updatedAt as string) || null,
-    dueDate: (backendTask.dueDate as string) || null,
-    creatorId: (backendTask.creatorId as string) || '',
-    assigneeId: (backendTask.assigneeId as string) || null,
-    tags: (backendTask.tags as string[]) || null,
-    estimatedHours: (backendTask.estimatedHours as number) || null,
-    actualHours: (backendTask.actualHours as number) || null,
-    trackingTimeSeconds: (backendTask.trackingTimeSeconds as number) || null,
-    timeTrackingActive: (backendTask.timeTrackingActive as boolean) || false,
-    trackingStartTime: (backendTask.trackingStartTime as string) || null,
-    creator: backendTask.creator as any,
-    assignee: (backendTask.assignee as any) || null,
-    subtasks: (backendTask.subtasks as any[]) || [],
-    _count: backendTask._count as any
-  };
+    ...task,
+    tags: task.tags || [],
+    timeTrackingActive: task.timeTrackingActive || false,
+    trackingTimeSeconds: task.trackingTimeSeconds || 0,
+    savedAsTemplate: task.savedAsTemplate || false,
+    archived: task.archived || false,
+  } as Task;
 };
 
-/**
- * Convert array of backend tasks to frontend Task array
- */
-export const adaptTasksFromBackend = (backendTasks: BackendTask[]): Task[] => {
-  return backendTasks.map(adaptTaskFromBackend);
-};
-
-/**
- * Convert backend template data to frontend TaskTemplate interface
- */
-export const adaptTemplateFromBackend = (backendTemplate: BackendTemplate): TaskTemplate => {
+export const adaptTemplateFromBackend = (backendTemplate: unknown): TaskTemplate => {
+  const template = backendTemplate as Record<string, unknown>;
   return {
-    id: (backendTemplate.id as string) || '',
-    name: (backendTemplate.name as string) || '',
-    description: (backendTemplate.description as string) || null,
-    priority: backendTemplate.priority ? convertPriorityFromBackend(backendTemplate.priority as string) : TaskPriority.MEDIUM,
-    tags: (backendTemplate.tags as string[]) || null,
-    estimatedHours: (backendTemplate.estimatedHours as number) || null,
-    subtasks: [], // Will be extracted from templateData if needed
-    category: (backendTemplate.category as string) || null,
-    createdAt: (backendTemplate.createdAt as string) || new Date().toISOString(),
-    createdById: (backendTemplate.createdById as string) || undefined,
-    createdBy: backendTemplate.createdBy as any,
-    isPublic: (backendTemplate.isPublic as boolean) || false,
-    usageCount: (backendTemplate.usageCount as number) || 0,
-    updatedAt: (backendTemplate.updatedAt as string) || undefined,
-    templateData: backendTemplate.templateData
-  };
+    ...template,
+    tags: template.tags || [],
+    isPublic: template.isPublic !== false, // default to true
+    usageCount: template.usageCount || 0,
+  } as TaskTemplate;
 };
 
-/**
- * Convert array of backend templates to frontend TaskTemplate array
- */
-export const adaptTemplatesFromBackend = (backendTemplates: BackendTemplate[]): TaskTemplate[] => {
-  return backendTemplates.map(adaptTemplateFromBackend);
-};
-
-/**
- * Convert backend notification data to frontend Notification interface
- */
-export const adaptNotificationFromBackend = (backendNotification: BackendNotification): Notification => {
+export const adaptUserFromBackend = (backendUser: unknown): User => {
+  const user = backendUser as Record<string, unknown>;
   return {
-    id: (backendNotification.id as string) || '',
-    type: (backendNotification.type as string) || '',
-    title: (backendNotification.title as string) || '',
-    message: (backendNotification.message as string) || '',
-    read: (backendNotification.read as boolean) || false,
-    createdAt: (backendNotification.createdAt as string) || new Date().toISOString(),
-    userId: (backendNotification.userId as string) || '',
-    relatedEntityId: (backendNotification.relatedEntityId as string) || null,
-    relatedEntityType: (backendNotification.relatedEntityType as string) || null,
-    relatedTaskId: (backendNotification.relatedEntityId as string) || null, // Map for backward compatibility
-    relatedTask: null // Would need to be populated separately if needed
-  };
+    ...user,
+    googleConnected: !!(user.googleId || user.googleToken),
+  } as User;
 };
 
-/**
- * Convert array of backend notifications to frontend Notification array
- */
-export const adaptNotificationsFromBackend = (backendNotifications: BackendNotification[]): Notification[] => {
-  return backendNotifications.map(adaptNotificationFromBackend);
+export const adaptCommentFromBackend = (backendComment: unknown): Comment => {
+  const comment = backendComment as Record<string, unknown>;
+  return {
+    ...comment,
+    author: comment.author ? adaptUserFromBackend(comment.author) : undefined,
+    replies: comment.replies ? (comment.replies as unknown[]).map(adaptCommentFromBackend) : undefined,
+  } as Comment;
 };
 
-/**
- * Type-safe wrapper for API results with adaptation
- */
-export type AdaptedApiResult<T> = {
-  data: T | null;
-  error: string | null;
-  success: boolean;
+export const adaptAttachmentFromBackend = (backendAttachment: unknown): Attachment => {
+  const attachment = backendAttachment as Record<string, unknown>;
+  return {
+    ...attachment,
+    // Add computed properties for frontend compatibility
+    name: attachment.fileName || attachment.name,
+    size: attachment.fileSize || attachment.size,
+    url: attachment.filePath || attachment.url,
+    createdAt: attachment.uploadedAt || attachment.createdAt,
+  } as Attachment;
 };
 
-/**
- * Generic adapter function for API results
- */
-export const adaptApiResult = <TBackend, TFrontend>(
-  result: { data: TBackend | null; error: string | null; success: boolean },
-  adapter: (data: TBackend) => TFrontend
-): AdaptedApiResult<TFrontend> => {
-  if (!result.success || !result.data) {
-    return {
-      data: null,
-      error: result.error,
-      success: false
-    };
+export const adaptNotificationFromBackend = (backendNotification: unknown): Notification => {
+  const notification = backendNotification as Record<string, unknown>;
+  return {
+    ...notification,
+    user: notification.user ? adaptUserFromBackend(notification.user) : undefined,
+    // Map resource fields to legacy fields for compatibility
+    relatedTaskId: notification.resourceType === 'task' ? notification.resourceId : notification.relatedTaskId,
+    relatedCommentId: notification.resourceType === 'comment' ? notification.resourceId : notification.relatedCommentId,
+  } as Notification;
+};
+
+// Generic API result adapter
+export const adaptApiResult = <T>(data: unknown, adapter?: (item: unknown) => T): T | T[] | null => {
+  if (!data) return null;
+  
+  if (Array.isArray(data)) {
+    return adapter ? data.map(adapter) : data as T[];
   }
+  
+  return adapter ? adapter(data) : data as T;
+};
 
-  try {
-    return {
-      data: adapter(result.data),
-      error: null,
-      success: true
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Adaptation failed',
-      success: false
-    };
+// Status conversion utilities (for backward compatibility)
+export const convertStatusFromString = (status: string): TaskStatus => {
+  const upperStatus = status.toUpperCase();
+  switch (upperStatus) {
+    case 'BACKLOG': return 'BACKLOG';
+    case 'TODO': return 'TODO';
+    case 'IN_PROGRESS': return 'IN_PROGRESS';
+    case 'REVIEW': return 'REVIEW';
+    case 'DONE': return 'DONE';
+    case 'ARCHIVED': return 'ARCHIVED';
+    default: return 'TODO';
   }
 };
 
-/**
- * Utility function to safely convert string to TaskStatus
- */
-export const safeTaskStatus = (status: string | undefined): TaskStatus => {
-  if (!status) return TaskStatus.TODO;
-  
-  // Handle both frontend and backend formats
-  const statusMap: Record<string, TaskStatus> = {
-    'todo': TaskStatus.TODO,
-    'TODO': TaskStatus.TODO,
-    'backlog': TaskStatus.BACKLOG,
-    'BACKLOG': TaskStatus.BACKLOG,
-    'in_progress': TaskStatus.IN_PROGRESS,
-    'IN_PROGRESS': TaskStatus.IN_PROGRESS,
-    'blocked': TaskStatus.BLOCKED,
-    'BLOCKED': TaskStatus.BLOCKED,
-    'in_review': TaskStatus.IN_REVIEW,
-    'REVIEW': TaskStatus.IN_REVIEW,
-    'done': TaskStatus.DONE,
-    'DONE': TaskStatus.DONE,
-    'archived': TaskStatus.ARCHIVED,
-    'ARCHIVED': TaskStatus.ARCHIVED,
-  };
-  
-  return statusMap[status] || TaskStatus.TODO;
+export const convertPriorityFromString = (priority: string): TaskPriority => {
+  const upperPriority = priority.toUpperCase();
+  switch (upperPriority) {
+    case 'LOW': return 'LOW';
+    case 'MEDIUM': return 'MEDIUM';
+    case 'HIGH': return 'HIGH';
+    case 'URGENT': return 'URGENT';
+    default: return 'MEDIUM';
+  }
 };
 
-/**
- * Utility function to safely convert string to TaskPriority
- */
-export const safeTaskPriority = (priority: string | undefined): TaskPriority => {
-  if (!priority) return TaskPriority.MEDIUM;
-  
-  // Handle both frontend and backend formats
-  const priorityMap: Record<string, TaskPriority> = {
-    'low': TaskPriority.LOW,
-    'LOW': TaskPriority.LOW,
-    'medium': TaskPriority.MEDIUM,
-    'MEDIUM': TaskPriority.MEDIUM,
-    'high': TaskPriority.HIGH,
-    'HIGH': TaskPriority.HIGH,
-    'urgent': TaskPriority.URGENT,
-    'URGENT': TaskPriority.URGENT,
-  };
-  
-  return priorityMap[priority] || TaskPriority.MEDIUM;
+export const convertRoleFromString = (role: string): UserRole => {
+  const upperRole = role.toUpperCase();
+  switch (upperRole) {
+    case 'ADMIN': return 'ADMIN';
+    case 'MEMBER': return 'MEMBER';
+    case 'GUEST': return 'GUEST';
+    default: return 'MEMBER';
+  }
 };

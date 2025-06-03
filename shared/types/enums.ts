@@ -1,111 +1,159 @@
 /**
- * Shared enum definitions for consistent typing across frontend and backend
+ * Enum definitions and conversion utilities
+ * These match the Prisma schema enums exactly
  */
 
-// Task Status Enum - Frontend format (lowercase with underscores)
-export enum TaskStatus {
-  BACKLOG = 'backlog',
-  TODO = 'todo',
-  IN_PROGRESS = 'in_progress',
-  BLOCKED = 'blocked',
-  IN_REVIEW = 'in_review',
-  DONE = 'done',
-  ARCHIVED = 'archived'
-}
+// Database enums (uppercase, matching Prisma schema)
+export type UserRole = 'ADMIN' | 'MEMBER' | 'GUEST';
+export type TaskStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' | 'ARCHIVED';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'COMMENT_ADDED' | 'DUE_DATE_REMINDER' | 'MENTION' | 'SYSTEM';
 
-// Task Priority Enum - Frontend format (lowercase)
-export enum TaskPriority {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  URGENT = 'urgent'
-}
+// Frontend display enums (lowercase, for UI consistency)
+export type FrontendTaskStatus = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done' | 'archived';
+export type FrontendTaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type FrontendUserRole = 'admin' | 'member' | 'guest';
 
-// Backend Priority Enum - Backend format (uppercase)
-export enum BackendTaskPriority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  URGENT = 'URGENT'
-}
-
-// Backend Status Enum - Backend format (uppercase)
-export enum BackendTaskStatus {
-  BACKLOG = 'BACKLOG',
-  TODO = 'TODO',
-  IN_PROGRESS = 'IN_PROGRESS',
-  REVIEW = 'REVIEW',
-  DONE = 'DONE',
-  ARCHIVED = 'ARCHIVED'
-}
-
-// Notification Type Enum
-export enum NotificationType {
-  TASK_ASSIGNED = 'task_assigned',
-  TASK_COMPLETED = 'task_completed',
-  TASK_OVERDUE = 'task_overdue',
-  COMMENT_ADDED = 'comment_added',
-  SYSTEM = 'system'
-}
-
-// User Role Enum
-export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
-  MANAGER = 'manager'
-}
-
-// Type conversion utilities
-export const convertPriorityToBackend = (priority: TaskPriority): BackendTaskPriority => {
-  const map: Record<TaskPriority, BackendTaskPriority> = {
-    [TaskPriority.LOW]: BackendTaskPriority.LOW,
-    [TaskPriority.MEDIUM]: BackendTaskPriority.MEDIUM,
-    [TaskPriority.HIGH]: BackendTaskPriority.HIGH,
-    [TaskPriority.URGENT]: BackendTaskPriority.URGENT,
+// Conversion utilities for backend/frontend compatibility
+export const convertStatusFromBackend = (status: TaskStatus): FrontendTaskStatus => {
+  const statusMap: Record<TaskStatus, FrontendTaskStatus> = {
+    'BACKLOG': 'backlog',
+    'TODO': 'todo',
+    'IN_PROGRESS': 'in_progress',
+    'REVIEW': 'review',
+    'DONE': 'done',
+    'ARCHIVED': 'archived'
   };
-  return map[priority];
+  return statusMap[status];
 };
 
-export const convertPriorityFromBackend = (priority: BackendTaskPriority | string): TaskPriority => {
-  const map: Record<string, TaskPriority> = {
-    'LOW': TaskPriority.LOW,
-    'MEDIUM': TaskPriority.MEDIUM,
-    'HIGH': TaskPriority.HIGH,
-    'URGENT': TaskPriority.URGENT,
+export const convertStatusToBackend = (status: FrontendTaskStatus): TaskStatus => {
+  const statusMap: Record<FrontendTaskStatus, TaskStatus> = {
+    'backlog': 'BACKLOG',
+    'todo': 'TODO',
+    'in_progress': 'IN_PROGRESS',
+    'review': 'REVIEW',
+    'done': 'DONE',
+    'archived': 'ARCHIVED'
   };
-  return map[priority] || TaskPriority.MEDIUM;
+  return statusMap[status];
 };
 
-export const convertStatusToBackend = (status: TaskStatus): BackendTaskStatus => {
-  const map: Record<TaskStatus, BackendTaskStatus> = {
-    [TaskStatus.BACKLOG]: BackendTaskStatus.BACKLOG,
-    [TaskStatus.TODO]: BackendTaskStatus.TODO,
-    [TaskStatus.IN_PROGRESS]: BackendTaskStatus.IN_PROGRESS,
-    [TaskStatus.BLOCKED]: BackendTaskStatus.TODO, // Backend doesn't have BLOCKED, map to TODO
-    [TaskStatus.IN_REVIEW]: BackendTaskStatus.REVIEW,
-    [TaskStatus.DONE]: BackendTaskStatus.DONE,
-    [TaskStatus.ARCHIVED]: BackendTaskStatus.ARCHIVED,
+export const convertPriorityFromBackend = (priority: TaskPriority): FrontendTaskPriority => {
+  const priorityMap: Record<TaskPriority, FrontendTaskPriority> = {
+    'LOW': 'low',
+    'MEDIUM': 'medium',
+    'HIGH': 'high',
+    'URGENT': 'urgent'
   };
-  return map[status];
+  return priorityMap[priority];
 };
 
-export const convertStatusFromBackend = (status: BackendTaskStatus | string): TaskStatus => {
-  const map: Record<string, TaskStatus> = {
-    'BACKLOG': TaskStatus.BACKLOG,
-    'TODO': TaskStatus.TODO,
-    'IN_PROGRESS': TaskStatus.IN_PROGRESS,
-    'REVIEW': TaskStatus.IN_REVIEW,
-    'DONE': TaskStatus.DONE,
-    'ARCHIVED': TaskStatus.ARCHIVED,
+export const convertPriorityToBackend = (priority: FrontendTaskPriority): TaskPriority => {
+  const priorityMap: Record<FrontendTaskPriority, TaskPriority> = {
+    'low': 'LOW',
+    'medium': 'MEDIUM',
+    'high': 'HIGH',
+    'urgent': 'URGENT'
   };
-  return map[status] || TaskStatus.TODO;
+  return priorityMap[priority];
 };
 
-// Type guards
-export const isValidTaskStatus = (status: string): status is TaskStatus => {
-  return Object.values(TaskStatus).includes(status as TaskStatus);
+export const convertRoleFromBackend = (role: UserRole): FrontendUserRole => {
+  const roleMap: Record<UserRole, FrontendUserRole> = {
+    'ADMIN': 'admin',
+    'MEMBER': 'member',
+    'GUEST': 'guest'
+  };
+  return roleMap[role];
 };
 
-export const isValidTaskPriority = (priority: string): priority is TaskPriority => {
-  return Object.values(TaskPriority).includes(priority as TaskPriority);
+export const convertRoleToBackend = (role: FrontendUserRole): UserRole => {
+  const roleMap: Record<FrontendUserRole, UserRole> = {
+    'admin': 'ADMIN',
+    'member': 'MEMBER',
+    'guest': 'GUEST'
+  };
+  return roleMap[role];
+};
+
+// Status display labels
+export const getStatusLabel = (status: TaskStatus | FrontendTaskStatus): string => {
+  const labels: Record<string, string> = {
+    'BACKLOG': 'Backlog',
+    'backlog': 'Backlog',
+    'TODO': 'To Do',
+    'todo': 'To Do',
+    'IN_PROGRESS': 'In Progress',
+    'in_progress': 'In Progress',
+    'REVIEW': 'Review',
+    'review': 'Review',
+    'DONE': 'Done',
+    'done': 'Done',
+    'ARCHIVED': 'Archived',
+    'archived': 'Archived'
+  };
+  return labels[status] || status;
+};
+
+// Priority display labels
+export const getPriorityLabel = (priority: TaskPriority | FrontendTaskPriority): string => {
+  const labels: Record<string, string> = {
+    'LOW': 'Low',
+    'low': 'Low',
+    'MEDIUM': 'Medium',
+    'medium': 'Medium',
+    'HIGH': 'High',
+    'high': 'High',
+    'URGENT': 'Urgent',
+    'urgent': 'Urgent'
+  };
+  return labels[priority] || priority;
+};
+
+// Role display labels
+export const getRoleLabel = (role: UserRole | FrontendUserRole): string => {
+  const labels: Record<string, string> = {
+    'ADMIN': 'Admin',
+    'admin': 'Admin',
+    'MEMBER': 'Member',
+    'member': 'Member',
+    'GUEST': 'Guest',
+    'guest': 'Guest'
+  };
+  return labels[role] || role;
+};
+
+// Status colors for UI
+export const getStatusColor = (status: TaskStatus | FrontendTaskStatus): string => {
+  const colors: Record<string, string> = {
+    'BACKLOG': 'gray',
+    'backlog': 'gray',
+    'TODO': 'blue',
+    'todo': 'blue',
+    'IN_PROGRESS': 'yellow',
+    'in_progress': 'yellow',
+    'REVIEW': 'orange',
+    'review': 'orange',
+    'DONE': 'green',
+    'done': 'green',
+    'ARCHIVED': 'dark',
+    'archived': 'dark'
+  };
+  return colors[status] || 'gray';
+};
+
+// Priority colors for UI
+export const getPriorityColor = (priority: TaskPriority | FrontendTaskPriority): string => {
+  const colors: Record<string, string> = {
+    'LOW': 'green',
+    'low': 'green',
+    'MEDIUM': 'yellow',
+    'medium': 'yellow',
+    'HIGH': 'orange',
+    'high': 'orange',
+    'URGENT': 'red',
+    'urgent': 'red'
+  };
+  return colors[priority] || 'gray';
 };

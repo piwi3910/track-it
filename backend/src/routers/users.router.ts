@@ -130,10 +130,19 @@ export const usersRouter = router({
     
   login: publicProcedure
     .input(userLoginSchema)
-    .mutation(({ input }) => safeProcedure(async () => {
+    .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
         // Log login attempt for debugging
-        logger.info({ email: input.email }, 'Login attempt');
+        logger.info({ 
+          input,
+          inputType: typeof input,
+          inputKeys: Object.keys(input || {}),
+          email: input?.email,
+          hasPassword: !!input?.password,
+          rawBody: (ctx.req as any).body,
+          rawBodyType: typeof (ctx.req as any).body,
+          rawBodyKeys: Object.keys((ctx.req as any).body || {})
+        }, 'Login attempt - detailed debug');
         
         // Get user by email
         const user = await userService.getUserByEmail(input.email);

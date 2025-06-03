@@ -35,12 +35,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       const response = await api.notifications.getAll();
       
-      if (response.error) {
-        set({ isLoading: false, error: response.error });
-        return [];
-      }
-      
-      const notifications = (response.data || []) as Array<{
+      const notifications = response as Array<{
         id: string;
         userId: string;
         type: string;
@@ -71,11 +66,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       const response = await api.notifications.getUnreadCount();
       
-      if (response.error) {
-        return get().unreadCount;
-      }
-      
-      const count = (response.data || 0) as number;
+      const count = response as number;
       set({ unreadCount: count });
       
       return count;
@@ -88,12 +79,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   // Mark notification as read
   markAsRead: async (id) => {
     try {
-      const response = await api.notifications.markAsRead(id);
-      
-      if (response.error) {
-        set({ error: response.error });
-        return false;
-      }
+      await api.notifications.markAsRead(id);
       
       // Update notification in the store
       set(state => {
@@ -120,12 +106,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   // Mark all notifications as read
   markAllAsRead: async () => {
     try {
-      const response = await api.notifications.markAllAsRead();
-      
-      if (response.error) {
-        set({ error: response.error });
-        return false;
-      }
+      await api.notifications.markAllAsRead();
       
       // Update all notifications in the store
       set(state => ({
@@ -144,12 +125,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   // Delete a notification
   deleteNotification: async (id) => {
     try {
-      const response = await api.notifications.delete(id);
-      
-      if (response.error) {
-        set({ error: response.error });
-        return false;
-      }
+      await api.notifications.delete();
       
       // Remove notification from the store
       set(state => {

@@ -75,12 +75,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTasksLoading(true);
     try {
       // Use real tRPC API
-      const { data, error } = await api.tasks.getAll();
-      if (error) {
-        console.error('Failed to fetch tasks:', error);
-      } else if (data) {
-        setTasks(data as unknown as Task[]);
-      }
+      const data = await api.tasks.getAll();
+      setTasks(data as Task[]);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
     } finally {
@@ -152,12 +148,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (localTask) return localTask;
       
       // Otherwise fetch from API
-      const { data, error } = await api.tasks.getById(id);
-      if (error) {
-        console.error('Failed to get task by ID:', error);
-        return null;
-      }
-      return data as unknown as Task;
+      const data = await api.tasks.getById(id);
+      return data as Task;
     } catch (error) {
       console.error('Failed to get task:', error);
       return null;
@@ -167,17 +159,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Create a new task
   const createTask = useCallback(async (task: Omit<Task, 'id'>) => {
     try {
-      const { data, error } = await api.tasks.create(task);
-      if (error) {
-        console.error('Failed to create task:', error);
-        return null;
-      }
+      const data = await api.tasks.create(task);
 
       // Update local tasks state
-      if (data) {
-        setTasks(prev => [...prev, data as unknown as Task]);
-      }
-      return data as unknown as Task;
+      setTasks(prev => [...prev, data as Task]);
+      return data as Task;
     } catch (error) {
       console.error('Failed to create task:', error);
       return null;
@@ -187,22 +173,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update an existing task
   const updateTask = useCallback(async (id: string, task: Partial<Task>) => {
     try {
-      const { data, error } = await api.tasks.update(id, task);
-      if (error) {
-        console.error('Failed to update task:', error);
-        return null;
-      }
+      const data = await api.tasks.update(id, task);
 
       // Update local tasks state
-      if (data) {
-        setTasks(prev => prev.map(t => t.id === id ? (data as unknown as Task) : t));
+      setTasks(prev => prev.map(t => t.id === id ? (data as Task) : t));
 
-        // Update selectedTask if it's the one being edited
-        if (selectedTask?.id === id) {
-          setSelectedTask(data as unknown as Task);
-        }
+      // Update selectedTask if it's the one being edited
+      if (selectedTask?.id === id) {
+        setSelectedTask(data as Task);
       }
-      return data as unknown as Task;
+      return data as Task;
     } catch (error) {
       console.error('Failed to update task:', error);
       return null;
@@ -212,11 +192,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Delete a task
   const deleteTask = useCallback(async (id: string) => {
     try {
-      const { error } = await api.tasks.delete(id);
-      if (error) {
-        console.error('Failed to delete task:', error);
-        return false;
-      }
+      await api.tasks.delete(id);
 
       // Update local tasks state
       setTasks(prev => prev.filter(t => t.id !== id));
@@ -267,12 +243,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const searchTasks = useCallback(async (query: string) => {
     try {
       // Use the tRPC API search function
-      const { data, error } = await api.tasks.search(query);
-      if (error) {
-        console.error('Search API error:', error);
-        throw new Error(typeof error === 'string' ? error : (error as Error).message || 'Search failed');
-      }
-      return (data || []) as Task[];
+      const data = await api.tasks.search(query);
+      return data as Task[];
     } catch (error) {
       console.error('Failed to search tasks:', error);
       
@@ -288,9 +260,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Get template by ID
   const getTemplateById = useCallback(async (id: string) => {
     try {
-      const { data, error } = await api.templates.getById(id);
-      if (error) return null;
-      return data as unknown as TaskTemplate;
+      const data = await api.templates.getById(id);
+      return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to get template:', error);
       return null;
@@ -300,14 +271,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Create a new template
   const createTemplate = useCallback(async (template: Omit<TaskTemplate, 'id' | 'createdAt' | 'usageCount'>) => {
     try {
-      const { data, error } = await api.templates.create(template);
-      if (error) throw new Error(error);
+      const data = await api.templates.create(template);
 
       // Update local templates state
-      if (data) {
-        setTemplates(prev => [...prev, data as unknown as TaskTemplate]);
-      }
-      return data as unknown as TaskTemplate;
+      setTemplates(prev => [...prev, data as TaskTemplate]);
+      return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to create template:', error);
       return null;
@@ -317,19 +285,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Update an existing template
   const updateTemplate = useCallback(async (id: string, template: Partial<TaskTemplate>) => {
     try {
-      const { data, error } = await api.templates.update(id, template);
-      if (error) throw new Error(error);
+      const data = await api.templates.update(id, template);
 
       // Update local templates state
-      if (data) {
-        setTemplates(prev => prev.map(t => t.id === id ? (data as unknown as TaskTemplate) : t));
+      setTemplates(prev => prev.map(t => t.id === id ? (data as TaskTemplate) : t));
 
-        // Update selectedTemplate if it's the one being edited
-        if (selectedTemplate?.id === id) {
-          setSelectedTemplate(data as unknown as TaskTemplate);
-        }
+      // Update selectedTemplate if it's the one being edited
+      if (selectedTemplate?.id === id) {
+        setSelectedTemplate(data as TaskTemplate);
       }
-      return data as unknown as TaskTemplate;
+      return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to update template:', error);
       return null;
@@ -339,8 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Delete a template
   const deleteTemplate = useCallback(async (id: string) => {
     try {
-      const { error } = await api.templates.delete(id);
-      if (error) throw new Error(error);
+      await api.templates.delete(id);
 
       // Update local templates state
       setTemplates(prev => prev.filter(t => t.id !== id));
@@ -365,13 +329,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Save a task as a template
   const saveTaskAsTemplate = useCallback(async (taskId: string, templateName: string, isPublic = true) => {
     try {
-      const { data, error } = await api.tasks.saveAsTemplate(taskId, templateName, isPublic);
-      if (error) throw new Error(error);
+      const data = await api.tasks.saveAsTemplate(taskId, templateName, isPublic);
 
       // Update local templates state
-      if (data) {
-        setTemplates(prev => [...prev, data as TaskTemplate]);
-      }
+      setTemplates(prev => [...prev, data as TaskTemplate]);
       return data as TaskTemplate;
     } catch (error) {
       console.error('Failed to save task as template:', error);
@@ -382,14 +343,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Create a task from a template
   const createTaskFromTemplate = useCallback(async (templateId: string, taskData: Partial<Task>) => {
     try {
-      const { data, error } = await api.tasks.createFromTemplate(templateId, taskData);
-      if (error) throw new Error(error);
+      const data = await api.tasks.createFromTemplate(templateId, taskData);
 
       // Update local tasks state
-      if (data) {
-        setTasks(prev => [...prev, data as unknown as Task]);
-      }
-      return data as unknown as Task;
+      setTasks(prev => [...prev, data as Task]);
+      return data as Task;
     } catch (error) {
       console.error('Failed to create task from template:', error);
       return null;
@@ -427,9 +385,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Get all template categories
   const getTemplateCategories = useCallback(async () => {
     try {
-      const { data, error } = await api.templates.getCategories();
-      if (error) throw new Error(error);
-      return (data || []) as string[];
+      const data = await api.templates.getCategories();
+      return data as string[];
     } catch (error) {
       console.error('Failed to get template categories:', error);
       return [];

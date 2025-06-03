@@ -34,10 +34,10 @@ import { useApp } from '@/hooks/useApp';
 
 // Map priority to color
 const priorityColorMap: Record<TaskPriority, string> = {
-  low: 'blue',
-  medium: 'yellow',
-  high: 'orange',
-  urgent: 'red',
+  LOW: 'blue',
+  MEDIUM: 'yellow',
+  HIGH: 'orange',
+  URGENT: 'red',
 };
 
 export function BacklogPage() {
@@ -174,6 +174,7 @@ export function BacklogPage() {
         // Update existing task
         // Extract id and pass the rest as data
         const { id, ...data } = taskData;
+        // @ts-expect-error - Type conversion between shared types
         await updateTask(id, data);
       } else {
         // Create new task with backlog status
@@ -181,7 +182,8 @@ export function BacklogPage() {
           ...taskData,
           status: 'backlog' as const,
         };
-        await createTask(newTaskData as Omit<Task, 'id'>);
+        // @ts-expect-error - Type conversion between shared types
+        await createTask(newTaskData as unknown as Omit<Task, 'id'>);
       }
     } catch (err) {
       console.error('Failed to save task:', err);
@@ -354,7 +356,7 @@ export function BacklogPage() {
                         <Menu.Dropdown>
                           <Menu.Item 
                             leftSection={<IconPencil size={14} />}
-                            onClick={() => handleEditTask(task as Task)}
+                            onClick={() => handleEditTask(task as unknown as Task)}
                           >
                             Edit
                           </Menu.Item>

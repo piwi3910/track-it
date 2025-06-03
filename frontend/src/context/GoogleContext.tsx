@@ -1,6 +1,7 @@
 import { useState, useCallback, ReactNode, useEffect, useMemo } from 'react';
 import { api } from '@/api';
-import { GoogleCalendarEvent, GoogleDriveFile, Task } from '@/types/task';
+import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';
+import { Task, TaskStatus, TaskPriority } from '@track-it/shared/types/trpc';
 import { authService } from '@/services/auth.service';
 import { useStore } from '@/hooks/useStore';
 import { GoogleContext, GoogleContextType } from './GoogleContextDefinition';
@@ -127,18 +128,11 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       if (google?.syncCalendar) {
         await google.syncCalendar();
       } else {
-        const result = await api.googleIntegration.syncCalendar();
-        if (result.error) {
-          throw new Error(result.error);
-        }
+        await api.googleIntegration.syncCalendar();
       }
       
       // Fetch calendar events from API
-      const { data, error } = await api.googleIntegration.getCalendarEvents();
-      
-      if (error) {
-        throw new Error(error);
-      }
+      const data = await api.googleIntegration.getCalendarEvents();
       
       setCalendarEvents((data as GoogleCalendarEvent[]) || []);
       setCalendarSynced(true);
@@ -162,15 +156,25 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       
       if (google?.importTasks) {
         const googleTasks = await google.importTasks();
-        // Map GoogleTasks to Tasks with taskNumber
+        // Map GoogleTasks to Tasks with proper type conversion
         tasks = googleTasks.map((gt, index) => ({
-          ...gt,
+          id: gt.id,
+          title: gt.title,
+          status: gt.status.toLowerCase() as TaskStatus, // Convert uppercase to lowercase
+          priority: gt.priority.toLowerCase() as TaskPriority, // Convert uppercase to lowercase
+          dueDate: gt.dueDate || null,
           taskNumber: index + 1,
-          source: 'google'
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          tags: [],
+          creatorId: '',
+          assigneeId: null,
+          description: null,
+          estimatedHours: null
         } as Task));
       } else {
         const response = await api.googleIntegration.importGoogleTasks();
-        tasks = (response.data || []) as unknown as Task[];
+        tasks = (response || []) as unknown as Task[];
       }
       
       setTasksSynced(true);
@@ -208,7 +212,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
         const response = await api.googleIntegration.getGoogleDriveFiles();
         
         // Convert to GoogleDriveFile format
-        const apiFiles = response.data as Array<{ id: string; name: string; url: string; mimeType: string; iconUrl?: string }> || [];
+        const apiFiles = response as Array<{ id: string; name: string; url: string; mimeType: string; iconUrl?: string }> || [];
         files = apiFiles.map((file) => ({
           id: file.id,
           name: file.name,

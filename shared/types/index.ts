@@ -1,40 +1,47 @@
 /**
  * Shared types between frontend and backend
+ * This is the single source of truth for all type definitions
  */
 
 // Re-export error types
 export * from './errors';
+export * from './enums';
 
-// Task status types
-export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'in_review' | 'done';
+// User roles (matching Prisma schema)
+export type UserRole = 'ADMIN' | 'MEMBER' | 'GUEST';
 
-// Task priority types
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+// Task status types (matching Prisma schema)
+export type TaskStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' | 'ARCHIVED';
 
-// User roles
-export type UserRole = 'admin' | 'member' | 'guest';
+// Task priority types (matching Prisma schema)
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+// Notification types (matching Prisma schema)
+export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'COMMENT_ADDED' | 'DUE_DATE_REMINDER' | 'MENTION' | 'SYSTEM';
 
 // Subtask interface
 export interface Subtask {
   id: string;
   title: string;
   completed: boolean;
+  assigneeId?: string | null;
+  assignee?: User | null;
 }
 
-// Recurrence types for tasks
+// Recurrence types for tasks (future feature)
 export type RecurrencePattern = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
 
-// Recurrence interface
+// Recurrence interface (future feature)
 export interface TaskRecurrence {
   pattern: RecurrencePattern;
-  interval?: number; // Default is 1 (e.g., every 1 week)
-  endDate?: string | null; // When recurrence should end
-  daysOfWeek?: number[]; // For weekly: 0 (Sunday) to 6 (Saturday)
-  dayOfMonth?: number; // For monthly (1-31)
-  monthOfYear?: number; // For yearly (1-12)
+  interval?: number;
+  endDate?: string | null;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  monthOfYear?: number;
 }
 
-// Time tracking session interface
+// Time tracking session interface (future feature)
 export interface TimeTrackingSession {
   id: string;
   taskId: string;
@@ -45,50 +52,57 @@ export interface TimeTrackingSession {
   notes?: string;
 }
 
-// Task interface
+// Task interface (matching Prisma schema)
 export interface Task {
   id: string;
+  taskNumber: number;
   title: string;
-  description?: string;
+  description?: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  weight?: number; // Task weight (0-10)
-  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
   dueDate?: string | null;
-  startDate?: string | null; // Start date for multi-day tasks
-  endDate?: string | null; // End date for multi-day tasks
-  isMultiDay?: boolean; // Flag to indicate this is a multi-day task
-  createdAt?: string;
-  updatedAt?: string;
+  estimatedHours?: number | null;
+  actualHours?: number | null;
+  tags: string[];
+  
+  // Relations
+  creatorId: string;
+  creator?: User;
   assigneeId?: string | null;
-  reporterId?: string | null;
-  estimatedHours?: number;
-  actualHours?: number;
-  // Time tracking properties
-  timeTrackingActive?: boolean; // Whether time tracking is currently active
-  trackingTimeSeconds?: number; // Current tracking time in seconds
-  startTrackedTimestamp?: string; // When the current tracking session started
-  lastTrackedTimestamp?: string; // When the last tracking session ended
-  lastSavedTimestamp?: string; // When the tracking data was last saved
-  timeTrackingHistory?: TimeTrackingSession[]; // History of tracking sessions
-  // Hierarchy and recurrence
-  subtasks?: Subtask[];
-  parentTaskId?: string | null; // For task hierarchy
-  childTaskIds?: string[]; // For task hierarchy
-  source?: 'app' | 'google' | 'import';
-  isSubtask?: boolean; // Indicates if this is a subtask that appears as a separate task
-  recurrence?: TaskRecurrence; // For recurring tasks
-  isRecurrenceInstance?: boolean; // True if this is an instance of a recurring task
-  originalTaskId?: string; // References original task if this is a recurrence instance
+  assignee?: User | null;
+  parentId?: string | null;
+  parent?: Task | null;
+  subtasks?: Task[];
+  
+  // Time tracking (matching Prisma schema)
+  timeTrackingActive: boolean;
+  trackingStartTime?: string | null;
+  trackingTimeSeconds: number;
+  
+  // Template and archive flags
+  savedAsTemplate: boolean;
+  archived: boolean;
+  
+  // Counts for UI
+  _count?: {
+    subtasks: number;
+    comments: number;
+    attachments: number;
+  };
 }
 
-// User interface
+// User interface (matching Prisma schema)
 export interface User {
   id: string;
-  name: string;
   email: string;
-  avatarUrl?: string;
-  role?: UserRole;
+  name: string;
+  role: UserRole;
+  avatarUrl?: string | null;
+  lastLogin?: string | null;
+  createdAt: string;
+  updatedAt: string;
   preferences?: {
     theme?: 'light' | 'dark' | 'auto';
     defaultView?: 'dashboard' | 'kanban' | 'calendar' | 'backlog';
@@ -96,84 +110,110 @@ export interface User {
       email?: boolean;
       inApp?: boolean;
     };
-  };
+  } | null;
+  
+  // Google integration
+  googleId?: string | null;
+  googleToken?: string | null;
+  googleRefreshToken?: string | null;
+  googleProfile?: any | null;
+  googleConnected?: boolean;
 }
 
-// Comment interface 
+// Comment interface (matching Prisma schema)
 export interface Comment {
   id: string;
-  taskId: string;
-  authorId: string;
   text: string;
   createdAt: string;
-  updatedAt?: string | null;
-  mentions?: string[]; // User IDs mentioned in the comment
+  updatedAt: string;
+  taskId: string;
+  authorId: string;
+  author?: User;
+  parentId?: string | null;
+  parent?: Comment | null;
+  replies?: Comment[];
 }
 
-// Attachment interface
+// Attachment interface (matching Prisma schema)
 export interface Attachment {
   id: string;
-  taskId: string;
-  name: string;
+  fileName: string;
+  fileSize: number;
   fileType: string;
-  size: number;
-  url: string;
-  createdAt: string;
-  thumbnailUrl?: string;
+  filePath: string;
+  uploadedAt: string;
+  taskId: string;
+  
+  // Google Drive integration
+  googleDriveId?: string | null;
+  googleDriveUrl?: string | null;
+  
+  // Computed properties for frontend compatibility
+  name?: string; // alias for fileName
+  size?: number; // alias for fileSize
+  url?: string; // computed from filePath
+  createdAt?: string; // alias for uploadedAt
 }
 
-// Notification interface
+// Notification interface (matching Prisma schema)
 export interface Notification {
   id: string;
-  userId: string;
-  type: 'assignment' | 'mention' | 'comment' | 'due_soon' | 'status_change';
+  type: NotificationType;
+  title: string;
   message: string;
-  relatedTaskId?: string;
-  relatedCommentId?: string;
-  createdAt: string;
   read: boolean;
+  createdAt: string;
+  userId: string;
+  user?: User;
+  resourceType?: string | null;
+  resourceId?: string | null;
+  
+  // Computed properties for frontend compatibility
+  relatedTaskId?: string | null;
+  relatedCommentId?: string | null;
 }
 
-// Task Template interface
+// Task Template interface (matching Prisma schema)
 export interface TaskTemplate {
   id: string;
   name: string;
-  description?: string;
-  priority: TaskPriority;
-  tags?: string[];
-  estimatedHours?: number;
-  subtasks?: Subtask[];
-  category?: string; // For grouping templates
+  description?: string | null;
   createdAt: string;
-  updatedAt?: string;
-  createdBy?: string;
-  isPublic?: boolean; // Whether the template is available to all users
-  usageCount?: number; // How many times the template has been used
+  updatedAt: string;
+  priority: TaskPriority;
+  estimatedHours?: number | null;
+  tags: string[];
+  isPublic: boolean;
+  category?: string | null;
+  templateData: any; // JSON data for template structure
+  usageCount: number;
+  
+  // Future: creator relation
+  createdById?: string;
+  createdBy?: User;
 }
 
-// Filter interface
-export interface TaskFilter {
-  status?: TaskStatus[];
-  priority?: TaskPriority[];
-  assigneeId?: string[];
-  dueDate?: {
-    from?: string;
-    to?: string;
-  };
-  tags?: string[];
-}
-
-// Google integration types
+// Google Calendar Event interface (matching Prisma schema)
 export interface GoogleCalendarEvent {
   id: string;
+  googleEventId: string;
   title: string;
-  description?: string;
-  start: string;
-  end: string;
-  location?: string;
-  link: string;
+  description?: string | null;
+  startTime: string;
+  endTime: string;
+  location?: string | null;
+  meetingLink?: string | null;
+  userId: string;
+  taskId?: string | null;
+  lastSynced: string;
+  
+  // Computed properties for frontend compatibility
+  start?: string; // alias for startTime
+  end?: string; // alias for endTime
+  link?: string; // alias for meetingLink
 }
 
+// Google Drive File interface
 export interface GoogleDriveFile {
   id: string;
   name: string;
@@ -195,6 +235,7 @@ export interface LoginResponse {
   email: string;
   role: UserRole;
   token: string;
+  googleConnected?: boolean;
 }
 
 export interface RegisterRequest {
@@ -208,6 +249,18 @@ export interface RegisterResponse {
   id: string;
   name: string;
   email: string;
+}
+
+// Filter interface
+export interface TaskFilter {
+  status?: TaskStatus[];
+  priority?: TaskPriority[];
+  assigneeId?: string[];
+  dueDate?: {
+    from?: string;
+    to?: string;
+  };
+  tags?: string[];
 }
 
 // Input types for API procedures
@@ -238,7 +291,7 @@ export interface TaskCreateInput {
 
 export interface TaskUpdateInput {
   id: string;
-  data: Partial<Task>;
+  data: Partial<Omit<Task, 'id' | 'taskNumber' | 'createdAt' | 'updatedAt' | 'creator' | 'assignee' | 'parent' | 'subtasks' | '_count'>>;
 }
 
 export interface TaskDeleteInput {
@@ -274,7 +327,7 @@ export interface TemplateCreateInput {
 
 export interface TemplateUpdateInput {
   id: string;
-  data: Partial<TaskTemplate>;
+  data: Partial<Omit<TaskTemplate, 'id' | 'createdAt' | 'updatedAt' | 'usageCount' | 'createdBy'>>;
 }
 
 export interface TemplateDeleteInput {

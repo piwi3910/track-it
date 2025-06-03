@@ -90,7 +90,7 @@ export function GlobalSearch() {
       const mappedResults = (Array.isArray(searchResults) ? searchResults : []).map((task, index) => ({
         ...task,
         taskNumber: 'taskNumber' in task && typeof task.taskNumber === 'number' ? task.taskNumber : index + 1
-      })) as Task[];
+      })) as unknown as Task[];
       setResults(mappedResults);
     } catch (error) {
       console.error('Search failed:', error);
@@ -115,7 +115,7 @@ export function GlobalSearch() {
     saveSearch(query);
     
     // Navigate to the appropriate page based on task status
-    if (task.status === 'backlog') {
+    if (task.status === 'BACKLOG') {
       navigate(`/backlog?task=${task.taskNumber}`);
     } else {
       navigate(`/kanban?task=${task.taskNumber}`);

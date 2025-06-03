@@ -61,7 +61,7 @@ describe('Tasks API Integration Example', () => {
     // Generate test task data
     const taskData = generators.task({
       title: `Example Test Task ${Date.now()}`,
-      priority: 'high'
+      priority: 'HIGH'
     });
     
     // Create task
@@ -84,7 +84,7 @@ describe('Tasks API Integration Example', () => {
     
     // Create a test task with specific status
     const taskData = generators.task({
-      status: 'in_progress'
+      status: 'IN_PROGRESS'
     });
     
     const task = await testSetup.createTestTask(

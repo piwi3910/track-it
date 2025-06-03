@@ -41,15 +41,17 @@ export function NotificationMenu() {
   // Get icon for notification type - memoize to prevent recreation on every render
   const getNotificationIcon = useCallback((type: Notification['type']) => {
     switch (type) {
-      case 'assignment':
+      case 'TASK_ASSIGNED':
         return <IconUserPlus size={16} />;
-      case 'mention':
-      case 'comment':
+      case 'MENTION':
+      case 'COMMENT_ADDED':
         return <IconMessage size={16} />;
-      case 'due_soon':
+      case 'DUE_DATE_REMINDER':
         return <IconClock size={16} />;
-      case 'status_change':
+      case 'TASK_UPDATED':
         return <IconStatusChange size={16} />;
+      case 'SYSTEM':
+        return <IconBell size={16} />;
       default:
         return <IconBell size={16} />;
     }

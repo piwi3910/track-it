@@ -8,14 +8,14 @@ import {
   Divider,
   Stack,
   Image,
-  Alert,
-  TextInput,
-  PasswordInput
+  Alert
 } from '@mantine/core';
 import { IconAlertCircle, IconAt, IconLock } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useStore } from '@/hooks/useStore';
 import { AppButton } from '@/components/ui/AppButton';
+import { AppTextInput } from '@/components/ui/AppTextInput';
+import { AppPasswordInput } from '@/components/ui/AppPasswordInput';
 
 export default function LoginPage() {
   const { auth } = useStore();
@@ -127,21 +127,21 @@ export default function LoginPage() {
         )}
         
         <Stack gap="md">
-          <TextInput
+          <AppTextInput
             label="Email"
             placeholder="your@email.com"
             value={email}
             onChange={(event) => setEmail(event.currentTarget.value)}
-            leftSection={<IconAt size="1rem" />}
+            leftSection={<IconAt size={16} />}
             required
           />
           
-          <PasswordInput
+          <AppPasswordInput
             label="Password"
             placeholder="Your password"
             value={password}
             onChange={(event) => setPassword(event.currentTarget.value)}
-            leftSection={<IconLock size="1rem" />}
+            leftSection={<IconLock size={16} />}
             required
           />
           

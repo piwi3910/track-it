@@ -11,7 +11,7 @@ import LoginPage from '@/pages/LoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AuthErrorHandler from '@/components/AuthErrorHandler';
 import { useStore } from '@/hooks/useStore';
-import { ButtonComparison } from '@/components/ButtonComparison';
+import { UIComparison } from '@/components/UIComparison';
 
 function App() {
   const { auth } = useStore();
@@ -47,7 +47,7 @@ function App() {
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="admin" element={<AdminPage />} />
           <Route path="settings" element={<SettingsPage />} />
-          <Route path="ui-comparison" element={<ButtonComparison />} />
+          <Route path="ui-comparison" element={<UIComparison />} />
           {/* Catch all for unknown routes */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

@@ -2,19 +2,19 @@ import { useState } from 'react';
 import {
   Container,
   Title,
-  Tabs,
   Paper,
   Group,
   Text,
   Divider,
-  Switch,
   Select,
   TextInput,
-  Button,
   Accordion,
-  Badge,
   Stack
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AppTabs } from '@/components/ui/AppTabs';
+import { AppSwitch } from '@/components/ui/AppSwitch';
 import {
   IconUser,
   IconBrandGoogle,
@@ -79,25 +79,25 @@ export function SettingsPage() {
     <Container size="xl">
       <Title mb="xl">Settings</Title>
       
-      <Tabs value={activeTab} onChange={setActiveTab}>
-        <Tabs.List mb="xl">
-          <Tabs.Tab value="account" leftSection={<IconUser size={16} />}>
+      <AppTabs value={activeTab} onChange={setActiveTab}>
+        <AppTabs.List mb="xl">
+          <AppTabs.Tab value="account" leftSection={<IconUser size={16} />}>
             Account
-          </Tabs.Tab>
-          <Tabs.Tab value="notifications" leftSection={<IconBell size={16} />}>
+          </AppTabs.Tab>
+          <AppTabs.Tab value="notifications" leftSection={<IconBell size={16} />}>
             Notifications
-          </Tabs.Tab>
-          <Tabs.Tab value="appearance" leftSection={<IconPalette size={16} />}>
+          </AppTabs.Tab>
+          <AppTabs.Tab value="appearance" leftSection={<IconPalette size={16} />}>
             Appearance
-          </Tabs.Tab>
-          <Tabs.Tab 
+          </AppTabs.Tab>
+          <AppTabs.Tab 
             value="integrations" 
             leftSection={<IconBrandGoogle size={16} />}
             className="disabled coming-soon"
           >
             Integrations
-          </Tabs.Tab>
-        </Tabs.List>
+          </AppTabs.Tab>
+        </AppTabs.List>
         
         {/* Account Settings */}
         {activeTab === 'account' && (
@@ -123,14 +123,15 @@ export function SettingsPage() {
                   />
                   
                   <Group mt="md">
-                    <Badge color="blue">{currentUser.role?.toUpperCase() || 'MEMBER'}</Badge>
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{currentUser.role?.toUpperCase() || 'MEMBER'}</Badge>
                   </Group>
                   
                   <Divider my="md" />
                   
                   <Group justify="space-between">
                     <Button variant="outline">Change Password</Button>
-                    <Button color="red" leftSection={<IconLogout size={16} />}>
+                    <Button variant="destructive">
+                      <IconLogout size={16} className="mr-2 h-4 w-4" />
                       Sign Out
                     </Button>
                   </Group>
@@ -155,7 +156,7 @@ export function SettingsPage() {
                     <Stack>
                       <Group justify="space-between">
                         <Text>Receive email notifications</Text>
-                        <Switch 
+                        <AppSwitch 
                           checked={emailNotifications} 
                           onChange={(e) => setEmailNotifications(e.currentTarget.checked)} 
                         />
@@ -165,22 +166,22 @@ export function SettingsPage() {
                       
                       <Group justify="space-between">
                         <Text>Task assignments</Text>
-                        <Switch defaultChecked disabled={!emailNotifications} />
+                        <AppSwitch defaultChecked disabled={!emailNotifications} />
                       </Group>
                       
                       <Group justify="space-between">
                         <Text>Task due date reminders</Text>
-                        <Switch defaultChecked disabled={!emailNotifications} />
+                        <AppSwitch defaultChecked disabled={!emailNotifications} />
                       </Group>
                       
                       <Group justify="space-between">
                         <Text>Mentions in comments</Text>
-                        <Switch defaultChecked disabled={!emailNotifications} />
+                        <AppSwitch defaultChecked disabled={!emailNotifications} />
                       </Group>
                       
                       <Group justify="space-between">
                         <Text>Status changes</Text>
-                        <Switch disabled={!emailNotifications} />
+                        <AppSwitch disabled={!emailNotifications} />
                       </Group>
                     </Stack>
                   </Accordion.Panel>
@@ -194,7 +195,7 @@ export function SettingsPage() {
                     <Stack>
                       <Group justify="space-between">
                         <Text>Show in-app notifications</Text>
-                        <Switch 
+                        <AppSwitch 
                           checked={inAppNotifications} 
                           onChange={(e) => setInAppNotifications(e.currentTarget.checked)} 
                         />
@@ -204,27 +205,27 @@ export function SettingsPage() {
                       
                       <Group justify="space-between">
                         <Text>Task assignments</Text>
-                        <Switch defaultChecked disabled={!inAppNotifications} />
+                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
                       </Group>
                       
                       <Group justify="space-between">
                         <Text>Comments on your tasks</Text>
-                        <Switch defaultChecked disabled={!inAppNotifications} />
+                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
                       </Group>
                       
                       <Group justify="space-between">
                         <Text>Mentions in comments</Text>
-                        <Switch defaultChecked disabled={!inAppNotifications} />
+                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
                       </Group>
                       
                       <Group justify="space-between">
                         <Text>Status changes</Text>
-                        <Switch defaultChecked disabled={!inAppNotifications} />
+                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
                       </Group>
                       
                       <Group justify="space-between">
                         <Text>Due date reminders</Text>
-                        <Switch defaultChecked disabled={!inAppNotifications} />
+                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
                       </Group>
                     </Stack>
                   </Accordion.Panel>
@@ -245,7 +246,7 @@ export function SettingsPage() {
                   <Text>Dark Mode</Text>
                   <Text size="sm" c="dimmed">Enable dark mode for the application</Text>
                 </div>
-                <Switch 
+                <AppSwitch 
                   checked={isDark} 
                   onChange={toggleColorScheme}
                   size="lg"
@@ -279,7 +280,7 @@ export function SettingsPage() {
         {activeTab === 'integrations' && (
           <GoogleIntegrationPanel />
         )}
-      </Tabs>
+      </AppTabs>
     </Container>
   );
 }

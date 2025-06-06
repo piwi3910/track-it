@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import {
   TextInput,
-  Button,
   Group,
   ActionIcon,
   Paper,
   Select,
   Popover,
   TagsInput,
-  Tooltip,
 } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Button } from '@/components/ui/button';
+import { AppTooltip } from '@/components/ui/AppTooltip';
+import { notifications } from '@/components/ui/notifications';
 import { DatePickerInput } from '@mantine/dates';
 import {
   IconPlus,
@@ -187,7 +187,7 @@ export default function QuickAddTask({
           onChange={setDetailsOpen}
         >
           <Popover.Target>
-            <Tooltip label="More details" withArrow position="top">
+            <AppTooltip label="More details" withArrow position="top">
               <span style={{ display: 'inline-block' }}>
                 <ActionIcon
                   color="gray"
@@ -197,7 +197,7 @@ export default function QuickAddTask({
                   <IconPlus size={16} />
                 </ActionIcon>
               </span>
-            </Tooltip>
+            </AppTooltip>
           </Popover.Target>
           <Popover.Dropdown>
             <Group mb="xs" grow>

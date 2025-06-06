@@ -16,7 +16,7 @@ import {
   Box,
   Loader,
 } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/components/ui/notifications';
 import {
   IconSearch,
   IconFilter,

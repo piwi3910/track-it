@@ -1,17 +1,17 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Menu,
   ActionIcon,
   Text,
   Group,
   Divider,
-  Button,
   ScrollArea,
   Indicator,
   Stack,
   Loader
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { AppMenu } from '@/components/ui/AppMenu';
 import {
   IconBell,
   IconCheck,
@@ -97,13 +97,13 @@ export function NotificationMenu() {
   }, []);
   
   return (
-    <Menu
+    <AppMenu
       position="bottom-end"
       width={320}
       opened={menuOpened}
       onChange={setMenuOpened}
     >
-      <Menu.Target>
+      <AppMenu.Target>
         <Indicator
           disabled={unreadCount === 0}
           color="red"
@@ -119,19 +119,20 @@ export function NotificationMenu() {
             <IconBell size={18} />
           </ActionIcon>
         </Indicator>
-      </Menu.Target>
+      </AppMenu.Target>
       
-      <Menu.Dropdown>
+      <AppMenu.Dropdown>
         <Group justify="space-between" p="xs">
           <Text fw={600}>Notifications</Text>
           {unreadCount > 0 && (
             <Button 
-              variant="subtle" 
-              size="xs" 
+              variant="ghost" 
+              size="sm" 
+              className="h-6 text-xs"
               onClick={() => markAllAsRead()}
-              rightSection={<IconCheck size={14} />}
             >
               Mark all as read
+              <IconCheck size={14} className="ml-2 h-4 w-4" />
             </Button>
           )}
         </Group>
@@ -146,7 +147,7 @@ export function NotificationMenu() {
         ) : error ? (
           <Stack align="center" py="md">
             <Text size="sm" c="red">{error.message}</Text>
-            <Button size="xs" onClick={clearError}>Dismiss</Button>
+            <Button size="sm" className="h-6 text-xs" onClick={clearError}>Dismiss</Button>
           </Stack>
         ) : notifications.length === 0 ? (
           <Stack align="center" py="md">
@@ -158,7 +159,7 @@ export function NotificationMenu() {
             <ScrollArea h={400} offsetScrollbars>
               <Stack gap={0}>
                 {notifications.map(notification => (
-                  <Menu.Item
+                  <AppMenu.Item
                     key={notification.id}
                     leftSection={getNotificationIcon(notification.type)}
                     style={{
@@ -173,22 +174,22 @@ export function NotificationMenu() {
                     <Text size="xs" c="dimmed">
                       {formatRelativeTime(notification.createdAt)}
                     </Text>
-                  </Menu.Item>
+                  </AppMenu.Item>
                 ))}
               </Stack>
             </ScrollArea>
             
             <Divider />
             
-            <Menu.Item
+            <AppMenu.Item
               leftSection={<IconSettings size={16} />}
               onClick={() => navigate('/settings')}
             >
               Notification settings
-            </Menu.Item>
+            </AppMenu.Item>
           </>
         )}
-      </Menu.Dropdown>
-    </Menu>
+      </AppMenu.Dropdown>
+    </AppMenu>
   );
 }

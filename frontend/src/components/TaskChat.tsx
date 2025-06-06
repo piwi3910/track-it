@@ -6,18 +6,18 @@ import {
   Avatar,
   Stack,
   Textarea,
-  Button,
   ActionIcon,
-  Menu,
   Divider,
   ScrollArea,
-  Badge,
   Popover,
-  Tooltip,
   Loader,
   Box,
   Anchor
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AppTooltip } from '@/components/ui/AppTooltip';
+import { AppMenu } from '@/components/ui/AppMenu';
 import {
   IconSend,
   IconPaperclip,
@@ -36,7 +36,7 @@ import { useApp } from '@/hooks/useApp';
 import { useGoogle } from '@/hooks/useGoogle';
 import { api } from '@/api';
 import { Comment, Attachment, User } from '@/types/task';
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/components/ui/notifications';
 import { useTheme } from '@/hooks/useTheme';;
 
 interface TaskChatProps {
@@ -352,7 +352,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
       if (mentionedUser) {
         // Add styled mention
         parts.push(
-          <Badge key={`${startIndex}-${username}`} color="blue" variant="light">
+          <Badge key={`${startIndex}-${username}`} variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
             @{username}
           </Badge>
         );
@@ -574,15 +574,15 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                           </Text>
                           
                           {isCurrentUser && (
-                            <Menu position="bottom-end" withArrow>
-                              <Menu.Target>
+                            <AppMenu position="bottom-end" withArrow>
+                              <AppMenu.Target>
                                 <ActionIcon size="xs" variant="subtle">
                                   <IconDotsVertical size={12} />
                                 </ActionIcon>
-                              </Menu.Target>
+                              </AppMenu.Target>
                               
-                              <Menu.Dropdown>
-                                <Menu.Item
+                              <AppMenu.Dropdown>
+                                <AppMenu.Item
                                   leftSection={<IconEdit size={14} />}
                                   onClick={() => {
                                     setEditingComment(comment.id);
@@ -590,16 +590,16 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                                   }}
                                 >
                                   Edit
-                                </Menu.Item>
-                                <Menu.Item
+                                </AppMenu.Item>
+                                <AppMenu.Item
                                   leftSection={<IconTrash size={14} />}
                                   color="red"
                                   onClick={() => handleDeleteComment(comment.id)}
                                 >
                                   Delete
-                                </Menu.Item>
-                              </Menu.Dropdown>
-                            </Menu>
+                                </AppMenu.Item>
+                              </AppMenu.Dropdown>
+                            </AppMenu>
                           )}
                         </Group>
                       </Group>
@@ -614,8 +614,9 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                           />
                           <Group justify="flex-end">
                             <Button 
-                              variant="subtle" 
-                              size="xs"
+                              variant="ghost" 
+                              size="sm"
+                              className="h-6 text-xs"
                               onClick={() => {
                                 setEditingComment(null);
                                 setEditText('');
@@ -624,7 +625,8 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                               Cancel
                             </Button>
                             <Button 
-                              size="xs"
+                              size="sm"
+                              className="h-6 text-xs"
                               onClick={() => handleEditComment(comment.id)}
                             >
                               Save
@@ -716,18 +718,16 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
               filteredUsers.map(user => (
                 <Button
                   key={user.id}
-                  variant="subtle"
-                  leftSection={
-                    <Avatar 
-                      src={user.avatarUrl} 
-                      size="xs" 
-                      radius="xl"
-                    />
-                  }
+                  variant="ghost"
                   onClick={() => handleSelectMention(user.name.replace(/\s+/g, ''))}
-                  fullWidth
-                  justify="flex-start"
+                  className="w-full justify-start"
                 >
+                  <Avatar 
+                    src={user.avatarUrl} 
+                    size="xs" 
+                    radius="xl"
+                    className="mr-2 h-4 w-4"
+                  />
                   {user.name}
                 </Button>
               ))
@@ -751,14 +751,14 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                 pointerEvents: 'none'
               }}
             >
-              <Tooltip label="Drop files here to upload">
+              <AppTooltip label="Drop files here to upload">
                 <span style={{ display: 'inline-block' }}>
                   <Group gap={6} opacity={0.6}>
                     <IconDragDrop size={16} />
                     <Text size="xs">Drop files here to upload</Text>
                   </Group>
                 </span>
-              </Tooltip>
+              </AppTooltip>
             </div>
           )}
         </div>
@@ -773,7 +773,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
             shadow="md"
           >
             <Popover.Target>
-              <Tooltip label="Attach from Google Drive">
+              <AppTooltip label="Attach from Google Drive">
                 <span style={{ display: 'inline-block' }}>
                   <ActionIcon
                     variant="light"
@@ -792,7 +792,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                   <IconBrandGoogleDrive size={18} />
                 </ActionIcon>
                 </span>
-              </Tooltip>
+              </AppTooltip>
             </Popover.Target>
             
             <Popover.Dropdown>
@@ -804,16 +804,15 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                       {driveFiles.map(file => (
                         <Button
                           key={file.id}
-                          variant="subtle"
-                          leftSection={<IconFileText size={14} />}
+                          variant="ghost"
                           onClick={() => handleDriveAttachment({
                             id: file.id,
                             name: file.name,
                             url: file.webViewLink
                           })}
-                          fullWidth
-                          justify="flex-start"
+                          className="w-full justify-start"
                         >
+                          <IconFileText size={14} className="mr-2 h-4 w-4" />
                           {file.name}
                         </Button>
                       ))}
@@ -828,7 +827,7 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
             </Popover.Dropdown>
           </Popover>
           
-          <Tooltip label="Attach file">
+          <AppTooltip label="Attach file">
             <span style={{ display: 'inline-block' }}>
               <div>
                 <input
@@ -846,14 +845,14 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                 </ActionIcon>
               </div>
             </span>
-          </Tooltip>
+          </AppTooltip>
           
           <Button
             disabled={!message.trim()}
             onClick={handleSubmit}
-            rightSection={<IconSend size={14} />}
           >
             Send
+            <IconSend size={14} className="ml-2 h-4 w-4" />
           </Button>
         </Group>
       </Group>

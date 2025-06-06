@@ -1,26 +1,26 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal,
-  Button,
   TextInput,
   Textarea,
   Select,
   Group,
   Stack,
   TagsInput,
-  Tabs,
   Paper,
-  Checkbox,
   ActionIcon,
   NumberInput,
   Divider,
   Text,
   Avatar,
-  Switch,
-  Badge,
-  Tooltip,
   Progress
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AppModal } from '@/components/ui/AppModal';
+import { AppTooltip } from '@/components/ui/AppTooltip';
+import { AppTabs } from '@/components/ui/AppTabs';
+import { AppSwitch } from '@/components/ui/AppSwitch';
+import { AppCheckbox } from '@/components/ui/AppCheckbox';
 import { DatePickerInput } from '@mantine/dates';
 import {
   IconPlus,
@@ -358,7 +358,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
 
 
   return (
-    <Modal
+    <AppModal
       opened={opened}
       onClose={onClose}
       zIndex={200}
@@ -369,7 +369,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
           <Text>{task ? 'Edit Task' : 'Create New Task'}</Text>
           {task && task.id && (
             <Group gap={4}>
-              <Badge size="sm" variant="outline" color="gray" style={{ cursor: 'pointer' }}
+              <Badge variant="outline" className="text-sm" style={{ cursor: 'pointer' }}
                 onClick={() => {
                   navigator.clipboard.writeText(task.id);
                   alert('ID copied to clipboard!');
@@ -377,7 +377,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
               >
                 {task.id.replace('task', '')}
               </Badge>
-              <Tooltip label="Copy ID to clipboard">
+              <AppTooltip label="Copy ID to clipboard">
                 <span style={{ display: 'inline-block' }}>
                   <ActionIcon
                     size="xs"
@@ -390,7 +390,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                     <IconCopy size={14} />
                   </ActionIcon>
                 </span>
-              </Tooltip>
+              </AppTooltip>
             </Group>
           )}
         </Group>
@@ -398,38 +398,38 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       size="xl"
     >
       <Group justify="space-between" mb="md">
-        <Tabs value={activeTab} onChange={setActiveTab} style={{ flex: 1 }}>
-          <Tabs.List>
-            <Tabs.Tab value="details">Details</Tabs.Tab>
-            <Tabs.Tab value="subtasks">
+        <AppTabs value={activeTab} onChange={setActiveTab} style={{ flex: 1 }}>
+          <AppTabs.List>
+            <AppTabs.Tab value="details">Details</AppTabs.Tab>
+            <AppTabs.Tab value="subtasks">
               <Group gap={4}>
                 <IconSubtask size={16} />
                 <Text>Subtasks {formData.subtasks.length > 0 ? `(${formData.subtasks.length})` : ''}</Text>
               </Group>
-            </Tabs.Tab>
-            <Tabs.Tab value="recurrence">
+            </AppTabs.Tab>
+            <AppTabs.Tab value="recurrence">
               <Group gap={4}>
                 <IconRepeat size={16} />
                 <Text>Recurrence {formData.isRecurring ? '(Active)' : ''}</Text>
               </Group>
-            </Tabs.Tab>
+            </AppTabs.Tab>
             {task && task.id && (
               <>
-                <Tabs.Tab value="time">Time Tracking</Tabs.Tab>
-                <Tabs.Tab value="conversation">
+                <AppTabs.Tab value="time">Time Tracking</AppTabs.Tab>
+                <AppTabs.Tab value="conversation">
                   <Group gap={4}>
                     <IconMessageCircle2 size={16} />
                     <Text>Conversation {commentCount > 0 && (
-                      <Badge size="sm" variant="filled" color="blue" ml={5}>
+                      <Badge className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ml-1">
                         {commentCount}
                       </Badge>
                     )}</Text>
                   </Group>
-                </Tabs.Tab>
+                </AppTabs.Tab>
               </>
             )}
-          </Tabs.List>
-        </Tabs>
+          </AppTabs.List>
+        </AppTabs>
 
         {/* Template save button - DISABLED */}
         {/* {task && task.id && (
@@ -440,7 +440,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
             position="bottom-end"
           >
             <Popover.Target>
-              <Button
+              <AppButton
                 variant="light"
                 leftSection={<IconTemplate size={16} />}
                 onClick={() => {
@@ -449,7 +449,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                 }}
               >
                 Save as Template
-              </Button>
+              </AppButton>
             </Popover.Target>
             <Popover.Dropdown>
               <Stack>
@@ -462,21 +462,21 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                   required
                 />
                 <Group justify="flex-end">
-                  <Button
+                  <AppButton
                     variant="subtle"
                     onClick={() => setSaveAsTemplateOpen(false)}
                     size="xs"
                   >
                     Cancel
-                  </Button>
-                  <Button
+                  </AppButton>
+                  <AppButton
                     leftSection={<IconDeviceFloppy size={14} />}
                     onClick={handleSaveAsTemplate}
                     disabled={!templateName.trim()}
                     size="xs"
                   >
                     Save
-                  </Button>
+                  </AppButton>
                 </Group>
               </Stack>
             </Popover.Dropdown>
@@ -533,7 +533,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
             </Group>
 
             <Group align="flex-start">
-              <Switch
+              <AppSwitch
                 label="Multi-day task"
                 checked={formData.isMultiDay}
                 onChange={(event) => handleChange('isMultiDay', event.currentTarget.checked)}
@@ -661,7 +661,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                     })
                     .map((subtask) => (
                       <Group key={subtask.id} gap="md" align="flex-start">
-                        <Checkbox
+                        <AppCheckbox
                           checked={subtask.completed}
                           onChange={(e) => handleSubtaskChange(subtask.id, 'completed', e.currentTarget.checked)}
                           style={{ marginTop: 8 }}
@@ -695,10 +695,10 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
               )}
 
               <Button
-                leftSection={<IconPlus size={14} />}
                 variant="outline"
                 onClick={handleAddSubtask}
               >
+                <IconPlus size={14} className="mr-2 h-4 w-4" />
                 Add Subtask
               </Button>
             </Stack>
@@ -717,7 +717,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
             <Stack gap="md">
               <Group justify="space-between">
                 <Text fw={500}>Recurring Task</Text>
-                <Switch
+                <AppSwitch
                   label="Enable recurrence"
                   checked={formData.isRecurring}
                   onChange={(e) => handleToggleRecurrence(e.currentTarget.checked)}
@@ -762,8 +762,8 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                           return (
                             <Badge
                               key={day}
-                              variant={isSelected ? 'filled' : 'outline'}
-                              color={isSelected ? 'blue' : 'gray'}
+                              variant={isSelected ? 'default' : 'outline'}
+                              className={isSelected ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : ''}
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
                                 const currentDays = formData.recurrence?.daysOfWeek || [];
@@ -891,6 +891,6 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
           </Group>
         </Stack>
       )}
-    </Modal>
+    </AppModal>
   );
 }

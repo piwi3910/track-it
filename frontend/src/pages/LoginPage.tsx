@@ -7,15 +7,15 @@ import {
   Group,
   Divider,
   Stack,
-  Image,
-  Alert
+  Image
 } from '@mantine/core';
 import { IconAlertCircle, IconAt, IconLock } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useStore } from '@/hooks/useStore';
-import { AppButton } from '@/components/ui/AppButton';
+import { Button } from '@/components/ui/button';
 import { AppTextInput } from '@/components/ui/AppTextInput';
 import { AppPasswordInput } from '@/components/ui/AppPasswordInput';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function LoginPage() {
   const { auth } = useStore();
@@ -105,24 +105,27 @@ export default function LoginPage() {
         </Stack>
 
         {isRedirected && !error && (
-          <Alert 
-            color="blue" 
-            mb="md"
-          >
-            Please log in to access {location.state.from.pathname}
+          <Alert className="mb-4">
+            <AlertDescription>
+              Please log in to access {location.state.from.pathname}
+            </AlertDescription>
           </Alert>
         )}
 
         {error && (
-          <Alert 
-            icon={<IconAlertCircle size="1rem" />} 
-            title="Authentication Error" 
-            color="red" 
-            mb="md"
-            withCloseButton
-            onClose={() => setError(null)}
-          >
-            {error}
+          <Alert variant="destructive" className="mb-4">
+            <IconAlertCircle className="h-4 w-4" />
+            <AlertTitle>Authentication Error</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-2 hover:opacity-70"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </AlertDescription>
           </Alert>
         )}
         
@@ -145,15 +148,20 @@ export default function LoginPage() {
             required
           />
           
-          <AppButton
-            fullWidth
-            mt="md"
-            loading={loading}
+          <Button
+            className="w-full mt-4"
             onClick={handlePasswordLogin}
-            disabled={!email || !password}
+            disabled={!email || !password || loading}
           >
-            Sign in
-          </AppButton>
+            {loading ? (
+              <>
+                <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                Loading...
+              </>
+            ) : (
+              'Sign in'
+            )}
+          </Button>
           
           <Text size="xs" c="dimmed" ta="center">
             Default credentials: demo@example.com / password123

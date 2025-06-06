@@ -3,22 +3,22 @@ import {
   Container,
   Title,
   Group,
-  Button,
   Grid,
   Paper,
   Text,
   Stack,
   Card,
-  Badge,
   Loader,
   useMantineTheme,
   ActionIcon,
-  Modal,
   ScrollArea,
   Divider,
   Notification,
   Box,
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AppModal } from '@/components/ui/AppModal';
 import { MonthPickerInput, DatePickerInput } from '@mantine/dates';
 import {
   IconPlus,
@@ -196,7 +196,7 @@ function DayDetailModal({
   const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
 
   return (
-    <Modal
+    <AppModal
       opened={opened}
       onClose={onClose}
       title={
@@ -204,7 +204,7 @@ function DayDetailModal({
           <IconCalendarTime size={20} />
           <Text fw={600}>
             {formattedDate}
-            {isToday && <Badge ml="sm" color="green">Today</Badge>}
+            {isToday && <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 ml-2">Today</Badge>}
           </Text>
         </Group>
       }
@@ -213,10 +213,10 @@ function DayDetailModal({
       <Stack gap="md">
         <Group justify="flex-end">
           <Button
-            leftSection={<IconPlus size={14} />}
             onClick={() => onAddTask(day)}
             disabled={isPast}
           >
+            <IconPlus size={14} className="mr-2 h-4 w-4" />
             Add Task
           </Button>
         </Group>
@@ -227,7 +227,7 @@ function DayDetailModal({
               <IconListDetails size={40} opacity={0.3} />
               <Text c="dimmed">No tasks for this day</Text>
               {!isPast && (
-                <Button variant="light" onClick={() => onAddTask(day)} mt="sm">
+                <Button variant="secondary" onClick={() => onAddTask(day)} className="mt-4">
                   Add a task
                 </Button>
               )}
@@ -300,28 +300,32 @@ function DayDetailModal({
                         <Group justify="space-between" wrap="nowrap">
                           <div>
                             <Group gap="xs" wrap="nowrap">
-                              <Badge color={
-                                task.priority === 'high' ? 'orange' :
-                                task.priority === 'urgent' ? 'red' :
-                                task.priority === 'medium' ? 'yellow' :
-                                'blue'
-                              } size="xs">
+                              <Badge 
+                                variant={task.priority === 'urgent' ? 'destructive' : 'secondary'}
+                                className={`text-xs h-5 ${
+                                  task.priority === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                  task.priority === 'low' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                  ''
+                                }`}>
                                 {task.priority}
                               </Badge>
-                              <Badge size="xs" color={
-                                task.status === 'done' ? 'green' :
-                                task.status === 'in_progress' ? 'blue' :
-                                task.status === 'in_review' ? 'grape' :
-                                task.status === 'todo' ? 'yellow' :
-                                'gray'
-                              }>
+                              <Badge 
+                                className={`text-xs h-5 ${
+                                  task.status === 'done' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                  task.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                  task.status === 'in_review' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                  task.status === 'todo' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                  ''
+                                }`}
+                                variant="secondary">
                                 {task.status.replace('_', ' ')}
                               </Badge>
                             </Group>
                             <Text fw={500} mt="xs">{task.title}</Text>
                             {task.isMultiDay && (
                               <Group gap={4} mt={4}>
-                                <Badge size="xs" color="blue">Multi-day</Badge>
+                                <Badge className="text-xs h-5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Multi-day</Badge>
                                 <Text size="xs" c="dimmed">
                                   {task.startDate && task.endDate
                                     ? `${new Date(task.startDate).toLocaleDateString()} - ${new Date(task.endDate).toLocaleDateString()}`
@@ -351,7 +355,7 @@ function DayDetailModal({
                               {task.tags && task.tags.length > 0 && (
                                 <Group gap={4}>
                                   {task.tags.map(tag => (
-                                    <Badge key={tag} size="xs" variant="outline" color="gray">
+                                    <Badge key={tag} variant="outline" className="text-xs h-5">
                                       {tag}
                                     </Badge>
                                   ))}
@@ -375,7 +379,7 @@ function DayDetailModal({
           </Stack>
         )}
       </Stack>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -470,7 +474,7 @@ function DayCell({
           >
             {day.getDate()}
           </Text>
-          {isToday && <Badge size="xs" color="green">Today</Badge>}
+          {isToday && <Badge className="text-xs h-5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Today</Badge>}
         </Group>
 
         {/* Render the task items */}
@@ -516,7 +520,7 @@ function DayCell({
                 {day.toLocaleDateString(undefined, { weekday: 'long', month: 'short' })}
               </Text>
             </Group>
-            {isToday && <Badge color="green">Today</Badge>}
+            {isToday && <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Today</Badge>}
           </Group>
           
           <Divider mb="xs" />
@@ -588,21 +592,25 @@ function DayCell({
                         <Group justify="space-between" wrap="nowrap">
                           <div>
                             <Group gap="xs" wrap="nowrap">
-                              <Badge color={
-                                task.priority === 'high' ? 'orange' :
-                                task.priority === 'urgent' ? 'red' :
-                                task.priority === 'medium' ? 'yellow' :
-                                'blue'
-                              } size="xs">
+                              <Badge 
+                                variant={task.priority === 'urgent' ? 'destructive' : 'secondary'}
+                                className={`text-xs h-5 ${
+                                  task.priority === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                  task.priority === 'low' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                  ''
+                                }`}>
                                 {task.priority}
                               </Badge>
-                              <Badge size="xs" color={
-                                task.status === 'done' ? 'green' :
-                                task.status === 'in_progress' ? 'blue' :
-                                task.status === 'in_review' ? 'grape' :
-                                task.status === 'todo' ? 'yellow' :
-                                'gray'
-                              }>
+                              <Badge 
+                                className={`text-xs h-5 ${
+                                  task.status === 'done' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                  task.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                  task.status === 'in_review' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                  task.status === 'todo' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                  ''
+                                }`}
+                                variant="secondary">
                                 {task.status.replace('_', ' ')}
                               </Badge>
                             </Group>
@@ -632,15 +640,14 @@ function DayCell({
             </Stack>
             
             <Button 
-              fullWidth 
-              variant="light" 
-              mt="md" 
-              leftSection={<IconListDetails size={16} />}
+              className="w-full mt-4" 
+              variant="secondary" 
               onClick={(e) => {
                 e.stopPropagation();
                 onDateClick();
               }}
             >
+              <IconListDetails size={16} className="mr-2 h-4 w-4" />
               View all details
             </Button>
           </ScrollArea.Autosize>
@@ -868,29 +875,32 @@ export function CalendarPage() {
         <Title>Calendar</Title>
         <Group>
           <Group>
-            <Button.Group>
+            <Group gap={0}>
               <Button
-                variant={viewType === 'month' ? 'filled' : 'light'}
+                variant={viewType === 'month' ? 'default' : 'secondary'}
                 onClick={() => setViewType('month')}
-                leftSection={<IconCalendarMonth size={16} />}
+                style={{ borderRadius: '4px 0 0 4px' }}
               >
+                <IconCalendarMonth size={16} className="mr-2 h-4 w-4" />
                 Month
               </Button>
               <Button
-                variant={viewType === 'week' ? 'filled' : 'light'}
+                variant={viewType === 'week' ? 'default' : 'secondary'}
                 onClick={() => setViewType('week')}
-                leftSection={<IconCalendarWeek size={16} />}
+                style={{ borderRadius: 0, borderLeft: 0, borderRight: 0 }}
               >
+                <IconCalendarWeek size={16} className="mr-2 h-4 w-4" />
                 Week
               </Button>
               <Button
-                variant={viewType === 'day' ? 'filled' : 'light'}
+                variant={viewType === 'day' ? 'default' : 'secondary'}
                 onClick={() => setViewType('day')}
-                leftSection={<IconCalendar size={16} />}
+                style={{ borderRadius: '0 4px 4px 0' }}
               >
+                <IconCalendar size={16} className="mr-2 h-4 w-4" />
                 Day
               </Button>
-            </Button.Group>
+            </Group>
           </Group>
 
           <Group>
@@ -1047,7 +1057,7 @@ export function CalendarPage() {
                         <Text fw={isToday ? 700 : 400} size={isToday ? "md" : "sm"}>
                           {day.getDate()}
                         </Text>
-                        {isToday && <Badge size="xs" color="green">Today</Badge>}
+                        {isToday && <Badge className="text-xs h-5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Today</Badge>}
                       </Group>
 
                     <Droppable droppableId={`day-${day.toISOString().split('T')[0]}`} type="task">
@@ -1149,7 +1159,7 @@ export function CalendarPage() {
                                       >
                                         <Group gap={4} wrap="nowrap" align="center">
                                           {isMultiDay && (
-                                            <Badge size="xs" color="blue" radius={0} style={{ padding: '2px 4px' }}>
+                                            <Badge className="text-xs h-5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-none" style={{ padding: '2px 4px' }}>
                                               {task._isFirstDay ? 'Start' : task._isLastDay ? 'End' : 'Day ' + (task._totalDays && task._totalDays > 3 ? Math.floor(task._totalDays / 2) : '')}
                                             </Badge>
                                           )}
@@ -1459,11 +1469,11 @@ export function CalendarPage() {
 
                           {/* Add task button */}
                           <Button
-                            leftSection={<IconPlus size={14} />}
-                            variant="light"
-                            mt="md"
+                            variant="secondary"
+                            className="mt-4"
                             onClick={() => date && handleAddTaskForDay(date)}
                           >
+                            <IconPlus size={14} className="mr-2 h-4 w-4" />
                             Add Task
                           </Button>
                         </Paper>

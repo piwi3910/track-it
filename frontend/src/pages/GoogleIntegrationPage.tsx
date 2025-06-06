@@ -6,7 +6,6 @@ import {
   Button,
   Paper,
   Group,
-  Tabs,
   Card,
   Stack,
   Loader,
@@ -16,6 +15,7 @@ import {
   Image,
   List
 } from '@mantine/core';
+import { AppTabs } from '@/components/ui/AppTabs';
 import {
   IconCalendar,
   IconChecklist,
@@ -29,7 +29,7 @@ import {
 } from '@tabler/icons-react';
 import { useGoogle } from '@/hooks/useGoogle';;
 import { useApp } from '@/hooks/useApp';
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/components/ui/notifications';
 import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';
 
 export function GoogleIntegrationPage() {
@@ -170,19 +170,19 @@ export function GoogleIntegrationPage() {
         </Paper>
       ) : (
         <>
-          <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'calendar')} mb="lg">
-            <Tabs.List>
-              <Tabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>
+          <AppTabs value={activeTab} onChange={(value) => setActiveTab(value || 'calendar')} mb="lg">
+            <AppTabs.List>
+              <AppTabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>
                 Calendar
-              </Tabs.Tab>
-              <Tabs.Tab value="tasks" leftSection={<IconChecklist size={16} />}>
+              </AppTabs.Tab>
+              <AppTabs.Tab value="tasks" leftSection={<IconChecklist size={16} />}>
                 Tasks
-              </Tabs.Tab>
-              <Tabs.Tab value="drive" leftSection={<IconFileDescription size={16} />}>
+              </AppTabs.Tab>
+              <AppTabs.Tab value="drive" leftSection={<IconFileDescription size={16} />}>
                 Drive
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs>
+              </AppTabs.Tab>
+            </AppTabs.List>
+          </AppTabs>
           
           {activeTab === 'calendar' && (
             <Paper p="md" withBorder>

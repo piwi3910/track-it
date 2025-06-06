@@ -1,16 +1,16 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Group,
-  Button,
   Text,
-  Modal,
   Stack,
   FileInput,
-  Alert,
   Image,
   Center,
   Box
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { AppModal } from '@/components/ui/AppModal';
+import { AppAlert } from '@/components/ui/AppAlert';
 import {
   IconCamera,
   IconUpload,
@@ -20,7 +20,7 @@ import {
   IconAlertCircle
 } from '@tabler/icons-react';
 import { InitialsAvatar } from './InitialsAvatar';
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/components/ui/notifications';
 
 interface ProfilePictureUploadProps {
   currentAvatarUrl?: string | null;
@@ -201,29 +201,29 @@ export function ProfilePictureUpload({
         
         <Stack gap="xs">
           <Button
-            variant="light"
+            variant="secondary"
             size="sm"
-            leftSection={<IconUpload size={16} />}
             onClick={() => setIsModalOpen(true)}
           >
+            <IconUpload size={16} className="mr-2 h-4 w-4" />
             Change Picture
           </Button>
           
           {currentAvatarUrl && (
             <Button
-              variant="subtle"
+              variant="ghost"
               size="sm"
-              color="red"
-              leftSection={<IconTrash size={16} />}
+              className="text-red-600 hover:text-red-700"
               onClick={handleRemoveAvatar}
             >
+              <IconTrash size={16} className="mr-2 h-4 w-4" />
               Remove Picture
             </Button>
           )}
         </Stack>
       </Group>
 
-      <Modal
+      <AppModal
         opened={isModalOpen}
         onClose={handleCloseModal}
         title="Update Profile Picture"
@@ -232,14 +232,14 @@ export function ProfilePictureUpload({
       >
         <Stack gap="md">
           {error && (
-            <Alert
+            <AppAlert
               icon={<IconAlertCircle size={16} />}
               color="red"
               onClose={() => setError(null)}
               withCloseButton
             >
               {error}
-            </Alert>
+            </AppAlert>
           )}
 
           {previewUrl ? (
@@ -259,16 +259,22 @@ export function ProfilePictureUpload({
                 <Button
                   variant="outline"
                   onClick={() => setPreviewUrl(null)}
-                  leftSection={<IconX size={16} />}
                 >
+                  <IconX size={16} className="mr-2 h-4 w-4" />
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveAvatar}
-                  loading={isUploading}
-                  leftSection={<IconCheck size={16} />}
+                  disabled={isUploading}
                 >
-                  Save Picture
+                  {isUploading ? (
+                    <>Loading...</>
+                  ) : (
+                    <>
+                      <IconCheck size={16} className="mr-2 h-4 w-4" />
+                      Save Picture
+                    </>
+                  )}
                 </Button>
               </Group>
             </Box>
@@ -292,14 +298,14 @@ export function ProfilePictureUpload({
                     <Button
                       variant="outline"
                       onClick={stopCamera}
-                      leftSection={<IconX size={16} />}
                     >
+                      <IconX size={16} className="mr-2 h-4 w-4" />
                       Cancel
                     </Button>
                     <Button
                       onClick={capturePhoto}
-                      leftSection={<IconCamera size={16} />}
                     >
+                      <IconCamera size={16} className="mr-2 h-4 w-4" />
                       Take Photo
                     </Button>
                   </Group>
@@ -316,11 +322,11 @@ export function ProfilePictureUpload({
                   />
                   
                   <Button
-                    variant="light"
-                    fullWidth
-                    leftSection={<IconCamera size={16} />}
+                    variant="secondary"
+                    className="w-full"
                     onClick={startCamera}
                   >
+                    <IconCamera size={16} className="mr-2 h-4 w-4" />
                     Use Camera
                   </Button>
                   
@@ -332,7 +338,7 @@ export function ProfilePictureUpload({
             </>
           )}
         </Stack>
-      </Modal>
+      </AppModal>
     </>
   );
 }

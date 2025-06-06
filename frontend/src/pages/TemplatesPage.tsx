@@ -5,23 +5,33 @@ import {
   Title,
   Text,
   Group,
-  Button,
   Card,
-  Badge,
   TextInput,
   ActionIcon,
   Menu,
-  Tabs,
   SimpleGrid,
   Paper,
   Loader,
   Select,
   Center,
-  Modal,
   Stack,
   Textarea,
   TagsInput
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import {
   IconSearch,
   IconPlus,
@@ -102,14 +112,13 @@ function TemplateCard({ template, onUse, onEdit, onDelete }: {
 
         <Group gap="xs" mt="xs" data-no-propagation="true">
           <Badge
-            color={template.priority === 'LOW' ? 'blue' :
-                  template.priority === 'MEDIUM' ? 'yellow' :
-                  template.priority === 'HIGH' ? 'orange' : 'red'}
-            variant="light"
+            variant={template.priority === 'LOW' ? 'secondary' :
+                    template.priority === 'HIGH' || template.priority === 'URGENT' ? 'destructive' : 'default'}
+            className={template.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' : ''}
           >
             {template.priority.charAt(0).toUpperCase() + template.priority.slice(1)}
           </Badge>
-          {template.category && <Badge variant="outline" size="xs">{template.category}</Badge>}
+          {template.category && <Badge variant="outline" className="text-xs">{template.category}</Badge>}
           {template.estimatedHours && (
             <Group gap="xs" style={{ display: 'inline-flex', alignItems: 'center' }}>
               <IconClock size={12} />
@@ -125,20 +134,13 @@ function TemplateCard({ template, onUse, onEdit, onDelete }: {
       {template.tags && template.tags.length > 0 && (
         <Group mt="sm" gap="xs" data-no-propagation="true">
           {template.tags.map((tag, index) => {
-            // Generate a deterministic color based on tag name
-            const colors = ['blue', 'cyan', 'green', 'teal', 'violet', 'grape', 'pink', 'orange'];
-            const colorIndex = tag.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-            const tagColor = colors[colorIndex];
+            // We could use different colors based on tag name, but for now using secondary variant
 
             return (
               <Badge
                 key={index}
-                size="sm"
-                variant="light"
-                color={tagColor}
-                styles={{
-                  root: { textTransform: 'lowercase' },
-                }}
+                variant="secondary"
+                className="text-xs lowercase"
               >
                 {tag}
               </Badge>
@@ -159,14 +161,9 @@ function TemplateCard({ template, onUse, onEdit, onDelete }: {
         {/* Button in bottom right */}
         <div style={{ position: 'absolute', bottom: 0, right: 0 }}>
           <Button
-            size="xs"
+            size="sm"
             onClick={onUse}
-            style={{
-              padding: '2px 6px',
-              height: 'auto',
-              minHeight: '18px',
-              fontSize: '0.65rem'
-            }}
+            className="h-auto min-h-[18px] py-0.5 px-1.5 text-xs"
           >
             Use Template
           </Button>
@@ -392,12 +389,10 @@ export function TemplatesPage() {
         zIndex: 100
       }}>
         <Button
-          leftSection={<IconPlus size={16} />}
           onClick={handleCreateTemplate}
-          size="md"
-          radius="xl"
-          style={{ boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)' }}
+          className="rounded-full shadow-lg"
         >
+          <IconPlus className="mr-2 h-4 w-4" />
           Create Template
         </Button>
       </div>
@@ -451,20 +446,21 @@ export function TemplatesPage() {
         <Center my="xl">
           <Stack align="center">
             <Text color="dimmed">No templates found</Text>
-            <Button variant="outline" leftSection={<IconPlus size={16} />} onClick={handleCreateTemplate}>
+            <Button variant="outline" onClick={handleCreateTemplate}>
+              <IconPlus className="mr-2 h-4 w-4" />
               Create Your First Template
             </Button>
           </Stack>
         </Center>
       ) : (
-        <Tabs defaultValue="all">
-          <Tabs.List mb="md">
-            <Tabs.Tab value="all">All Templates</Tabs.Tab>
-            <Tabs.Tab value="my">My Templates</Tabs.Tab>
-            <Tabs.Tab value="popular">Popular Templates</Tabs.Tab>
-          </Tabs.List>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="all">All Templates</TabsTrigger>
+            <TabsTrigger value="my">My Templates</TabsTrigger>
+            <TabsTrigger value="popular">Popular Templates</TabsTrigger>
+          </TabsList>
           
-          <Tabs.Panel value="all">
+          <TabsContent value="all">
             <SimpleGrid
               cols={{ base: 1, sm: 2, md: 3 }}
               spacing="md"
@@ -479,9 +475,9 @@ export function TemplatesPage() {
                 />
               ))}
             </SimpleGrid>
-          </Tabs.Panel>
+          </TabsContent>
           
-          <Tabs.Panel value="my">
+          <TabsContent value="my">
             <SimpleGrid
               cols={{ base: 1, sm: 2, md: 3 }}
               spacing="md"
@@ -498,9 +494,9 @@ export function TemplatesPage() {
                   />
                 ))}
             </SimpleGrid>
-          </Tabs.Panel>
+          </TabsContent>
           
-          <Tabs.Panel value="popular">
+          <TabsContent value="popular">
             <SimpleGrid
               cols={{ base: 1, sm: 2, md: 3 }}
               spacing="md"
@@ -518,17 +514,16 @@ export function TemplatesPage() {
                   />
                 ))}
             </SimpleGrid>
-          </Tabs.Panel>
+          </TabsContent>
         </Tabs>
       )}
       
       {/* Edit Template Modal */}
-      <Modal
-        opened={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title={currentTemplate ? 'Edit Template' : 'Create Template'}
-        size="lg"
-      >
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{currentTemplate ? 'Edit Template' : 'Create Template'}</DialogTitle>
+          </DialogHeader>
         <Stack>
           <TextInput
             label="Template Name"
@@ -581,14 +576,15 @@ export function TemplatesPage() {
             <Button onClick={handleSubmitTemplateForm}>Save Template</Button>
           </Group>
         </Stack>
-      </Modal>
+        </DialogContent>
+      </Dialog>
       
       {/* Use Template Modal */}
-      <Modal
-        opened={isUseModalOpen}
-        onClose={() => setIsUseModalOpen(false)}
-        title="Create Task from Template"
-      >
+      <Dialog open={isUseModalOpen} onOpenChange={setIsUseModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Task from Template</DialogTitle>
+          </DialogHeader>
         <Stack>
           <TextInput
             label="Task Title"
@@ -603,7 +599,8 @@ export function TemplatesPage() {
             <Button onClick={handleSubmitUseTemplateForm}>Create Task</Button>
           </Group>
         </Stack>
-      </Modal>
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 }

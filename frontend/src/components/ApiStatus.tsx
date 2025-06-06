@@ -1,6 +1,9 @@
-import { Badge, Button, Group, Popover, Stack, Text, Tooltip, ActionIcon, Progress } from '@mantine/core';
+import { Group, Popover, Stack, Text, ActionIcon, Progress } from '@mantine/core';
 import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconDatabase, IconClock } from '@tabler/icons-react';
 import { useApiStore } from '@/stores/useApiStore';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AppTooltip } from '@/components/ui/AppTooltip';
 import { useState, useMemo } from 'react';
 
 /**
@@ -61,27 +64,30 @@ export function ApiStatus() {
       <Popover.Target>
         <Group gap="xs">
           {isMockApi ? (
-            <Tooltip label="Using mock API" position="bottom">
-              <Badge variant="light" color="blue" size="sm" leftSection={<IconDatabaseImport size={14} />}>
+            <AppTooltip label="Using mock API" position="bottom">
+              <Badge variant="secondary" className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <IconDatabaseImport size={14} className="mr-1 inline" />
                 Mock
               </Badge>
-            </Tooltip>
+            </AppTooltip>
           ) : apiAvailable ? (
-            <Tooltip label="API is connected" position="bottom">
-              <Badge variant="light" color="green" size="sm" leftSection={<IconCloud size={14} />}>
+            <AppTooltip label="API is connected" position="bottom">
+              <Badge variant="secondary" className="text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                <IconCloud size={14} className="mr-1 inline" />
                 API
               </Badge>
-            </Tooltip>
+            </AppTooltip>
           ) : (
-            <Tooltip label={apiError || 'API is not available'} position="bottom">
-              <Badge variant="light" color="red" size="sm" leftSection={<IconCloudOff size={14} />}>
+            <AppTooltip label={apiError || 'API is not available'} position="bottom">
+              <Badge variant="destructive" className="text-sm">
+                <IconCloudOff size={14} className="mr-1 inline" />
                 API Down
               </Badge>
-            </Tooltip>
+            </AppTooltip>
           )}
 
           {!isMockApi && (
-            <Tooltip 
+            <AppTooltip 
               label={
                 isApiLoading ? "Checking API connection..." : 
                 connectionAttempts >= maxConnectionAttempts ? "Connection attempts exhausted" :
@@ -108,7 +114,7 @@ export function ApiStatus() {
               >
                 <IconRefresh size={14} />
               </ActionIcon>
-            </Tooltip>
+            </AppTooltip>
           )}
         </Group>
       </Popover.Target>
@@ -119,27 +125,26 @@ export function ApiStatus() {
           
           <Group>
             <Badge 
-              variant="filled"
-              color={isMockApi ? 'blue' : apiAvailable ? 'green' : 'red'}
-              rightSection={
-                isMockApi ? <IconDatabase size={12} /> : 
-                apiAvailable ? <IconCloud size={12} /> : 
-                <IconCloudOff size={12} />
-              }
+              variant={isMockApi || apiAvailable ? 'default' : 'destructive'}
+              className={isMockApi ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
+                        apiAvailable ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : ''}
             >
               {isMockApi ? 'Mock API' : apiAvailable ? 'Connected' : 'Disconnected'}
+              {isMockApi ? <IconDatabase size={12} className="ml-1 inline" /> : 
+               apiAvailable ? <IconCloud size={12} className="ml-1 inline" /> : 
+               <IconCloudOff size={12} className="ml-1 inline" />}
             </Badge>
             
             <Button 
-              variant="light" 
-              size="compact-xs" 
-              rightSection={<IconRefresh size={14} />}
-              loading={isApiLoading}
+              variant="secondary" 
+              size="sm" 
+              className="h-6 text-xs"
               onClick={() => checkApiAvailability(true)} // Force check
-              disabled={isMockApi}
+              disabled={isMockApi || isApiLoading}
               title="Force API check"
             >
-              Check
+              {isApiLoading ? 'Checking...' : 'Check'}
+              {!isApiLoading && <IconRefresh size={14} className="ml-2 h-4 w-4" />}
             </Button>
           </Group>
           
@@ -171,9 +176,9 @@ export function ApiStatus() {
                         Next check in {timeUntilNextCheck}s
                       </Text>
                       <Button 
-                        variant="subtle" 
-                        color="gray" 
-                        size="compact-xs"
+                        variant="ghost" 
+                        size="sm"
+                        className="h-6 text-xs"
                         onClick={() => resetConnectionAttempts()}
                       >
                         Reset
@@ -191,9 +196,9 @@ export function ApiStatus() {
               
               <Group gap="xs">
                 <Button
-                  variant="light"
-                  color="blue" 
-                  size="xs"
+                  variant="secondary"
+                  size="sm"
+                  className="h-6 text-xs"
                   onClick={() => setMockApi(true)}
                 >
                   Switch to Mock API
@@ -202,8 +207,8 @@ export function ApiStatus() {
                 {connectionAttempts >= maxConnectionAttempts && (
                   <Button
                     variant="outline"
-                    color="green"
-                    size="xs"
+                    size="sm"
+                    className="h-6 text-xs"
                     onClick={() => {
                       resetConnectionAttempts();
                       checkApiAvailability(true);
@@ -223,9 +228,9 @@ export function ApiStatus() {
               </Text>
               
               <Button
-                variant="light"
-                color="blue" 
-                size="xs"
+                variant="secondary"
+                size="sm"
+                className="h-6 text-xs"
                 onClick={() => {
                   setMockApi(false);
                   resetConnectionAttempts();

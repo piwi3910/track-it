@@ -2,23 +2,23 @@ import { useState, useEffect } from 'react';
 import {
   Container,
   Title,
-  Tabs,
   Paper,
   Group,
   Text,
-  Button,
-  Modal,
   TextInput,
   Select,
   PasswordInput,
   Table,
   ActionIcon,
-  Badge,
   Stack,
-  Alert,
   Loader,
   Center
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AppModal } from '@/components/ui/AppModal';
+import { AppTabs } from '@/components/ui/AppTabs';
+import { AppAlert } from '@/components/ui/AppAlert';
 import {
   IconUsers,
   IconUserPlus,
@@ -31,7 +31,7 @@ import {
   IconX
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/components/ui/notifications';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useApp } from '@/hooks/useApp';
 import { User, UserRole } from '@track-it/shared';
@@ -318,13 +318,23 @@ export function AdminPage() {
     }
   };
 
-  // Get role badge color
-  const getRoleBadgeColor = (role: UserRole) => {
+  // Get role badge className
+  const getRoleBadgeClassName = (role: UserRole) => {
     switch (role) {
-      case 'admin': return 'red';
-      case 'member': return 'blue';
-      case 'guest': return 'gray';
-      default: return 'gray';
+      case 'admin': return '';
+      case 'member': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'guest': return '';
+      default: return '';
+    }
+  };
+
+  // Get role badge variant
+  const getRoleBadgeVariant = (role: UserRole) => {
+    switch (role) {
+      case 'admin': return 'destructive' as const;
+      case 'member': return 'secondary' as const;
+      case 'guest': return 'secondary' as const;
+      default: return 'secondary' as const;
     }
   };
 
@@ -332,13 +342,13 @@ export function AdminPage() {
   if (!isAdmin) {
     return (
       <Container size="xl">
-        <Alert
+        <AppAlert
           icon={<IconAlertCircle size={16} />}
           title="Access Denied"
           color="red"
         >
           You don't have permission to access this page. Admin privileges are required.
-        </Alert>
+        </AppAlert>
       </Container>
     );
   }
@@ -347,15 +357,15 @@ export function AdminPage() {
     <Container size="xl">
       <Title mb="xl">Admin Panel</Title>
       
-      <Tabs value={activeTab} onChange={setActiveTab}>
-        <Tabs.List mb="xl">
-          <Tabs.Tab value="users" leftSection={<IconUsers size={16} />}>
+      <AppTabs value={activeTab} onChange={setActiveTab}>
+        <AppTabs.List mb="xl">
+          <AppTabs.Tab value="users" leftSection={<IconUsers size={16} />}>
             User Management
-          </Tabs.Tab>
-          <Tabs.Tab value="settings" leftSection={<IconShield size={16} />}>
+          </AppTabs.Tab>
+          <AppTabs.Tab value="settings" leftSection={<IconShield size={16} />}>
             System Settings
-          </Tabs.Tab>
-        </Tabs.List>
+          </AppTabs.Tab>
+        </AppTabs.List>
         
         {/* User Management Tab */}
         {activeTab === 'users' && (
@@ -363,9 +373,9 @@ export function AdminPage() {
             <Group justify="space-between" mb="lg">
               <Title order={3}>Users ({users.length})</Title>
               <Button
-                leftSection={<IconUserPlus size={16} />}
                 onClick={openCreateModal}
               >
+                <IconUserPlus size={16} className="mr-2 h-4 w-4" />
                 Create User
               </Button>
             </Group>
@@ -401,7 +411,9 @@ export function AdminPage() {
                         <Text c="dimmed">{user.email}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Badge color={getRoleBadgeColor(user.role || 'member')}>
+                        <Badge 
+                          variant={getRoleBadgeVariant(user.role || 'member')}
+                          className={getRoleBadgeClassName(user.role || 'member')}>
                           {(user.role || 'member').toUpperCase()}
                         </Badge>
                       </Table.Td>
@@ -446,10 +458,10 @@ export function AdminPage() {
             <Text c="dimmed">System configuration options will be available here.</Text>
           </Paper>
         )}
-      </Tabs>
+      </AppTabs>
 
       {/* Create User Modal */}
-      <Modal
+      <AppModal
         opened={createModalOpened}
         onClose={closeCreateModal}
         title="Create New User"
@@ -500,10 +512,10 @@ export function AdminPage() {
             </Button>
           </Group>
         </Stack>
-      </Modal>
+      </AppModal>
 
       {/* Edit User Modal */}
-      <Modal
+      <AppModal
         opened={editModalOpened}
         onClose={closeEditModal}
         title="Edit User"
@@ -547,10 +559,10 @@ export function AdminPage() {
             </Button>
           </Group>
         </Stack>
-      </Modal>
+      </AppModal>
 
       {/* Password Reset Modal */}
-      <Modal
+      <AppModal
         opened={passwordModalOpened}
         onClose={closePasswordModal}
         title={`Reset Password for ${selectedUser?.name}`}
@@ -576,15 +588,15 @@ export function AdminPage() {
             <Button variant="outline" onClick={closePasswordModal}>
               Cancel
             </Button>
-            <Button color="yellow" onClick={handlePasswordReset}>
+            <Button variant="secondary" onClick={handlePasswordReset}>
               Reset Password
             </Button>
           </Group>
         </Stack>
-      </Modal>
+      </AppModal>
 
       {/* Delete User Modal */}
-      <Modal
+      <AppModal
         opened={deleteModalOpened}
         onClose={closeDeleteModal}
         title="Delete User - Impact Assessment"
@@ -592,13 +604,13 @@ export function AdminPage() {
         size="lg"
       >
         <Stack>
-          <Alert
+          <AppAlert
             icon={<IconAlertCircle size={16} />}
             color="red"
             title="Warning: This action cannot be undone"
           >
             You are about to permanently delete <strong>{selectedUser?.name}</strong> and all associated data.
-          </Alert>
+          </AppAlert>
 
           {loadingStats ? (
             <Center py="xl">
@@ -610,37 +622,37 @@ export function AdminPage() {
               <Text fw={500}>Deletion Impact:</Text>
               
               {deletionStats.consequences.willDelete.length > 0 && (
-                <Alert color="red" icon={<IconX size={16} />} title="Will be permanently deleted:">
+                <AppAlert color="red" icon={<IconX size={16} />} title="Will be permanently deleted:">
                   <Stack gap="xs">
                     {deletionStats.consequences.willDelete.map((item, index) => (
                       <Text key={index} size="sm">• {item}</Text>
                     ))}
                   </Stack>
-                </Alert>
+                </AppAlert>
               )}
 
               {deletionStats.consequences.willUpdate.length > 0 && (
-                <Alert color="orange" icon={<IconAlertCircle size={16} />} title="Will be updated:">
+                <AppAlert color="orange" icon={<IconAlertCircle size={16} />} title="Will be updated:">
                   <Stack gap="xs">
                     {deletionStats.consequences.willUpdate.map((item, index) => (
                       <Text key={index} size="sm">• {item}</Text>
                     ))}
                   </Stack>
-                </Alert>
+                </AppAlert>
               )}
 
               {deletionStats.stats.createdTasks === 0 && 
                deletionStats.stats.comments === 0 && 
                deletionStats.stats.assignedTasks === 0 ? (
-                <Alert color="green" icon={<IconCheck size={16} />}>
+                <AppAlert color="green" icon={<IconCheck size={16} />}>
                   This user has no associated tasks or comments. Deletion will be clean.
-                </Alert>
+                </AppAlert>
               ) : null}
             </Stack>
           ) : (
-            <Alert color="orange" icon={<IconAlertCircle size={16} />}>
+            <AppAlert color="orange" icon={<IconAlertCircle size={16} />}>
               Unable to load deletion statistics. Proceeding may have unexpected consequences.
-            </Alert>
+            </AppAlert>
           )}
 
           <Group justify="flex-end" mt="md">
@@ -648,7 +660,7 @@ export function AdminPage() {
               Cancel
             </Button>
             <Button 
-              color="red" 
+              variant="destructive" 
               onClick={handleDeleteUser}
               disabled={loadingStats}
             >
@@ -656,7 +668,7 @@ export function AdminPage() {
             </Button>
           </Group>
         </Stack>
-      </Modal>
+      </AppModal>
     </Container>
   );
 }

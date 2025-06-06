@@ -1,7 +1,8 @@
-import { Alert, Group, Stack, Text, Button } from '@mantine/core';
+import { Group, Stack, Text, Button } from '@mantine/core';
 import { IconAlertCircle, IconInfoCircle, IconExclamationMark } from '@tabler/icons-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared';
+import { AppAlert } from '@/components/ui/AppAlert';
 
 interface ErrorAlertProps {
   error: AppError | AppErrorDetails | string | Error | null;
@@ -145,9 +146,9 @@ export function ErrorAlert({
   };
   
   return (
-    <Alert
+    <AppAlert
       icon={<Icon size={16} />}
-      color={color}
+      color={color as 'blue' | 'red' | 'yellow' | 'green'}
       title={alertTitle}
       withCloseButton={!!onClose}
       onClose={() => {
@@ -179,7 +180,7 @@ export function ErrorAlert({
           </Group>
         )}
       </Stack>
-    </Alert>
+    </AppAlert>
   );
 }
 

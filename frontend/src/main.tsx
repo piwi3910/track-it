@@ -6,6 +6,7 @@ import { MantineProvider, createTheme, ColorSchemeScript } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { ThemeProvider, ApiProvider, AuthProvider, AppProvider, NotificationProvider, GoogleProvider } from './components/providers';
 import { TRPCProvider } from './components/TRPCProvider';
+import { Toaster } from './components/ui/sonner';
 import App from './App';
 
 // Import all required styles
@@ -33,6 +34,7 @@ createRoot(document.getElementById('root')!).render(
                 <NotificationProvider>
                   <AppProvider>
                     <Notifications position="top-right" />
+                    <Toaster position="top-right" />
                     <BrowserRouter>
                       <App />
                     </BrowserRouter>

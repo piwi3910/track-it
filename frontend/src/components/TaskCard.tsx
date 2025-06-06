@@ -3,23 +3,23 @@ import {
   Card,
   Text,
   Group,
-  Badge,
-  Menu,
   ActionIcon,
   useMantineTheme,
   Progress,
-  Tooltip,
   Avatar,
   Box,
   TextInput,
   NumberInput,
   Popover,
   Stack,
-  Checkbox,
   Divider,
-  Button,
   Indicator
 } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { AppTooltip } from '@/components/ui/AppTooltip';
+import { AppMenu } from '@/components/ui/AppMenu';
+import { AppCheckbox } from '@/components/ui/AppCheckbox';
 // Using centralized theme styles
 import {
   IconDotsVertical,
@@ -407,7 +407,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         >
           <Popover.Target>
             {localTask.assigneeId ? (
-              <Tooltip label={`Assigned to ${getAssigneeName(localTask.assigneeId)} - Click to reassign`} position="bottom">
+              <AppTooltip label={`Assigned to ${getAssigneeName(localTask.assigneeId)} - Click to reassign`} position="bottom">
                 <span style={{ display: 'inline-block' }}>
                   <Avatar
                     size={32}
@@ -420,9 +420,9 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                     }}
                   />
                 </span>
-              </Tooltip>
+              </AppTooltip>
             ) : (
-              <Tooltip label="Click to assign task" position="bottom">
+              <AppTooltip label="Click to assign task" position="bottom">
                 <ActionIcon
                   size={32}
                   radius="xl"
@@ -440,7 +440,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 >
                   <IconPlus size={12} />
                 </ActionIcon>
-              </Tooltip>
+              </AppTooltip>
             )}
           </Popover.Target>
           <Popover.Dropdown>
@@ -507,15 +507,15 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         </Popover>
         
         {/* Menu */}
-        <Menu position="bottom-end">
-          <Menu.Target>
+        <AppMenu position="bottom-end">
+          <AppMenu.Target>
             <ActionIcon variant="subtle" size="sm" onClick={(e) => e.stopPropagation()}>
               <IconDotsVertical size={16} />
             </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
+          </AppMenu.Target>
+          <AppMenu.Dropdown>
             {onEdit && (
-              <Menu.Item
+              <AppMenu.Item
                 leftSection={<IconPencil size={14} />}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -523,10 +523,10 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 }}
               >
                 Edit
-              </Menu.Item>
+              </AppMenu.Item>
             )}
             {/* Time tracking in menu */}
-            <Menu.Item
+            <AppMenu.Item
               leftSection={isTimeTrackingActive ? <IconPlayerStop size={14} color="red" /> : <IconPlayerPlay size={14} color="green" />}
               onClick={(e) => {
                 e.stopPropagation();
@@ -535,9 +535,9 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
             >
               {isTimeTrackingActive ? 'Stop Time Tracking' : 'Start Time Tracking'}
               {isTimeTrackingActive && trackingTime > 0 && ` (${formatTrackingTime(trackingTime)})`}
-            </Menu.Item>
+            </AppMenu.Item>
             {onEdit && (
-              <Menu.Item
+              <AppMenu.Item
                 leftSection={<IconSubtask size={14} />}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -562,26 +562,26 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 }}
               >
                 Add Subtask
-              </Menu.Item>
+              </AppMenu.Item>
             )}
             {onViewConversation && (
-              <Menu.Item
+              <AppMenu.Item
                 leftSection={<IconMessageCircle2 size={14} />}
                 onClick={(e) => {
                   e.stopPropagation();
                   onViewConversation();
                 }}
                 rightSection={commentCount > 0 && (
-                  <Badge size="xs" variant="filled" color="blue">
+                  <Badge className="text-xs h-5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                     {commentCount}
                   </Badge>
                 )}
               >
                 View Conversation
-              </Menu.Item>
+              </AppMenu.Item>
             )}
             {onDelete && (
-              <Menu.Item
+              <AppMenu.Item
                 leftSection={<IconTrash size={14} />}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -590,10 +590,10 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 color="red"
               >
                 Delete
-              </Menu.Item>
+              </AppMenu.Item>
             )}
-          </Menu.Dropdown>
-        </Menu>
+          </AppMenu.Dropdown>
+        </AppMenu>
       </div>
 
       {/* Task number in the top-left corner */}
@@ -603,7 +603,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         left: '8px',
         zIndex: 25
       }}>
-        <Tooltip label={`Task #${localTask.taskNumber} - Click to copy`} position="top">
+        <AppTooltip label={`Task #${localTask.taskNumber} - Click to copy`} position="top">
           <div
             style={{
               width: '32px',
@@ -643,7 +643,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
           >
             {localTask.taskNumber}
           </div>
-        </Tooltip>
+        </AppTooltip>
       </div>
 
       {/* Task Content */}
@@ -651,13 +651,13 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         {/* Recurrence indicator */}
         {localTask.recurrence && (
           <Group gap={8} mb="xs" data-no-propagation="true" justify="flex-start">
-            <Tooltip label={getRecurrenceDescription(localTask.recurrence)} position="top">
+            <AppTooltip label={getRecurrenceDescription(localTask.recurrence)} position="top">
               <span style={{ display: 'inline-block' }}>
                 <ActionIcon size="xs" variant="subtle" color="blue">
                   <IconRepeat size={16} />
                 </ActionIcon>
               </span>
-            </Tooltip>
+            </AppTooltip>
           </Group>
         )}
 
@@ -679,10 +679,10 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
         >
           <Popover.Target>
             <Badge
-              color={localTask.priority === 'LOW' ? 'blue' :
-                     localTask.priority === 'MEDIUM' ? 'yellow' :
-                     localTask.priority === 'HIGH' ? 'orange' : 'red'}
-              variant="light"
+              variant={localTask.priority === 'URGENT' ? 'destructive' : 'secondary'}
+              className={localTask.priority === 'LOW' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                     localTask.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                     localTask.priority === 'HIGH' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ''}
               style={{ cursor: 'pointer' }}
               onClick={(e) => {
                 e.stopPropagation();
@@ -704,9 +704,11 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                   style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}
                   className="hover-highlight"
                 >
-                  <Badge color={priority === 'low' ? 'blue' : 
-                             priority === 'medium' ? 'yellow' : 
-                             priority === 'high' ? 'orange' : 'red'} variant="light">
+                  <Badge 
+                    variant={priority === 'urgent' ? 'destructive' : 'secondary'}
+                    className={priority === 'low' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
+                             priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                             priority === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : ''}>
                     {priority.charAt(0).toUpperCase() + priority.slice(1)}
                   </Badge>
                   {localTask.priority === priority && <IconCheck size={14} />}
@@ -745,7 +747,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               <Divider />
               {localTask.subtasks?.map((subtask) => (
                 <Group key={subtask.id} gap="xs" align="flex-start">
-                  <Checkbox
+                  <AppCheckbox
                     checked={('completed' in subtask && Boolean(subtask.completed)) || false}
                     onChange={(e) => {
                       // Create a copy of subtasks with the updated one
@@ -776,13 +778,14 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
                 </Group>
               ))}
               <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconSubtask size={14} />}
+                size="sm"
+                variant="secondary"
+                className="h-6 text-xs"
                 onClick={() => {
                   onEdit?.();
                 }}
               >
+                <IconSubtask size={14} className="mr-2 h-4 w-4" />
                 Manage Subtasks
               </Button>
             </Stack>
@@ -816,7 +819,7 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
               {!localTask.actualHours && !localTask.estimatedHours ? 'Set time tracking...' : ''}
             </Text>
             {isTimeTrackingActive && (
-              <Badge size="xs" color="red" variant="filled" radius="sm">
+              <Badge variant="destructive" className="text-xs h-5">
                 {formatTrackingTime(trackingTime)}
               </Badge>
             )}
@@ -849,14 +852,14 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
             {/* Time tracking buttons */}
             <Group>
               <Button
-                size="xs"
-                variant={isTimeTrackingActive ? 'filled' : 'light'}
-                color={isTimeTrackingActive ? 'red' : 'blue'}
-                leftSection={isTimeTrackingActive ? <IconPlayerStop size={14} /> : <IconPlayerPlay size={14} />}
+                size="sm"
+                variant={isTimeTrackingActive ? 'destructive' : 'secondary'}
+                className="h-6 text-xs"
                 onClick={() => {
                   handleToggleTimeTracking();
                 }}
               >
+                {isTimeTrackingActive ? <IconPlayerStop size={14} className="mr-2 h-4 w-4" /> : <IconPlayerPlay size={14} className="mr-2 h-4 w-4" />}
                 {isTimeTrackingActive ? 'Stop Tracking' : 'Start Tracking'}
               </Button>
 
@@ -899,11 +902,8 @@ export default function TaskCard({ task, onEdit, onDelete, onViewConversation }:
           {localTask.tags.map((tag) => (
             <Badge
               key={tag}
-              size="sm"
               variant="outline"
-              styles={{
-                root: { textTransform: 'lowercase' },
-              }}
+              className="text-sm lowercase"
             >
               {tag}
             </Badge>

@@ -5,7 +5,6 @@ import {
   Button,
   Paper,
   Group,
-  Tabs,
   Card,
   Stack,
   Loader,
@@ -14,11 +13,12 @@ import {
   ScrollArea,
   Image,
   List,
-  Alert,
-  Switch,
   Box,
   Divider
 } from '@mantine/core';
+import { AppTabs } from '@/components/ui/AppTabs';
+import { AppAlert } from '@/components/ui/AppAlert';
+import { AppSwitch } from '@/components/ui/AppSwitch';
 import {
   IconCalendar,
   IconChecklist,
@@ -35,7 +35,7 @@ import {
 import { useGoogle } from '@/hooks/useGoogle';;
 import { useApp } from '@/hooks/useApp';
 import { useStore } from '@/hooks/useStore';
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/components/ui/notifications';
 import { GoogleCalendarEvent, GoogleDriveFile } from '@/types/task';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
@@ -274,7 +274,7 @@ export function GoogleIntegrationPanel() {
             <Text fw={500}>Auto-sync</Text>
             <Text size="xs" c="dimmed">Automatically sync data when changes occur</Text>
           </div>
-          <Switch 
+          <AppSwitch 
             checked={autoSync} 
             onChange={(e) => setAutoSync(e.currentTarget.checked)} 
           />
@@ -286,7 +286,7 @@ export function GoogleIntegrationPanel() {
             <Text size="xs" c="dimmed">Sync Google Calendar events</Text>
           </div>
           <Group gap="xs">
-            <Switch 
+            <AppSwitch 
               checked={calendarSync} 
               onChange={(e) => setCalendarSync(e.currentTarget.checked)} 
             />
@@ -298,7 +298,7 @@ export function GoogleIntegrationPanel() {
             <Text fw={500}>Tasks</Text>
             <Text size="xs" c="dimmed">Sync Google Tasks</Text>
           </div>
-          <Switch 
+          <AppSwitch 
             checked={tasksSync} 
             onChange={(e) => setTasksSync(e.currentTarget.checked)} 
           />
@@ -309,7 +309,7 @@ export function GoogleIntegrationPanel() {
             <Text fw={500}>Drive</Text>
             <Text size="xs" c="dimmed">Access Google Drive files</Text>
           </div>
-          <Switch 
+          <AppSwitch 
             checked={driveSync} 
             onChange={(e) => setDriveSync(e.currentTarget.checked)} 
           />
@@ -330,7 +330,7 @@ export function GoogleIntegrationPanel() {
   return (
     <Paper p="xl" withBorder>
       {error && (
-        <Alert 
+        <AppAlert 
           icon={<IconAlertCircle size={16} />}
           title="Error" 
           color="red" 
@@ -339,7 +339,7 @@ export function GoogleIntegrationPanel() {
           onClose={() => setError(null)}
         >
           {error}
-        </Alert>
+        </AppAlert>
       )}
     
       {!isAuthenticated ? (
@@ -376,22 +376,22 @@ export function GoogleIntegrationPanel() {
         </Stack>
       ) : (
         <>
-          <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'calendar')} mb="lg">
-            <Tabs.List>
-              <Tabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>
+          <AppTabs value={activeTab} onChange={(value) => setActiveTab(value || 'calendar')} mb="lg">
+            <AppTabs.List>
+              <AppTabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>
                 Calendar
-              </Tabs.Tab>
-              <Tabs.Tab value="tasks" leftSection={<IconChecklist size={16} />}>
+              </AppTabs.Tab>
+              <AppTabs.Tab value="tasks" leftSection={<IconChecklist size={16} />}>
                 Tasks
-              </Tabs.Tab>
-              <Tabs.Tab value="drive" leftSection={<IconFileDescription size={16} />}>
+              </AppTabs.Tab>
+              <AppTabs.Tab value="drive" leftSection={<IconFileDescription size={16} />}>
                 Drive
-              </Tabs.Tab>
-              <Tabs.Tab value="settings" leftSection={<IconSettings size={16} />}>
+              </AppTabs.Tab>
+              <AppTabs.Tab value="settings" leftSection={<IconSettings size={16} />}>
                 Settings
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs>
+              </AppTabs.Tab>
+            </AppTabs.List>
+          </AppTabs>
           
           {activeTab === 'settings' && renderSettings()}
           

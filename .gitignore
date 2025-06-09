@@ -61,6 +61,7 @@ backend-backup/
 **/*.swp
 **/*.swo
 *~
+**/tmp.txt
 
 # Generated documentation
 **/docs/generated/

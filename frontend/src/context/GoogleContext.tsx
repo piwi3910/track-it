@@ -5,6 +5,7 @@ import { Task, TaskStatus, TaskPriority } from '@track-it/shared/types/trpc';
 import { authService } from '@/services/auth.service';
 import { useStore } from '@/hooks/useStore';
 import { GoogleContext, GoogleContextType } from './GoogleContextDefinition';
+import { logger } from '@/services/logger.service';
 
 export { GoogleContext, type GoogleContextType } from './GoogleContextDefinition';
 export function GoogleProvider({ children }: { children: ReactNode }) {
@@ -109,7 +110,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       
       return false;
     } catch (error) {
-      console.error('Authentication failed:', error);
+      logger.error('Authentication failed', error);
       return false;
     } finally {
       setAuthenticating(false);
@@ -137,7 +138,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       setCalendarEvents((data as GoogleCalendarEvent[]) || []);
       setCalendarSynced(true);
     } catch (error) {
-      console.error('Calendar sync failed:', error);
+      logger.error('Calendar sync failed', error);
     } finally {
       setCalendarSyncing(false);
     }
@@ -180,7 +181,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       setTasksSynced(true);
       return tasks || [];
     } catch (error) {
-      console.error('Task import failed:', error);
+      logger.error('Task import failed', error);
       return [];
     } finally {
       setTasksSyncing(false);
@@ -224,7 +225,7 @@ export function GoogleProvider({ children }: { children: ReactNode }) {
       
       setDriveFiles(files);
     } catch (error) {
-      console.error('Drive fetch failed:', error);
+      logger.error('Drive fetch failed', error);
     } finally {
       setDriveSyncing(false);
     }

@@ -1,25 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Title,
-  Group,
-  Grid,
-  Paper,
-  Text,
-  Stack,
-  Card,
-  Loader,
-  useMantineTheme,
-  ActionIcon,
-  ScrollArea,
-  Divider,
-  Notification,
-  Box,
-} from '@mantine/core';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AppModal } from '@/components/ui/AppModal';
-import { MonthPickerInput, DatePickerInput } from '@mantine/dates';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 import {
   IconPlus,
   IconCalendarEvent,
@@ -40,7 +30,7 @@ import QuickAddTask from '@/components/QuickAddTask';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import TaskModal from '@/components/TaskModal';
 import type { Task } from '@/types/task';
-import { useTheme } from '@/hooks/useTheme';;
+import { useTheme } from '@/hooks/useTheme';
 import { useApp } from '@/hooks/useApp';
 import { useGoogle } from '@/hooks/useGoogle';
 
@@ -170,7 +160,7 @@ function DayDetailModal({
   onAddTask: (day: Date) => void;
   onViewTask: (task: Task) => void;
 }) {
-  const theme = useMantineTheme();
+  // Theme removed - using Tailwind classes instead
 
   if (!day) return null;
 
@@ -196,22 +186,21 @@ function DayDetailModal({
   const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
 
   return (
-    <AppModal
-      opened={opened}
-      onClose={onClose}
-      title={
-        <Group>
-          <IconCalendarTime size={20} />
-          <Text fw={600}>
-            {formattedDate}
-            {isToday && <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 ml-2">Today</Badge>}
-          </Text>
-        </Group>
-      }
-      size="lg"
-    >
-      <Stack gap="md">
-        <Group justify="flex-end">
+    <Dialog open={opened} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>
+            <div className="flex items-center gap-2">
+              <IconCalendarTime size={20} />
+              <span className="font-semibold">
+                {formattedDate}
+                {isToday && <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 ml-2">Today</Badge>}
+              </span>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+      <div className="space-y-4">
+        <div className="flex justify-end">
           <Button
             onClick={() => onAddTask(day)}
             disabled={isPast}
@@ -219,87 +208,84 @@ function DayDetailModal({
             <IconPlus size={14} className="mr-2 h-4 w-4" />
             Add Task
           </Button>
-        </Group>
+        </div>
 
         {tasks.length === 0 ? (
-          <Paper withBorder p="md" bg="gray.0">
-            <Stack align="center" py="lg">
-              <IconListDetails size={40} opacity={0.3} />
-              <Text c="dimmed">No tasks for this day</Text>
+          <Card className="bg-gray-50 dark:bg-gray-900">
+            <CardContent className="flex flex-col items-center py-12">
+              <IconListDetails size={40} className="opacity-30" />
+              <p className="text-muted-foreground">No tasks for this day</p>
               {!isPast && (
                 <Button variant="secondary" onClick={() => onAddTask(day)} className="mt-4">
                   Add a task
                 </Button>
               )}
-            </Stack>
-          </Paper>
+            </CardContent>
+          </Card>
         ) : (
-          <Stack gap="md">
+          <div className="space-y-4">
             {googleTasks.length > 0 && (
               <>
-                <Text fw={600} size="sm" c="dimmed">CALENDAR EVENTS</Text>
-                <Stack gap="xs">
+                <p className="text-sm font-semibold text-muted-foreground">CALENDAR EVENTS</p>
+                <div className="space-y-2">
                   {googleTasks.map(task => (
                     <Card
                       key={task.id}
-                      withBorder
-                      padding="sm"
+                      className="p-3 border"
                       style={{
                         backgroundColor: '#e8f5e9',
                         cursor: 'pointer'
                       }}
                       onClick={() => onViewTask(task)}
                     >
-                      <Group justify="space-between" wrap="nowrap">
-                        <Group gap="xs" wrap="nowrap">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
                           <IconCalendarEvent size={16} color="#43a047" style={{ flexShrink: 0 }} />
                           <div>
-                            <Text fw={500} size="sm">{task.title}</Text>
+                            <p className="text-sm font-medium">{task.title}</p>
                             {task.description && (
-                              <Text size="xs" c="dimmed" lineClamp={1}>
+                              <p className="text-xs text-muted-foreground line-clamp-1">
                                 {task.description}
-                              </Text>
+                              </p>
                             )}
                           </div>
-                        </Group>
-                        <ActionIcon variant="subtle" onClick={(e) => {
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
                           e.stopPropagation();
                           onViewTask(task);
                         }}>
                           <IconEdit size={16} />
-                        </ActionIcon>
-                      </Group>
+                        </Button>
+                      </div>
                     </Card>
                   ))}
-                </Stack>
-                <Divider my="xs" />
+                </div>
+                <Separator className="my-2" />
               </>
             )}
 
             {sortedAppTasks.length > 0 && (
               <>
-                <Text fw={600} size="sm" c="dimmed">TASKS</Text>
-                <ScrollArea h={400}>
-                  <Stack gap="xs">
+                <p className="text-sm font-semibold text-muted-foreground">TASKS</p>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-2">
                     {sortedAppTasks.map(task => (
                       <Card
                         key={task.id}
-                        withBorder
-                        padding="sm"
+                        className="p-3 border cursor-pointer"
                         style={{
                           borderLeft: `4px solid ${
-                            task.priority === 'high' ? theme.colors.orange[6] :
-                            task.priority === 'urgent' ? theme.colors.red[6] :
-                            task.priority === 'medium' ? theme.colors.yellow[6] :
-                            theme.colors.blue[6]
-                          }`,
-                          cursor: 'pointer'
+                            task.priority === 'high' ? '#f97316' :
+                            task.priority === 'urgent' ? '#ef4444' :
+                            task.priority === 'medium' ? '#eab308' :
+                            '#3b82f6'
+                          }`
                         }}
                         onClick={() => onViewTask(task)}
                       >
-                        <Group justify="space-between" wrap="nowrap">
+                        <div className="flex items-center justify-between">
                           <div>
-                            <Group gap="xs" wrap="nowrap">
+                            <div className="flex items-center gap-2">
                               <Badge 
                                 variant={task.priority === 'urgent' ? 'destructive' : 'secondary'}
                                 className={`text-xs h-5 ${
@@ -321,65 +307,66 @@ function DayDetailModal({
                                 variant="secondary">
                                 {task.status.replace('_', ' ')}
                               </Badge>
-                            </Group>
-                            <Text fw={500} mt="xs">{task.title}</Text>
+                            </div>
+                            <p className="font-medium mt-2">{task.title}</p>
                             {task.isMultiDay && (
-                              <Group gap={4} mt={4}>
+                              <div className="flex items-center gap-1 mt-1">
                                 <Badge className="text-xs h-5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Multi-day</Badge>
-                                <Text size="xs" c="dimmed">
+                                <p className="text-xs text-muted-foreground">
                                   {task.startDate && task.endDate
                                     ? `${new Date(task.startDate).toLocaleDateString()} - ${new Date(task.endDate).toLocaleDateString()}`
                                     : ''
                                   }
-                                </Text>
-                              </Group>
+                                </p>
+                              </div>
                             )}
                             {task.description && (
-                              <Text size="xs" c="dimmed" lineClamp={2} mt={4}>
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                                 {task.description}
-                              </Text>
+                              </p>
                             )}
-                            <Group gap="xs" mt="xs">
+                            <div className="flex items-center gap-2 mt-2">
                               {task.estimatedHours && (
-                                <Group gap={4}>
+                                <div className="flex items-center gap-1">
                                   <IconClockHour4 size={14} color="#777" />
-                                  <Text size="xs" c="dimmed">Est: {task.estimatedHours}h</Text>
-                                </Group>
+                                  <p className="text-xs text-muted-foreground">Est: {task.estimatedHours}h</p>
+                                </div>
                               )}
                               {task.weight && (
-                                <Group gap={4}>
+                                <div className="flex items-center gap-1">
                                   <IconWeight size={14} color="#777" />
-                                  <Text size="xs" c="dimmed">Weight: {task.weight}</Text>
-                                </Group>
+                                  <p className="text-xs text-muted-foreground">Weight: {task.weight}</p>
+                                </div>
                               )}
                               {task.tags && task.tags.length > 0 && (
-                                <Group gap={4}>
+                                <div className="flex items-center gap-1">
                                   {task.tags.map(tag => (
                                     <Badge key={tag} variant="outline" className="text-xs h-5">
                                       {tag}
                                     </Badge>
                                   ))}
-                                </Group>
+                                </div>
                               )}
-                            </Group>
+                            </div>
                           </div>
-                          <ActionIcon variant="subtle" onClick={(e) => {
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
                             e.stopPropagation();
                             onViewTask(task);
                           }}>
                             <IconEdit size={16} />
-                          </ActionIcon>
-                        </Group>
+                          </Button>
+                        </div>
                       </Card>
                     ))}
-                  </Stack>
+                  </div>
                 </ScrollArea>
               </>
             )}
-          </Stack>
+          </div>
         )}
-      </Stack>
-    </AppModal>
+      </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -406,7 +393,7 @@ function DayCell({
   onViewTask: (task: Task) => void; // To view a specific task
 }) {
   const [hovered, setHovered] = useState(false);
-  const theme = useMantineTheme();
+  // Theme removed - using Tailwind classes instead
   
   // Group tasks by source for the overlay
   const googleTasks = allDayTasks.filter(task => task.source === 'google');
@@ -426,7 +413,8 @@ function DayCell({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <Paper
+      <div
+        className="border rounded-lg p-2"
         style={{
           minHeight: '150px',
           backgroundColor,
@@ -438,160 +426,132 @@ function DayCell({
           boxShadow: hovered && !isPast ? '0 4px 8px rgba(0,0,0,0.1)' : 'none',
           zIndex: 1
         }}
-        p="xs"
-        withBorder
         onClick={isPast ? undefined : onClick}
       >
         {hovered && !isPast && (
-          <ActionIcon
-            variant="light"
-            color="blue"
-            radius="xl"
-            style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              zIndex: 2,
-            }}
+          <Button
+            variant="default"
+            size="icon"
+            className="absolute top-2 right-2 z-[2] h-8 w-8 rounded-full"
             onClick={(e) => {
               e.stopPropagation();
               onClick();
             }}
           >
             <IconCirclePlus size={16} />
-          </ActionIcon>
+          </Button>
         )}
         {/* We replace the children prop with our custom implementation */}
-        <Group justify="space-between" mb={6}>
-          <Text
-            fw={isToday ? 700 : 400}
-            size={isToday ? "md" : "sm"}
-            style={{ cursor: 'pointer' }}
+        <div className="flex items-center justify-between mb-6">
+          <p
+            className={`${isToday ? "text-base font-bold" : "text-sm font-normal"} cursor-pointer`}
             onClick={(e) => {
               e.stopPropagation();
               onDateClick();
             }}
           >
             {day.getDate()}
-          </Text>
+          </p>
           {isToday && <Badge className="text-xs h-5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Today</Badge>}
-        </Group>
+        </div>
 
         {/* Render the task items */}
-        {React.Children.map(children, child => {
-          // Skip the Group element containing the date and badge
-          if (React.isValidElement(child) &&
-              child.type === Group &&
-              child.props.mb === 6) {
-            return null;
-          }
-          return child;
-        })}
-      </Paper>
+        {children}
+      </div>
       
       {/* Zoomed overlay popup when hovering */}
       {hovered && hasTasksToShow && (
-        <Paper
-          shadow="md"
-          p="sm"
-          radius="md"
-          withBorder
+        <div
+          className="absolute w-80 -top-2.5 bg-white dark:bg-gray-950 border rounded-lg shadow-md p-3 overflow-hidden"
           style={{
-            position: 'absolute',
-            width: '320px',
-            top: '-10px',
             // Check if day is close to the right edge (columns 5-6 in a 7-column grid)
             ...(day.getDay() >= 5 ?
               { right: '100%', marginRight: '10px' } : // Position to the left for days close to right edge
               { left: '100%', marginLeft: '10px' }     // Position to the right for other days
             ),
-            zIndex: 999,
-            backgroundColor: theme.white,
-            overflow: 'hidden'
+            zIndex: 999
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <Group justify="space-between" mb="xs">
-            <Group>
-              <Text fw={700} size="lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <p className="text-lg font-bold">
                 {day.getDate()}
-              </Text>
-              <Text c="dimmed" size="sm">
+              </p>
+              <p className="text-sm text-muted-foreground">
                 {day.toLocaleDateString(undefined, { weekday: 'long', month: 'short' })}
-              </Text>
-            </Group>
+              </p>
+            </div>
             {isToday && <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Today</Badge>}
-          </Group>
+          </div>
           
-          <Divider mb="xs" />
+          <Separator className="mb-2" />
           
-          <ScrollArea.Autosize mah={350}>
-            <Stack gap="md">
+          <ScrollArea className="h-auto max-h-[350px]">
+            <div className="space-y-4">
               {/* Show Google Calendar events first */}
               {googleTasks.length > 0 && (
                 <>
-                  <Text fw={600} size="xs" c="dimmed" mt="xs">CALENDAR EVENTS</Text>
-                  <Stack gap="xs">
+                  <p className="text-xs font-semibold text-muted-foreground mt-2">CALENDAR EVENTS</p>
+                  <div className="space-y-2">
                     {googleTasks.map(task => (
                       <Card
                         key={task.id}
-                        withBorder
-                        padding="sm"
+                        className="p-3 border"
                         style={{
                           backgroundColor: '#e8f5e9',
                           cursor: 'pointer'
                         }}
                         onClick={() => onViewTask(task)}
                       >
-                        <Group justify="space-between" wrap="nowrap">
-                          <Group gap="xs" wrap="nowrap">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
                             <IconCalendarEvent size={16} color="#43a047" style={{ flexShrink: 0 }} />
                             <div>
-                              <Text fw={500} size="sm">{task.title}</Text>
+                              <p className="text-sm font-medium">{task.title}</p>
                               {task.description && (
-                                <Text size="xs" c="dimmed" lineClamp={1}>
+                                <p className="text-xs text-muted-foreground line-clamp-1">
                                   {task.description}
-                                </Text>
+                                </p>
                               )}
                             </div>
-                          </Group>
-                          <ActionIcon variant="subtle" onClick={(e) => {
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
                             e.stopPropagation();
                             onViewTask(task);
                           }}>
                             <IconEdit size={16} />
-                          </ActionIcon>
-                        </Group>
+                          </Button>
+                        </div>
                       </Card>
                     ))}
-                  </Stack>
+                  </div>
                 </>
               )}
 
               {/* App tasks */}
               {sortedAppTasks.length > 0 && (
                 <>
-                  <Text fw={600} size="xs" c="dimmed" mt={googleTasks.length > 0 ? "md" : "xs"}>TASKS</Text>
-                  <Stack gap="xs">
+                  <p className={`text-xs font-semibold text-muted-foreground ${googleTasks.length > 0 ? "mt-4" : "mt-2"}`}>TASKS</p>
+                  <div className="space-y-2">
                     {sortedAppTasks.map(task => (
                       <Card
                         key={task.id}
-                        withBorder
-                        padding="sm"
+                        className="p-3 border"
                         style={{
                           borderLeft: `4px solid ${
-                            task.priority === 'high' ? theme.colors.orange[6] :
-                            task.priority === 'urgent' ? theme.colors.red[6] :
-                            task.priority === 'medium' ? theme.colors.yellow[6] :
-                            theme.colors.blue[6]
+                            task.priority === 'high' ? '#f97316' :
+                            task.priority === 'urgent' ? '#ef4444' :
+                            task.priority === 'medium' ? '#eab308' :
+                            '#3b82f6'
                           }`,
                           cursor: 'pointer'
                         }}
                         onClick={() => onViewTask(task)}
                       >
-                        <Group justify="space-between" wrap="nowrap">
+                        <div className="flex items-center justify-between">
                           <div>
-                            <Group gap="xs" wrap="nowrap">
+                            <div className="flex items-center gap-2">
                               <Badge 
                                 variant={task.priority === 'urgent' ? 'destructive' : 'secondary'}
                                 className={`text-xs h-5 ${
@@ -613,31 +573,31 @@ function DayCell({
                                 variant="secondary">
                                 {task.status.replace('_', ' ')}
                               </Badge>
-                            </Group>
-                            <Text fw={500} mt="xs">{task.title}</Text>
+                            </div>
+                            <p className="font-medium mt-2">{task.title}</p>
                             {task.description && (
-                              <Text size="xs" c="dimmed" lineClamp={2} mt={4}>
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                                 {task.description}
-                              </Text>
+                              </p>
                             )}
                           </div>
-                          <ActionIcon variant="subtle" onClick={(e) => {
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
                             e.stopPropagation();
                             onViewTask(task);
                           }}>
                             <IconEdit size={16} />
-                          </ActionIcon>
-                        </Group>
+                          </Button>
+                        </div>
                       </Card>
                     ))}
-                  </Stack>
+                  </div>
                 </>
               )}
               
               {allDayTasks.length === 0 && (
-                <Text c="dimmed" ta="center" py="lg">No tasks for this day</Text>
+                <p className="text-muted-foreground text-center py-12">No tasks for this day</p>
               )}
-            </Stack>
+            </div>
             
             <Button 
               className="w-full mt-4" 
@@ -650,8 +610,8 @@ function DayCell({
               <IconListDetails size={16} className="mr-2 h-4 w-4" />
               View all details
             </Button>
-          </ScrollArea.Autosize>
-        </Paper>
+          </ScrollArea>
+        </div>
       )}
     </div>
   );
@@ -662,7 +622,7 @@ type CalendarViewType = 'month' | 'week' | 'day';
 
 export function CalendarPage() {
   const { colors } = useTheme();
-  const theme = useMantineTheme();
+  // Theme removed - using Tailwind classes instead
   const { tasks: appTasks, createTask, updateTask } = useApp();
   const { isAuthenticated, calendarEvents, syncCalendar } = useGoogle();
 
@@ -870,41 +830,41 @@ export function CalendarPage() {
   };
 
   return (
-    <Container size="xl">
-      <Group justify="space-between" align="center" mb="md">
-        <Title>Calendar</Title>
-        <Group>
-          <Group>
-            <Group gap={0}>
-              <Button
-                variant={viewType === 'month' ? 'default' : 'secondary'}
-                onClick={() => setViewType('month')}
-                style={{ borderRadius: '4px 0 0 4px' }}
-              >
-                <IconCalendarMonth size={16} className="mr-2 h-4 w-4" />
-                Month
-              </Button>
-              <Button
-                variant={viewType === 'week' ? 'default' : 'secondary'}
-                onClick={() => setViewType('week')}
-                style={{ borderRadius: 0, borderLeft: 0, borderRight: 0 }}
-              >
-                <IconCalendarWeek size={16} className="mr-2 h-4 w-4" />
-                Week
-              </Button>
-              <Button
-                variant={viewType === 'day' ? 'default' : 'secondary'}
-                onClick={() => setViewType('day')}
-                style={{ borderRadius: '0 4px 4px 0' }}
-              >
-                <IconCalendar size={16} className="mr-2 h-4 w-4" />
-                Day
-              </Button>
-            </Group>
-          </Group>
+    <div className="container max-w-7xl mx-auto p-8">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-3xl font-bold">Calendar</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex">
+            <Button
+              variant={viewType === 'month' ? 'default' : 'outline'}
+              onClick={() => setViewType('month')}
+              className="rounded-r-none"
+            >
+              <IconCalendarMonth size={16} className="mr-2 h-4 w-4" />
+              Month
+            </Button>
+            <Button
+              variant={viewType === 'week' ? 'default' : 'outline'}
+              onClick={() => setViewType('week')}
+              className="rounded-none border-x-0"
+            >
+              <IconCalendarWeek size={16} className="mr-2 h-4 w-4" />
+              Week
+            </Button>
+            <Button
+              variant={viewType === 'day' ? 'default' : 'outline'}
+              onClick={() => setViewType('day')}
+              className="rounded-l-none"
+            >
+              <IconCalendar size={16} className="mr-2 h-4 w-4" />
+              Day
+            </Button>
+          </div>
 
-          <Group>
-            <ActionIcon
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => {
                 if (date) {
                   const newDate = new Date(date);
@@ -920,23 +880,61 @@ export function CalendarPage() {
               }}
             >
               <IconChevronLeft size={18} />
-            </ActionIcon>
+            </Button>
 
             {viewType === 'day' ? (
-              <DatePickerInput
-                value={date}
-                onChange={setDate}
-                valueFormat="DD MMM YYYY"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[200px] justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <IconCalendarEvent className="mr-2 h-4 w-4" />
+                    {date ? format(date, "dd MMM yyyy") : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date || undefined}
+                    onSelect={(newDate) => newDate && setDate(newDate)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             ) : (
-              <MonthPickerInput
-                value={date}
-                onChange={setDate}
-                valueFormat="MMMM YYYY"
-              />
+              <Select
+                value={date ? format(date, 'yyyy-MM') : ''}
+                onValueChange={(value) => {
+                  const [year, month] = value.split('-');
+                  const newDate = new Date(parseInt(year), parseInt(month) - 1);
+                  setDate(newDate);
+                }}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select month">
+                    {date ? format(date, 'MMMM yyyy') : 'Select month'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const monthDate = new Date(date?.getFullYear() || new Date().getFullYear(), i);
+                    return (
+                      <SelectItem key={i} value={format(monthDate, 'yyyy-MM')}>
+                        {format(monthDate, 'MMMM yyyy')}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             )}
 
-            <ActionIcon
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => {
                 if (date) {
                   const newDate = new Date(date);
@@ -952,66 +950,74 @@ export function CalendarPage() {
               }}
             >
               <IconChevronRight size={18} />
-            </ActionIcon>
-          </Group>
-        </Group>
-      </Group>
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      <Box mb="xl">
+      <div className="mb-8">
         <QuickAddTask
           defaultDueDate={date instanceof Date ? date : null}
           onTaskAdded={() => {
             // Task will be automatically added to the store
           }}
         />
-      </Box>
+      </div>
 
       {/* Success notification */}
       {successNotification && (
-        <Notification
-          icon={<IconCheck size="1.2rem" />}
-          color="teal"
-          title="Task Moved"
-          onClose={() => setSuccessNotification(null)}
-          mb="md"
-        >
-          {successNotification}
-        </Notification>
+        <div className="mb-4 p-4 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 flex items-start gap-3">
+          <IconCheck className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-medium text-green-900 dark:text-green-100">Task Moved</p>
+            <p className="text-sm text-green-800 dark:text-green-200">{successNotification}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900"
+            onClick={() => setSuccessNotification(null)}
+          >
+            ×
+          </Button>
+        </div>
       )}
 
       {loading ? (
-        <Paper withBorder p="xl" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-          <Stack align="center">
-            <Loader size="md" />
-            <Text c="dimmed" mt="md">Loading calendar events...</Text>
-          </Stack>
-        </Paper>
+        <Card>
+          <CardContent className="flex items-center justify-center min-h-[300px]">
+            <div className="flex flex-col items-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              <p className="text-muted-foreground mt-4">Loading calendar events...</p>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Paper withBorder p="md">
-            {/* Month View */}
-            {viewType === 'month' && (
-              <Grid columns={7}>
-                {/* Weekday headers */}
+          <Card>
+            <CardContent className="p-4">
+              {/* Month View */}
+              {viewType === 'month' && (
+                <div className="grid grid-cols-7 gap-0">
+                  {/* Weekday headers */}
                 {weekDays.map((day, i) => (
-                  <Grid.Col span={1} key={`header-${i}`}>
-                    <Text ta="center" fw={700} size="sm">
+                  <div key={`header-${i}`}>
+                    <p className="text-center text-sm font-bold">
                       {day}
-                    </Text>
-                  </Grid.Col>
+                    </p>
+                  </div>
                 ))}
 
                 {/* Empty cells for days before the first of month */}
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                  <Grid.Col span={1} key={`empty-${i}`}>
-                    <Paper
+                  <div key={`empty-${i}`}>
+                    <div
+                      className="border rounded-lg p-2"
                       style={{
                         minHeight: '150px',
                         backgroundColor: colors.cardBackground,
                         opacity: 0.5
                       }}
-                      p="xs"
-                      withBorder
                     >
                       {/* We still add a droppable area, but users shouldn't be able to drop here */}
                       <Droppable droppableId={`empty-${i}`} type="task" isDropDisabled={true}>
@@ -1021,8 +1027,8 @@ export function CalendarPage() {
                           </div>
                         )}
                       </Droppable>
-                    </Paper>
-                  </Grid.Col>
+                    </div>
+                  </div>
                 ))}
 
                 {/* Days of the month */}
@@ -1036,7 +1042,7 @@ export function CalendarPage() {
                   const appTasks = dayTasks.filter(task => !task.source || task.source === 'app');
 
                   return (
-                    <Grid.Col span={1} key={`day-${i}`}>
+                    <div key={`day-${i}`}>
                       <DayCell
                         day={day}
                         isToday={isToday}
@@ -1053,18 +1059,17 @@ export function CalendarPage() {
                         allDayTasks={dayTasks}
                         onViewTask={handleViewTask}
                       >
-                      <Group justify="space-between" mb={6}>
-                        <Text fw={isToday ? 700 : 400} size={isToday ? "md" : "sm"}>
+                      <div className="flex items-center justify-between mb-6">
+                        <p className={isToday ? "text-base font-bold" : "text-sm font-normal"}>
                           {day.getDate()}
-                        </Text>
+                        </p>
                         {isToday && <Badge className="text-xs h-5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Today</Badge>}
-                      </Group>
+                      </div>
 
                     <Droppable droppableId={`day-${day.toISOString().split('T')[0]}`} type="task">
                       {(provided) => (
-                        <Stack
-                          gap={4}
-                          mt="xs"
+                        <div
+                          className="space-y-1 mt-2"
                           {...provided.droppableProps}
                           ref={provided.innerRef}
                           style={{ minHeight: dayTasks.length === 0 ? '60px' : 'auto' }}
@@ -1088,9 +1093,8 @@ export function CalendarPage() {
                                     }}
                                   >
                                     <Card
-                                      padding={4}
+                                      className="p-1 cursor-pointer"
                                       style={{
-                                        cursor: 'pointer',
                                         backgroundColor: '#e8f5e9'
                                       }}
                                       onClick={(e) => {
@@ -1098,12 +1102,12 @@ export function CalendarPage() {
                                         handleViewTask(task);
                                       }}
                                     >
-                                      <Group gap={4} wrap="nowrap" align="flex-start">
+                                      <div className="flex items-start gap-1">
                                         <IconCalendarEvent size={12} style={{ marginTop: 3 }} color="#43a047" />
-                                        <Text size="xs" lineClamp={1} fw={500} style={{ flex: 1 }}>
+                                        <p className="text-xs line-clamp-1 font-medium flex-1">
                                           {task.title}
-                                        </Text>
-                                      </Group>
+                                        </p>
+                                      </div>
                                     </Card>
                                   </div>
                                 )}
@@ -1135,21 +1139,20 @@ export function CalendarPage() {
                                       }}
                                     >
                                       <Card
-                                        padding={4}
+                                        className="p-1 cursor-pointer"
                                         style={{
-                                          cursor: 'pointer',
                                           borderRadius: isMultiDay ?
                                             (task._isFirstDay ? '3px 0 0 3px' :
                                              task._isLastDay ? '0 3px 3px 0' : '0')
                                             : '3px',
                                           borderLeft: isMultiDay && !task._isFirstDay ? 'none' :
                                             `3px solid ${
-                                              task.priority === 'high' ? theme.colors.orange[6] :
-                                              task.priority === 'urgent' ? theme.colors.red[6] :
-                                              task.priority === 'medium' ? theme.colors.yellow[6] :
-                                              theme.colors.blue[6]
+                                              task.priority === 'high' ? '#f97316' :
+                                              task.priority === 'urgent' ? '#ef4444' :
+                                              task.priority === 'medium' ? '#eab308' :
+                                              '#3b82f6'
                                             }`,
-                                          backgroundColor: isMultiDay ? theme.colors.blue[1] : undefined,
+                                          backgroundColor: isMultiDay ? '#dbeafe' : undefined,
                                           borderRight: isMultiDay && !task._isLastDay ? 'none' : undefined
                                         }}
                                         onClick={(e) => {
@@ -1157,7 +1160,7 @@ export function CalendarPage() {
                                           handleViewTask(task);
                                         }}
                                       >
-                                        <Group gap={4} wrap="nowrap" align="center">
+                                        <div className="flex items-center gap-1">
                                           {isMultiDay && (
                                             <Badge className="text-xs h-5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-none" style={{ padding: '2px 4px' }}>
                                               {task._isFirstDay ? 'Start' : task._isLastDay ? 'End' : 'Day ' + (task._totalDays && task._totalDays > 3 ? Math.floor(task._totalDays / 2) : '')}
@@ -1166,10 +1169,10 @@ export function CalendarPage() {
                                           {!isMultiDay && task.estimatedHours && (
                                             <IconClockHour4 size={12} style={{ marginRight: 2 }} color="#999" />
                                         )}
-                                        <Text size="xs" lineClamp={1} style={{ flex: 1 }}>
+                                        <p className="text-xs line-clamp-1 flex-1">
                                           {isMultiDay && !task._isFirstDay ? '' : task.title}
-                                        </Text>
-                                      </Group>
+                                        </p>
+                                      </div>
                                     </Card>
                                   </div>
                                 )}
@@ -1178,108 +1181,91 @@ export function CalendarPage() {
                             })}
 
                             {googleTasks.length > 1 && (
-                              <Text size="xs" c="green" ta="left">
+                              <p className="text-xs text-green-600 text-left">
                                 +{googleTasks.length - 1} calendar events
-                              </Text>
+                              </p>
                             )}
 
                             {dayTasks.length > (googleTasks.length > 0 ? 3 : 2) && (
-                              <Text size="xs" c="dimmed" ta="center">
+                              <p className="text-xs text-muted-foreground text-center">
                                 +{dayTasks.length - (googleTasks.length > 0 ? 3 : 2)} more
-                              </Text>
+                              </p>
                             )}
                             {provided.placeholder}
-                          </Stack>
+                          </div>
                         )}
                       </Droppable>
                   </DayCell>
-                </Grid.Col>
+                </div>
               );
             })}
-          </Grid>
+          </div>
             )}
 
             {/* Week View */}
             {viewType === 'week' && (
-              <Stack>
+              <div className="space-y-4">
                 {/* Weekday Headers */}
-                <Grid columns={7}>
+                <div className="grid grid-cols-7 gap-0">
                   {date && getDaysInWeek(date).map((day, index) => {
                     const isToday = new Date().toDateString() === day.toDateString();
                     return (
-                      <Grid.Col span={1} key={`weekday-${index}`}>
-                        <Paper
-                          p="xs"
-                          withBorder
+                      <div key={`weekday-${index}`}>
+                        <div
+                          className="border rounded-lg p-2 text-center"
                           style={{
-                            backgroundColor: isToday ? colors.highlight : colors.cardBackground,
-                            textAlign: 'center'
+                            backgroundColor: isToday ? colors.highlight : colors.cardBackground
                           }}
                         >
-                          <Text fw={700} size="sm">
+                          <p className="text-sm font-bold">
                             {weekDays[index]}
-                          </Text>
-                          <Text
-                            fw={isToday ? 700 : 500}
-                            size="md"
-                            style={{
-                              backgroundColor: isToday ? theme.colors.blue[1] : 'transparent',
-                              borderRadius: theme.radius.sm,
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                            }}
+                          </p>
+                          <p
+                            className={`text-base ${isToday ? "font-bold bg-blue-100 dark:bg-blue-900" : "font-medium"} inline-block px-2 py-0.5 rounded`}
                           >
                             {day.getDate()}
-                          </Text>
-                        </Paper>
-                      </Grid.Col>
+                          </p>
+                        </div>
+                      </div>
                     );
                   })}
-                </Grid>
+                </div>
 
                 {/* Tasks Section */}
-                <Grid columns={7}>
+                <div className="grid grid-cols-7 gap-0">
                   {date && getDaysInWeek(date).map((day, index) => {
                     const dayTasks = getTasksForDate(day);
                     const isToday = new Date().toDateString() === day.toDateString();
                     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
 
                     return (
-                      <Grid.Col span={1} key={`week-day-${index}`}>
+                      <div key={`week-day-${index}`}>
                         <Droppable droppableId={`day-${day.toISOString().split('T')[0]}`} type="task">
                           {(provided) => (
-                            <Paper
+                            <div
+                              className="border rounded-lg p-2 relative"
                               {...provided.droppableProps}
                               ref={provided.innerRef}
                               style={{
                                 backgroundColor: isToday ? colors.highlight : colors.cardBackground,
                                 opacity: isPast ? 0.95 : 1,
-                                minHeight: '300px',
-                                padding: '8px',
-                                position: 'relative'
+                                minHeight: '300px'
                               }}
-                              withBorder
                             >
                               {/* Add task button */}
                               {!isPast && (
-                                <ActionIcon
-                                  variant="light"
-                                  color="blue"
-                                  radius="xl"
-                                  style={{
-                                    position: 'absolute',
-                                    top: 8,
-                                    right: 8,
-                                    zIndex: 2,
-                                  }}
+                                <Button
+                                  variant="default"
+                                  size="icon"
+                                  className="absolute top-2 right-2 z-[2] h-8 w-8 rounded-full"
                                   onClick={() => handleAddTaskForDay(day)}
                                 >
                                   <IconCirclePlus size={16} />
-                                </ActionIcon>
+                                </Button>
                               )}
 
                               {/* Tasks */}
-                              <Stack gap="xs" mt={30}>
+                              <div className="space-y-2 mt-8">
                                 {/* Group tasks for this day by source */}
                                 {dayTasks
                                   .sort((a, b) => {
@@ -1309,101 +1295,98 @@ export function CalendarPage() {
                                           }}
                                         >
                                           <Card
-                                            padding="xs"
+                                            className="p-2"
                                             style={{
                                               cursor: 'pointer',
                                               ...(task.source === 'google'
                                                 ? { backgroundColor: '#e8f5e9' }
                                                 : {
                                                     borderLeft: `4px solid ${
-                                                      task.priority === 'high' ? theme.colors.orange[6] :
-                                                      task.priority === 'urgent' ? theme.colors.red[6] :
-                                                      task.priority === 'medium' ? theme.colors.yellow[6] :
-                                                      theme.colors.blue[6]
+                                                      task.priority === 'high' ? '#f97316' :
+                                                      task.priority === 'urgent' ? '#ef4444' :
+                                                      task.priority === 'medium' ? '#eab308' :
+                                                      '#3b82f6'
                                                     }`
                                                   }
                                               )
                                             }}
                                             onClick={() => handleViewTask(task)}
                                           >
-                                            <Group justify="space-between" wrap="nowrap">
+                                            <div className="flex items-center justify-between">
                                               <div>
-                                                <Text fw={500} size="sm" lineClamp={1}>{task.title}</Text>
+                                                <p className="text-sm font-medium line-clamp-1">{task.title}</p>
                                                 {task.source === 'google' && (
-                                                  <Group gap={4} wrap="nowrap">
+                                                  <div className="flex items-center gap-1">
                                                     <IconCalendarEvent size={12} color="#43a047" />
-                                                    <Text size="xs" c="dimmed">Google Calendar</Text>
-                                                  </Group>
+                                                    <p className="text-xs text-muted-foreground">Google Calendar</p>
+                                                  </div>
                                                 )}
                                                 {!task.source && task.estimatedHours && (
-                                                  <Group gap={4} wrap="nowrap">
+                                                  <div className="flex items-center gap-1">
                                                     <IconClockHour4 size={12} color="#777" />
-                                                    <Text size="xs" c="dimmed">{task.estimatedHours}h</Text>
-                                                  </Group>
+                                                    <p className="text-xs text-muted-foreground">{task.estimatedHours}h</p>
+                                                  </div>
                                                 )}
                                               </div>
-                                              <ActionIcon variant="subtle" onClick={(e) => {
+                                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleViewTask(task);
                                               }}>
                                                 <IconEdit size={16} />
-                                              </ActionIcon>
-                                            </Group>
+                                              </Button>
+                                            </div>
                                           </Card>
                                         </div>
                                       )}
                                     </Draggable>
                                   ))}
                                 {provided.placeholder}
-                              </Stack>
-                            </Paper>
+                              </div>
+                            </div>
                           )}
                         </Droppable>
-                      </Grid.Col>
+                      </div>
                     );
                   })}
-                </Grid>
-              </Stack>
+                </div>
+              </div>
             )}
 
             {/* Day View */}
             {viewType === 'day' && (
-              <Stack>
+              <div className="space-y-4">
                 {/* Date Header */}
-                <Paper
-                  p="md"
-                  withBorder
+                <div
+                  className="border rounded-lg p-4 text-center"
                   style={{
-                    backgroundColor: colors.cardBackground,
-                    textAlign: 'center'
+                    backgroundColor: colors.cardBackground
                   }}
                 >
-                  <Text fw={700} size="xl">
+                  <p className="text-xl font-bold">
                     {date ? date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                  </Text>
-                </Paper>
+                  </p>
+                </div>
 
                 {/* Hour slots */}
-                <Grid>
-                  <Grid.Col span={2}>
-                    <Paper withBorder p="md" style={{ height: '50px', textAlign: 'center' }}>
-                      <Text fw={700}>All-day</Text>
-                    </Paper>
-                  </Grid.Col>
-                  <Grid.Col span={10}>
+                <div className="grid grid-cols-12 gap-0">
+                  <div className="col-span-2">
+                    <div className="border rounded-lg p-4 h-[50px] text-center flex items-center justify-center">
+                      <p className="font-bold">All-day</p>
+                    </div>
+                  </div>
+                  <div className="col-span-10">
                     <Droppable droppableId={`day-${date ? date.toISOString().split('T')[0] : 'unknown'}`} type="task">
                       {(provided) => (
-                        <Paper
+                        <div
+                          className="border rounded-lg p-4"
                           {...provided.droppableProps}
                           ref={provided.innerRef}
-                          withBorder
-                          p="md"
                           style={{
                             minHeight: '50px',
                             backgroundColor: colors.cardBackground
                           }}
                         >
-                          <Stack gap="xs">
+                          <div className="space-y-2">
                             {date && getTasksForDate(date).map((task, index) => (
                               <Draggable
                                 key={task.id}
@@ -1422,34 +1405,34 @@ export function CalendarPage() {
                                     }}
                                   >
                                     <Card
-                                      padding="xs"
+                                      className="p-2"
                                       style={{
                                         cursor: 'pointer',
                                         ...(task.source === 'google'
                                           ? { backgroundColor: '#e8f5e9' }
                                           : {
                                               borderLeft: `4px solid ${
-                                                task.priority === 'high' ? theme.colors.orange[6] :
-                                                task.priority === 'urgent' ? theme.colors.red[6] :
-                                                task.priority === 'medium' ? theme.colors.yellow[6] :
-                                                theme.colors.blue[6]
+                                                task.priority === 'high' ? '#f97316' :
+                                                task.priority === 'urgent' ? '#ef4444' :
+                                                task.priority === 'medium' ? '#eab308' :
+                                                '#3b82f6'
                                               }`
                                             }
                                         )
                                       }}
                                       onClick={() => handleViewTask(task)}
                                     >
-                                      <Group justify="space-between" wrap="nowrap">
+                                      <div className="flex items-center justify-between">
                                         <div>
-                                          <Text fw={500} size="sm">{task.title}</Text>
+                                          <p className="text-sm font-medium">{task.title}</p>
                                           {task.description && (
-                                            <Text size="xs" c="dimmed" lineClamp={1}>{task.description}</Text>
+                                            <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>
                                           )}
                                           {task.source === 'google' && (
-                                            <Group gap={4} wrap="nowrap">
+                                            <div className="flex items-center gap-1">
                                               <IconCalendarEvent size={12} color="#43a047" />
-                                              <Text size="xs" c="dimmed">Google Calendar</Text>
-                                            </Group>
+                                              <p className="text-xs text-muted-foreground">Google Calendar</p>
+                                            </div>
                                           )}
                                         </div>
                                         <ActionIcon variant="subtle" onClick={(e) => {
@@ -1458,14 +1441,14 @@ export function CalendarPage() {
                                         }}>
                                           <IconEdit size={16} />
                                         </ActionIcon>
-                                      </Group>
+                                      </div>
                                     </Card>
                                   </div>
                                 )}
                               </Draggable>
                             ))}
                             {provided.placeholder}
-                          </Stack>
+                          </div>
 
                           {/* Add task button */}
                           <Button
@@ -1476,40 +1459,27 @@ export function CalendarPage() {
                             <IconPlus size={14} className="mr-2 h-4 w-4" />
                             Add Task
                           </Button>
-                        </Paper>
+                        </div>
                       )}
                     </Droppable>
-                  </Grid.Col>
-                </Grid>
+                  </div>
+                </div>
 
                 {/* Hour slots */}
                 {getHourSlots().map((slot) => (
-                  <Grid key={`hour-${slot.hour}`}>
-                    <Grid.Col span={2}>
-                      <Paper
-                        withBorder
-                        p="md"
-                        style={{
-                          height: '80px',
-                          backgroundColor: theme.colors.gray[0],
-                          textAlign: 'center',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
+                  <div key={`hour-${slot.hour}`} className="grid grid-cols-12 gap-0">
+                    <div className="col-span-2">
+                      <div
+                        className="border rounded-lg p-4 h-20 bg-gray-100 dark:bg-gray-800 text-center flex items-center justify-center"
                       >
-                        <Text fw={500}>{slot.label}</Text>
-                      </Paper>
-                    </Grid.Col>
-                    <Grid.Col span={10}>
-                      <Paper
-                        withBorder
-                        p="xs"
+                        <p className="font-medium">{slot.label}</p>
+                      </div>
+                    </div>
+                    <div className="col-span-10">
+                      <div
+                        className="border rounded-lg p-2 h-20 cursor-pointer border-t-dashed"
                         style={{
-                          height: '80px',
-                          backgroundColor: colors.cardBackground,
-                          borderTop: '1px dashed rgba(0, 0, 0, 0.1)',
-                          cursor: 'pointer'
+                          backgroundColor: colors.cardBackground
                         }}
                         onClick={() => {
                           if (date) {
@@ -1517,12 +1487,13 @@ export function CalendarPage() {
                           }
                         }}
                       />
-                    </Grid.Col>
-                  </Grid>
+                    </div>
+                  </div>
                 ))}
-              </Stack>
+              </div>
             )}
-        </Paper>
+            </CardContent>
+          </Card>
         </DragDropContext>
       )}
 
@@ -1542,6 +1513,6 @@ export function CalendarPage() {
         onAddTask={handleAddTaskForDay}
         onViewTask={handleViewTask}
       />
-    </Container>
+    </div>
   );
 }

@@ -19,30 +19,19 @@ import {
   RegisterRequest,
   RegisterResponse
 } from '../../../shared/types';
+import { logger } from '@/services/logger.service';
 
 // Simple API call wrapper with proper error handling
 const apiCall = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
     return await fn();
   } catch (error) {
-    console.error('API call failed:', error);
+    logger.error('API call failed', error);
     throw error;
   }
 };
 
-// Type conversion helpers
-const convertTaskFromBackend = (backendTask: Record<string, unknown>): Task => {
-  return {
-    ...backendTask,
-    // Convert backend lowercase enums to frontend uppercase enums
-    status: (backendTask.status as string)?.toUpperCase() as TaskStatus,
-    priority: (backendTask.priority as string)?.toUpperCase() as TaskPriority,
-  } as Task;
-};
-
-const convertTasksFromBackend = (backendTasks: Record<string, unknown>[]): Task[] => {
-  return backendTasks.map(convertTaskFromBackend);
-};
+// No type conversion needed - types are consistent between frontend and backend
 
 // Main API object
 export const api = {
@@ -93,19 +82,19 @@ export const api = {
   tasks: {
     getAll: async (): Promise<Task[]> => {
       const result = await apiCall(() => trpcVanilla.tasks.getAll.query());
-      return convertTasksFromBackend(result as Record<string, unknown>[]);
+      return result as Task[];
     },
 
     getById: async (id: string): Promise<Task> => {
       const result = await apiCall(() => trpcVanilla.tasks.getById.query({ id }));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
 
     getByStatus: async (status: TaskStatus): Promise<Task[]> => {
       // Convert uppercase enum to lowercase for backend compatibility
       const backendStatus = status.toLowerCase() as 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'in_review' | 'done' | 'archived';
       const result = await apiCall(() => trpcVanilla.tasks.getByStatus.query({ status: backendStatus }));
-      return convertTasksFromBackend(result as Record<string, unknown>[]);
+      return result as Task[];
     },
 
     create: async (taskData: Partial<Task>): Promise<Task> => {
@@ -121,7 +110,7 @@ export const api = {
         assigneeId: taskData.assigneeId,
       };
       const result = await apiCall(() => trpcVanilla.tasks.create.mutate(backendData));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
 
     update: async (id: string, data: Partial<Task>): Promise<Task> => {
@@ -137,7 +126,7 @@ export const api = {
         assigneeId: data.assigneeId,
       };
       const result = await apiCall(() => trpcVanilla.tasks.update.mutate({ id, data: backendData }));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
 
     delete: async (id: string): Promise<void> => {
@@ -148,12 +137,12 @@ export const api = {
       // Convert uppercase enum to lowercase for backend compatibility
       const backendStatus = status.toLowerCase() as 'backlog' | 'todo' | 'in_progress' | 'blocked' | 'in_review' | 'done' | 'archived';
       const result = await apiCall(() => trpcVanilla.tasks.update.mutate({ id, data: { status: backendStatus } }));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
 
     search: async (query: string): Promise<Task[]> => {
       const result = await apiCall(() => trpcVanilla.tasks.search.query({ query }));
-      return convertTasksFromBackend(result as Record<string, unknown>[]);
+      return result as Task[];
     },
 
     getAnalytics: async (): Promise<Record<string, unknown>> => {
@@ -164,17 +153,17 @@ export const api = {
     // Additional methods that might be called by stores
     updateAssignee: async (id: string, assigneeId: string): Promise<Task> => {
       const result = await apiCall(() => trpcVanilla.tasks.update.mutate({ id, data: { assigneeId } }));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
 
     startTimeTracking: async (id: string): Promise<Task> => {
       const result = await apiCall(() => trpcVanilla.tasks.update.mutate({ id, data: { timeTrackingActive: true } }));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
 
     stopTimeTracking: async (id: string): Promise<Task> => {
       const result = await apiCall(() => trpcVanilla.tasks.update.mutate({ id, data: { timeTrackingActive: false } }));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
 
     saveAsTemplate: async (taskId: string, templateName: string, isPublic: boolean): Promise<TaskTemplate> => {
@@ -205,7 +194,7 @@ export const api = {
         status: 'todo' as const,
       };
       const result = await apiCall(() => trpcVanilla.tasks.create.mutate(newTaskData));
-      return convertTaskFromBackend(result as Record<string, unknown>);
+      return result as Task;
     },
   },
 

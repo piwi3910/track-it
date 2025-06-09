@@ -105,8 +105,8 @@ app.use(
         error: error.message,
         errorCode: error.code,
         input,
-        body: (ctx.req as any).body,
-        headers: ctx.req.headers
+        body: (ctx?.req as { body?: unknown })?.body,
+        headers: ctx?.req?.headers
       }, 'tRPC Error - detailed');
       
       if (error.code === 'INTERNAL_SERVER_ERROR') {

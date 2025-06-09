@@ -1,24 +1,21 @@
 import { useState, useEffect } from 'react';
-import {
-  Container,
-  Title,
-  Paper,
-  Group,
-  Text,
-  TextInput,
-  Select,
-  PasswordInput,
-  Table,
-  ActionIcon,
-  Stack,
-  Loader,
-  Center
-} from '@mantine/core';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AppModal } from '@/components/ui/AppModal';
-import { AppTabs } from '@/components/ui/AppTabs';
-import { AppAlert } from '@/components/ui/AppAlert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   IconUsers,
   IconUserPlus,
@@ -28,9 +25,10 @@ import {
   IconShield,
   IconAlertCircle,
   IconCheck,
-  IconX
+  IconX,
+  IconEye,
+  IconEyeOff
 } from '@tabler/icons-react';
-import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@/components/ui/notifications';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useApp } from '@/hooks/useApp';
@@ -78,10 +76,25 @@ export function AdminPage() {
   const [loadingStats, setLoadingStats] = useState(false);
   
   // Modal states
-  const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
-  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
-  const [passwordModalOpened, { open: openPasswordModal, close: closePasswordModal }] = useDisclosure(false);
-  const [deleteModalOpened, { open: openDeleteModal, close: closeDeleteModal }] = useDisclosure(false);
+  const [createModalOpened, setCreateModalOpened] = useState(false);
+  const [editModalOpened, setEditModalOpened] = useState(false);
+  const [passwordModalOpened, setPasswordModalOpened] = useState(false);
+  const [deleteModalOpened, setDeleteModalOpened] = useState(false);
+  
+  // Password visibility states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Modal control functions
+  const openCreateModal = () => setCreateModalOpened(true);
+  const closeCreateModal = () => setCreateModalOpened(false);
+  const openEditModal = () => setEditModalOpened(true);
+  const closeEditModal = () => setEditModalOpened(false);
+  const openPasswordModal = () => setPasswordModalOpened(true);
+  const closePasswordModal = () => setPasswordModalOpened(false);
+  const openDeleteModal = () => setDeleteModalOpened(true);
+  const closeDeleteModal = () => setDeleteModalOpened(false);
 
   // Form states
   const [createForm, setCreateForm] = useState<UserFormData>({
@@ -341,334 +354,424 @@ export function AdminPage() {
   // Redirect if not admin
   if (!isAdmin) {
     return (
-      <Container size="xl">
-        <AppAlert
-          icon={<IconAlertCircle size={16} />}
-          title="Access Denied"
-          color="red"
-        >
-          You don't have permission to access this page. Admin privileges are required.
-        </AppAlert>
-      </Container>
+      <div className="container max-w-7xl mx-auto p-8">
+        <Alert variant="destructive">
+          <IconAlertCircle className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You don't have permission to access this page. Admin privileges are required.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   return (
-    <Container size="xl">
-      <Title mb="xl">Admin Panel</Title>
+    <div className="container max-w-7xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-8">Admin Panel</h1>
       
-      <AppTabs value={activeTab} onChange={setActiveTab}>
-        <AppTabs.List mb="xl">
-          <AppTabs.Tab value="users" leftSection={<IconUsers size={16} />}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-8">
+          <TabsTrigger value="users">
+            <IconUsers className="mr-2 h-4 w-4" />
             User Management
-          </AppTabs.Tab>
-          <AppTabs.Tab value="settings" leftSection={<IconShield size={16} />}>
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <IconShield className="mr-2 h-4 w-4" />
             System Settings
-          </AppTabs.Tab>
-        </AppTabs.List>
+          </TabsTrigger>
+        </TabsList>
         
         {/* User Management Tab */}
-        {activeTab === 'users' && (
-          <Paper withBorder p="xl">
-            <Group justify="space-between" mb="lg">
-              <Title order={3}>Users ({users.length})</Title>
-              <Button
-                onClick={openCreateModal}
-              >
-                <IconUserPlus size={16} className="mr-2 h-4 w-4" />
-                Create User
-              </Button>
-            </Group>
+        <TabsContent value="users">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold">Users ({users.length})</h3>
+                <Button
+                  onClick={openCreateModal}
+                >
+                  <IconUserPlus size={16} className="mr-2 h-4 w-4" />
+                  Create User
+                </Button>
+              </div>
 
-            {loading ? (
-              <Center h={200}>
-                <Loader size="lg" />
-              </Center>
-            ) : (
-              <Table striped highlightOnHover>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>User</Table.Th>
-                    <Table.Th>Email</Table.Th>
-                    <Table.Th>Role</Table.Th>
-                    <Table.Th>Actions</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {users.map((user) => (
-                    <Table.Tr key={user.id}>
-                      <Table.Td>
-                        <Group gap="sm">
-                          <InitialsAvatar
-                            name={user.name}
-                            src={user.avatarUrl}
-                            size="sm"
-                          />
-                          <Text fw={500}>{user.name}</Text>
-                        </Group>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text c="dimmed">{user.email}</Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge 
-                          variant={getRoleBadgeVariant(user.role || 'member')}
-                          className={getRoleBadgeClassName(user.role || 'member')}>
-                          {(user.role || 'member').toUpperCase()}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap="xs">
-                          <ActionIcon
-                            variant="light"
-                            color="blue"
-                            onClick={() => openEditUserModal(user)}
-                          >
-                            <IconEdit size={16} />
-                          </ActionIcon>
-                          <ActionIcon
-                            variant="light"
-                            color="yellow"
-                            onClick={() => openPasswordResetModal(user)}
-                          >
-                            <IconKey size={16} />
-                          </ActionIcon>
-                          <ActionIcon
-                            variant="light"
-                            color="red"
-                            onClick={() => openDeleteUserModal(user)}
-                            disabled={user.id === currentUser?.id}
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Group>
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            )}
-          </Paper>
-        )}
+              {loading ? (
+                <div className="flex items-center justify-center h-[200px]">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <InitialsAvatar
+                                name={user.name}
+                                src={user.avatarUrl}
+                                size="sm"
+                              />
+                              <span className="font-medium">{user.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-muted-foreground">{user.email}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={getRoleBadgeVariant(user.role || 'member')}
+                              className={getRoleBadgeClassName(user.role || 'member')}>
+                              {(user.role || 'member').toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => openEditUserModal(user)}
+                              >
+                                <IconEdit size={16} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => openPasswordResetModal(user)}
+                              >
+                                <IconKey size={16} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => openDeleteUserModal(user)}
+                                disabled={user.id === currentUser?.id}
+                              >
+                                <IconTrash size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         {/* System Settings Tab */}
-        {activeTab === 'settings' && (
-          <Paper withBorder p="xl">
-            <Title order={3} mb="md">System Settings</Title>
-            <Text c="dimmed">System configuration options will be available here.</Text>
-          </Paper>
-        )}
-      </AppTabs>
+        <TabsContent value="settings">
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold mb-4">System Settings</h3>
+              <p className="text-muted-foreground">System configuration options will be available here.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Create User Modal */}
-      <AppModal
-        opened={createModalOpened}
-        onClose={closeCreateModal}
-        title="Create New User"
-        centered
-        size="md"
-      >
-        <Stack>
-          <TextInput
-            label="Name"
-            placeholder="Enter user's full name"
-            required
-            value={createForm.name}
-            onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-          />
-          <TextInput
-            label="Email"
-            placeholder="Enter user's email"
-            type="email"
-            required
-            value={createForm.email}
-            onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-          />
-          <Select
-            label="Role"
-            placeholder="Select user role"
-            required
-            value={createForm.role}
-            onChange={(value) => setCreateForm({ ...createForm, role: value as UserRole })}
-            data={[
-              { value: 'guest', label: 'Guest' },
-              { value: 'member', label: 'Member' },
-              { value: 'admin', label: 'Admin' }
-            ]}
-          />
-          <PasswordInput
-            label="Password"
-            placeholder="Enter password"
-            required
-            value={createForm.password}
-            onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-          />
-          <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={closeCreateModal}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateUser}>
-              Create User
-            </Button>
-          </Group>
-        </Stack>
-      </AppModal>
+      <Dialog open={createModalOpened} onOpenChange={(open) => !open && closeCreateModal()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="create-name">Name</Label>
+              <Input
+                id="create-name"
+                placeholder="Enter user's full name"
+                required
+                value={createForm.name}
+                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="create-email">Email</Label>
+              <Input
+                id="create-email"
+                placeholder="Enter user's email"
+                type="email"
+                required
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="create-role">Role</Label>
+              <Select
+                value={createForm.role}
+                onValueChange={(value) => setCreateForm({ ...createForm, role: value as UserRole })}
+              >
+                <SelectTrigger id="create-role">
+                  <SelectValue placeholder="Select user role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="guest">Guest</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="create-password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="create-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter password"
+                  required
+                  value={createForm.password || ''}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={closeCreateModal}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateUser}>
+                Create User
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit User Modal */}
-      <AppModal
-        opened={editModalOpened}
-        onClose={closeEditModal}
-        title="Edit User"
-        centered
-        size="md"
-      >
-        <Stack>
-          <TextInput
-            label="Name"
-            placeholder="Enter user's full name"
-            required
-            value={editForm.name}
-            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-          />
-          <TextInput
-            label="Email"
-            placeholder="Enter user's email"
-            type="email"
-            required
-            value={editForm.email}
-            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-          />
-          <Select
-            label="Role"
-            placeholder="Select user role"
-            required
-            value={editForm.role}
-            onChange={(value) => setEditForm({ ...editForm, role: value as UserRole })}
-            data={[
-              { value: 'guest', label: 'Guest' },
-              { value: 'member', label: 'Member' },
-              { value: 'admin', label: 'Admin' }
-            ]}
-          />
-          <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={closeEditModal}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditUser}>
-              Update User
-            </Button>
-          </Group>
-        </Stack>
-      </AppModal>
+      <Dialog open={editModalOpened} onOpenChange={(open) => !open && closeEditModal()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                placeholder="Enter user's full name"
+                required
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                placeholder="Enter user's email"
+                type="email"
+                required
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-role">Role</Label>
+              <Select
+                value={editForm.role}
+                onValueChange={(value) => setEditForm({ ...editForm, role: value as UserRole })}
+              >
+                <SelectTrigger id="edit-role">
+                  <SelectValue placeholder="Select user role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="guest">Guest</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={closeEditModal}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditUser}>
+                Update User
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Password Reset Modal */}
-      <AppModal
-        opened={passwordModalOpened}
-        onClose={closePasswordModal}
-        title={`Reset Password for ${selectedUser?.name}`}
-        centered
-        size="md"
-      >
-        <Stack>
-          <PasswordInput
-            label="New Password"
-            placeholder="Enter new password"
-            required
-            value={passwordForm.newPassword}
-            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-          />
-          <PasswordInput
-            label="Confirm Password"
-            placeholder="Confirm new password"
-            required
-            value={passwordForm.confirmPassword}
-            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-          />
-          <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={closePasswordModal}>
-              Cancel
-            </Button>
-            <Button variant="secondary" onClick={handlePasswordReset}>
-              Reset Password
-            </Button>
-          </Group>
-        </Stack>
-      </AppModal>
+      <Dialog open={passwordModalOpened} onOpenChange={(open) => !open && closePasswordModal()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password for {selectedUser?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="Enter new password"
+                  required
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm new password"
+                  required
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={closePasswordModal}>
+                Cancel
+              </Button>
+              <Button variant="secondary" onClick={handlePasswordReset}>
+                Reset Password
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete User Modal */}
-      <AppModal
-        opened={deleteModalOpened}
-        onClose={closeDeleteModal}
-        title="Delete User - Impact Assessment"
-        centered
-        size="lg"
-      >
-        <Stack>
-          <AppAlert
-            icon={<IconAlertCircle size={16} />}
-            color="red"
-            title="Warning: This action cannot be undone"
-          >
-            You are about to permanently delete <strong>{selectedUser?.name}</strong> and all associated data.
-          </AppAlert>
+      <Dialog open={deleteModalOpened} onOpenChange={(open) => !open && closeDeleteModal()}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Delete User - Impact Assessment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert variant="destructive">
+              <IconAlertCircle className="h-4 w-4" />
+              <AlertTitle>Warning: This action cannot be undone</AlertTitle>
+              <AlertDescription>
+                You are about to permanently delete <strong>{selectedUser?.name}</strong> and all associated data.
+              </AlertDescription>
+            </Alert>
 
-          {loadingStats ? (
-            <Center py="xl">
-              <Loader size="sm" />
-              <Text ml="sm">Loading impact assessment...</Text>
-            </Center>
-          ) : deletionStats ? (
-            <Stack gap="md">
-              <Text fw={500}>Deletion Impact:</Text>
+            {loadingStats ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary mr-2"></div>
+                <span className="text-sm">Loading impact assessment...</span>
+              </div>
+            ) : deletionStats ? (
+              <div className="space-y-4">
+                <p className="font-medium">Deletion Impact:</p>
               
               {deletionStats.consequences.willDelete.length > 0 && (
-                <AppAlert color="red" icon={<IconX size={16} />} title="Will be permanently deleted:">
-                  <Stack gap="xs">
-                    {deletionStats.consequences.willDelete.map((item, index) => (
-                      <Text key={index} size="sm">• {item}</Text>
-                    ))}
-                  </Stack>
-                </AppAlert>
+                <Alert variant="destructive">
+                  <IconX className="h-4 w-4" />
+                  <AlertTitle>Will be permanently deleted:</AlertTitle>
+                  <AlertDescription>
+                    <div className="space-y-1">
+                      {deletionStats.consequences.willDelete.map((item, index) => (
+                        <p key={index} className="text-sm">• {item}</p>
+                      ))}
+                    </div>
+                  </AlertDescription>
+                </Alert>
               )}
 
               {deletionStats.consequences.willUpdate.length > 0 && (
-                <AppAlert color="orange" icon={<IconAlertCircle size={16} />} title="Will be updated:">
-                  <Stack gap="xs">
-                    {deletionStats.consequences.willUpdate.map((item, index) => (
-                      <Text key={index} size="sm">• {item}</Text>
-                    ))}
-                  </Stack>
-                </AppAlert>
+                <Alert className="border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-100">
+                  <IconAlertCircle className="h-4 w-4" />
+                  <AlertTitle>Will be updated:</AlertTitle>
+                  <AlertDescription>
+                    <div className="space-y-1">
+                      {deletionStats.consequences.willUpdate.map((item, index) => (
+                        <p key={index} className="text-sm">• {item}</p>
+                      ))}
+                    </div>
+                  </AlertDescription>
+                </Alert>
               )}
 
               {deletionStats.stats.createdTasks === 0 && 
                deletionStats.stats.comments === 0 && 
                deletionStats.stats.assignedTasks === 0 ? (
-                <AppAlert color="green" icon={<IconCheck size={16} />}>
-                  This user has no associated tasks or comments. Deletion will be clean.
-                </AppAlert>
+                <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100">
+                  <IconCheck className="h-4 w-4" />
+                  <AlertDescription>
+                    This user has no associated tasks or comments. Deletion will be clean.
+                  </AlertDescription>
+                </Alert>
               ) : null}
-            </Stack>
-          ) : (
-            <AppAlert color="orange" icon={<IconAlertCircle size={16} />}>
-              Unable to load deletion statistics. Proceeding may have unexpected consequences.
-            </AppAlert>
+              </div>
+            ) : (
+            <Alert className="border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-100">
+              <IconAlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Unable to load deletion statistics. Proceeding may have unexpected consequences.
+              </AlertDescription>
+            </Alert>
           )}
 
-          <Group justify="flex-end" mt="md">
-            <Button variant="outline" onClick={closeDeleteModal}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDeleteUser}
-              disabled={loadingStats}
-            >
-              {loadingStats ? <Loader size="xs" /> : 'Delete User'}
-            </Button>
-          </Group>
-        </Stack>
-      </AppModal>
-    </Container>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={closeDeleteModal}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteUser}
+                disabled={loadingStats}
+              >
+                {loadingStats ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                ) : (
+                  'Delete User'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

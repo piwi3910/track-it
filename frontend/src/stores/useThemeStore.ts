@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useMantineColorScheme, MantineColorScheme } from '@mantine/core';
-import { useEffect } from 'react';
+
+// Color scheme type
+type ColorScheme = 'light' | 'dark';
 
 // Theme types
 interface ThemeColors {
@@ -92,8 +93,8 @@ interface ThemeTypography {
 // Store types
 interface ThemeState {
   // Theme controls
-  colorScheme: MantineColorScheme;
-  setColorScheme: (colorScheme: MantineColorScheme) => void;
+  colorScheme: ColorScheme;
+  setColorScheme: (colorScheme: ColorScheme) => void;
   toggleColorScheme: () => void;
   isDark: boolean;
 
@@ -120,7 +121,7 @@ export const useThemeStore = create<ThemeState>()(
       isDark: false,
       
       // Action to update the color scheme
-      setColorScheme: (colorScheme: MantineColorScheme) => {
+      setColorScheme: (colorScheme: ColorScheme) => {
         const isDark = colorScheme === 'dark';
         set({ colorScheme, isDark });
         
@@ -138,15 +139,7 @@ export const useThemeStore = create<ThemeState>()(
         const newMode = currentMode === 'dark' ? 'light' : 'dark';
         get().setColorScheme(newMode);
         
-        // Also manually update Mantine - this is one-way from our store to Mantine
-        const mantine = document.querySelector('html');
-        if (mantine) {
-          if (newMode === 'dark') {
-            mantine.setAttribute('data-mantine-color-scheme', 'dark');
-          } else {
-            mantine.setAttribute('data-mantine-color-scheme', 'light');
-          }
-        }
+        // Update document for theme
       },
       
       // Initial colors (light theme)
@@ -378,29 +371,3 @@ export const useThemeStore = create<ThemeState>()(
   )
 );
 
-/**
- * Hook to synchronize Mantine's color scheme with our theme store
- * But prevent infinite loops by using refs and sync flags
- */
-export function useSyncMantineTheme() {
-  const { setColorScheme } = useThemeStore();
-  const { colorScheme, setColorScheme: setMantineColorScheme } = useMantineColorScheme();
-  
-  // Use a single direction sync to prevent loops
-  useEffect(() => {
-    // Only sync from Mantine to our store on initial load
-    // This allows our store to be the source of truth after initialization
-    const storedTheme = localStorage.getItem('track-it-theme');
-    if (!storedTheme) {
-      // Only set if we don't have a stored preference already
-      setColorScheme(colorScheme);
-    }
-  }, [colorScheme, setColorScheme]); // Include dependencies
-  
-  // Expose a manual sync function if needed elsewhere
-  return {
-    syncThemeToMantine: (scheme: MantineColorScheme) => {
-      setMantineColorScheme(scheme);
-    }
-  };
-}

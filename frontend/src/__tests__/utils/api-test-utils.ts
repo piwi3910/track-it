@@ -13,7 +13,7 @@ import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import fetch from 'cross-fetch';
 import { TRPCClientError } from '@trpc/client';
 import { Task, TaskPriority, TaskStatus, User, Comment, Attachment, TaskTemplate } from '@/types/task';
-import type { AppRouter } from '@track-it/shared/types/trpc';
+import type { AppRouter } from '@track-it/shared/types';
 
 // Type for test client with expected procedures
 export interface TestTRPCClient {

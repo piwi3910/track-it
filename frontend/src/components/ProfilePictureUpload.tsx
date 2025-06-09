@@ -1,16 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
-import {
-  Group,
-  Text,
-  Stack,
-  FileInput,
-  Image,
-  Center,
-  Box
-} from '@mantine/core';
 import { Button } from '@/components/ui/button';
-import { AppModal } from '@/components/ui/AppModal';
-import { AppAlert } from '@/components/ui/AppAlert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   IconCamera,
   IconUpload,
@@ -40,13 +33,14 @@ export function ProfilePictureUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const fileInputRef = useRef<HTMLButtonElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   // File upload handler
-  const handleFileSelect = useCallback((file: File | null) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate file type
@@ -133,9 +127,7 @@ export function ProfilePictureUpload({
         message: 'Profile picture updated successfully',
         color: 'green',
         icon: <IconCheck size={16} />,
-        autoClose: 4000,
-        withCloseButton: true,
-        style: { maxWidth: 350 }
+        autoClose: 4000
       });
       
       setIsModalOpen(false);
@@ -147,9 +139,7 @@ export function ProfilePictureUpload({
         message: 'Failed to update profile picture',
         color: 'red',
         icon: <IconAlertCircle size={16} />,
-        autoClose: 5000,
-        withCloseButton: true,
-        style: { maxWidth: 350 }
+        autoClose: 5000
       });
     } finally {
       setIsUploading(false);
@@ -165,9 +155,7 @@ export function ProfilePictureUpload({
         message: 'Profile picture removed successfully',
         color: 'green',
         icon: <IconCheck size={16} />,
-        autoClose: 4000,
-        withCloseButton: true,
-        style: { maxWidth: 350 }
+        autoClose: 4000
       });
     } catch {
       notifications.show({
@@ -175,9 +163,7 @@ export function ProfilePictureUpload({
         message: 'Failed to remove profile picture',
         color: 'red',
         icon: <IconAlertCircle size={16} />,
-        autoClose: 5000,
-        withCloseButton: true,
-        style: { maxWidth: 350 }
+        autoClose: 5000
       });
     }
   }, [onAvatarChange]);
@@ -192,14 +178,14 @@ export function ProfilePictureUpload({
 
   return (
     <>
-      <Group gap="md">
+      <div className="flex items-center gap-4">
         <InitialsAvatar
           name={userName}
           src={currentAvatarUrl}
           size={size}
         />
         
-        <Stack gap="xs">
+        <div className="space-y-2">
           <Button
             variant="secondary"
             size="sm"
@@ -220,125 +206,125 @@ export function ProfilePictureUpload({
               Remove Picture
             </Button>
           )}
-        </Stack>
-      </Group>
+        </div>
+      </div>
 
-      <AppModal
-        opened={isModalOpen}
-        onClose={handleCloseModal}
-        title="Update Profile Picture"
-        centered
-        size="md"
-      >
-        <Stack gap="md">
-          {error && (
-            <AppAlert
-              icon={<IconAlertCircle size={16} />}
-              color="red"
-              onClose={() => setError(null)}
-              withCloseButton
-            >
-              {error}
-            </AppAlert>
-          )}
+      <Dialog open={isModalOpen} onOpenChange={(open) => !open && handleCloseModal()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Profile Picture</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {error && (
+              <Alert variant="destructive" className="relative">
+                <IconAlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+                <button
+                  onClick={() => setError(null)}
+                  className="absolute right-2 top-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+                >
+                  <IconX className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </button>
+              </Alert>
+            )}
 
-          {previewUrl ? (
-            <Box>
-              <Center>
-                <Image
-                  src={previewUrl}
-                  alt="Profile picture preview"
-                  fit="cover"
-                  w={200}
-                  h={200}
-                  radius="xl"
-                />
-              </Center>
-              
-              <Group justify="center" mt="md">
-                <Button
-                  variant="outline"
-                  onClick={() => setPreviewUrl(null)}
-                >
-                  <IconX size={16} className="mr-2 h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSaveAvatar}
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <>Loading...</>
-                  ) : (
-                    <>
-                      <IconCheck size={16} className="mr-2 h-4 w-4" />
-                      Save Picture
-                    </>
-                  )}
-                </Button>
-              </Group>
-            </Box>
-          ) : (
-            <>
-              {isCameraActive ? (
-                <Box>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    style={{
-                      width: '100%',
-                      maxWidth: '400px',
-                      borderRadius: '8px'
-                    }}
+            {previewUrl ? (
+              <div>
+                <div className="flex justify-center">
+                  <img
+                    src={previewUrl}
+                    alt="Profile picture preview"
+                    className="w-48 h-48 rounded-full object-cover"
                   />
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                  
-                  <Group justify="center" mt="md">
+                </div>
+                
+                <div className="flex justify-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setPreviewUrl(null)}
+                  >
+                    <IconX size={16} className="mr-2 h-4 w-4" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveAvatar}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>Loading...</>
+                    ) : (
+                      <>
+                        <IconCheck size={16} className="mr-2 h-4 w-4" />
+                        Save Picture
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {isCameraActive ? (
+                  <div>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full max-w-[400px] rounded-lg mx-auto"
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
+                    
+                    <div className="flex justify-center gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        onClick={stopCamera}
+                      >
+                        <IconX size={16} className="mr-2 h-4 w-4" />
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={capturePhoto}
+                      >
+                        <IconCamera size={16} className="mr-2 h-4 w-4" />
+                        Take Photo
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="picture">Upload from device</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="picture"
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    
                     <Button
-                      variant="outline"
-                      onClick={stopCamera}
-                    >
-                      <IconX size={16} className="mr-2 h-4 w-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={capturePhoto}
+                      variant="secondary"
+                      className="w-full"
+                      onClick={startCamera}
                     >
                       <IconCamera size={16} className="mr-2 h-4 w-4" />
-                      Take Photo
+                      Use Camera
                     </Button>
-                  </Group>
-                </Box>
-              ) : (
-                <Stack gap="md">
-                  <FileInput
-                    ref={fileInputRef}
-                    label="Upload from device"
-                    placeholder="Select image file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    leftSection={<IconUpload size={16} />}
-                  />
-                  
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={startCamera}
-                  >
-                    <IconCamera size={16} className="mr-2 h-4 w-4" />
-                    Use Camera
-                  </Button>
-                  
-                  <Text size="sm" c="dimmed" ta="center">
-                    Supported formats: JPG, PNG, GIF (max 5MB)
-                  </Text>
-                </Stack>
-              )}
-            </>
-          )}
-        </Stack>
-      </AppModal>
+                    
+                    <p className="text-sm text-muted-foreground text-center">
+                      Supported formats: JPG, PNG, GIF (max 5MB)
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

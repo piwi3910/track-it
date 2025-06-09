@@ -37,7 +37,7 @@ A comprehensive task tracking and collaboration application with Google Suite in
 - **Google Drive** integration for file attachments (prepared)
 
 ### User Experience
-- Modern, responsive UI with Mantine components
+- Modern, responsive UI with shadcn/ui components
 - **Light/dark theme** toggle with system preference detection
 - Real-time updates and optimistic UI interactions
 - Comprehensive error handling and loading states
@@ -56,11 +56,12 @@ A comprehensive task tracking and collaboration application with Google Suite in
 ### Frontend
 - **React 18** with TypeScript for type-safe development
 - **Vite** for fast build tooling and hot module replacement
-- **Mantine UI v7** component library for modern, accessible components
+- **shadcn/ui** components built on Radix UI primitives
 - **React Router v6** for client-side navigation
 - **TanStack Query v5** for efficient data fetching and caching
-- **Zustand** for state management across features
+- **Zustand** for state management with Redux DevTools support
 - **tRPC React Query** for end-to-end type safety
+- **Tailwind CSS** for utility-first styling
 
 ### Backend
 - **Fastify** server with TypeScript support and performance optimizations
@@ -77,6 +78,26 @@ A comprehensive task tracking and collaboration application with Google Suite in
 - **Jest** with React Testing Library for comprehensive testing
 - **Docker Compose** for local development services
 - **GitHub Actions** ready for CI/CD workflows
+
+## Architecture
+
+Track-It follows a clean architecture pattern with clear separation of concerns:
+
+### Key Architectural Decisions
+- **Repository Pattern**: Backend uses repositories for data access, separating business logic from database operations
+- **Type-Safe API**: tRPC provides end-to-end type safety without code generation
+- **State Management**: Zustand stores provide centralized state management with minimal boilerplate
+- **Component Architecture**: UI components are built with shadcn/ui for full control and customization
+- **Shared Types**: Monorepo structure with shared types package ensures consistency
+
+### Recent Improvements
+- **Migrated from Mantine to shadcn/ui**: Better performance and full control over components
+- **Implemented Repository Pattern**: Cleaner backend architecture with better testability
+- **Consolidated State Management**: Migrated from multiple Context providers to Zustand stores
+- **Type System Overhaul**: Simplified enum handling and removed manual type conversions
+- **Component Refactoring**: Large components broken down into focused, reusable pieces
+
+For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Setup and Installation
 
@@ -172,8 +193,9 @@ frontend/src/
 ```
 backend/src/
 ├── routers/          # tRPC router definitions
-├── db/               # Database client and services
-│   └── services/     # Database service layer
+├── repositories/     # Repository pattern data access layer
+├── db/               # Database client and migrations
+│   └── services/     # Legacy service layer
 ├── trpc/             # tRPC configuration and context
 ├── utils/            # Utility functions and error handling
 ├── cache/            # Redis caching utilities

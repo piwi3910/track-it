@@ -1,17 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ActionIcon,
-  Text,
-  Group,
-  Divider,
-  ScrollArea,
-  Indicator,
-  Stack,
-  Loader
-} from '@mantine/core';
 import { Button } from '@/components/ui/button';
-import { AppMenu } from '@/components/ui/AppMenu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 import {
   IconBell,
   IconCheck,
@@ -97,33 +94,29 @@ export function NotificationMenu() {
   }, []);
   
   return (
-    <AppMenu
-      position="bottom-end"
-      width={320}
-      opened={menuOpened}
-      onChange={setMenuOpened}
+    <DropdownMenu
+      open={menuOpened}
+      onOpenChange={setMenuOpened}
     >
-      <AppMenu.Target>
-        <Indicator
-          disabled={unreadCount === 0}
-          color="red"
-          size={16}
-          label={unreadCount > 9 ? '9+' : unreadCount.toString()}
-          offset={4}
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          title="Notifications"
         >
-          <ActionIcon 
-            variant="light" 
-            title="Notifications"
-            onClick={() => setMenuOpened(true)}
-          >
-            <IconBell size={18} />
-          </ActionIcon>
-        </Indicator>
-      </AppMenu.Target>
+          <IconBell size={18} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
       
-      <AppMenu.Dropdown>
-        <Group justify="space-between" p="xs">
-          <Text fw={600}>Notifications</Text>
+      <DropdownMenuContent align="end" className="w-80">
+        <div className="flex items-center justify-between p-3">
+          <h3 className="font-semibold">Notifications</h3>
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
@@ -135,61 +128,65 @@ export function NotificationMenu() {
               <IconCheck size={14} className="ml-2 h-4 w-4" />
             </Button>
           )}
-        </Group>
+        </div>
         
-        <Divider />
+        <Separator />
         
         {loading ? (
-          <Stack align="center" py="md">
-            <Loader size="sm" />
-            <Text size="sm" c="dimmed">Loading notifications...</Text>
-          </Stack>
+          <div className="flex flex-col items-center py-6">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground mt-2">Loading notifications...</p>
+          </div>
         ) : error ? (
-          <Stack align="center" py="md">
-            <Text size="sm" c="red">{error.message}</Text>
-            <Button size="sm" className="h-6 text-xs" onClick={clearError}>Dismiss</Button>
-          </Stack>
+          <div className="flex flex-col items-center py-6">
+            <p className="text-sm text-red-600">{error.message}</p>
+            <Button size="sm" className="h-6 text-xs mt-2" onClick={clearError}>Dismiss</Button>
+          </div>
         ) : notifications.length === 0 ? (
-          <Stack align="center" py="md">
-            <IconBell size={24} opacity={0.5} />
-            <Text size="sm" c="dimmed">No notifications</Text>
-          </Stack>
+          <div className="flex flex-col items-center py-6">
+            <IconBell size={24} className="text-muted-foreground opacity-50" />
+            <p className="text-sm text-muted-foreground mt-2">No notifications</p>
+          </div>
         ) : (
           <>
-            <ScrollArea h={400} offsetScrollbars>
-              <Stack gap={0}>
-                {notifications.map(notification => (
-                  <AppMenu.Item
-                    key={notification.id}
-                    leftSection={getNotificationIcon(notification.type)}
-                    style={{
-                      backgroundColor: notification.read ? undefined : 'var(--mantine-color-blue-0)',
-                      opacity: notification.read ? 0.8 : 1
-                    }}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <Text size="sm" lineClamp={2}>
-                      {notification.message}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {formatRelativeTime(notification.createdAt)}
-                    </Text>
-                  </AppMenu.Item>
-                ))}
-              </Stack>
-            </ScrollArea>
+            <div className="max-h-96 overflow-y-auto">
+              {notifications.map(notification => (
+                <DropdownMenuItem
+                  key={notification.id}
+                  className={`p-3 cursor-pointer ${
+                    !notification.read ? 'bg-blue-50 dark:bg-blue-950' : ''
+                  } ${notification.read ? 'opacity-80' : ''}`}
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <div className="flex items-start gap-3 w-full">
+                    <div className="mt-0.5">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm line-clamp-2">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatRelativeTime(notification.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </div>
             
-            <Divider />
+            <DropdownMenuSeparator />
             
-            <AppMenu.Item
-              leftSection={<IconSettings size={16} />}
+            <DropdownMenuItem
               onClick={() => navigate('/settings')}
+              className="p-3"
             >
+              <IconSettings size={16} className="mr-2 h-4 w-4" />
               Notification settings
-            </AppMenu.Item>
+            </DropdownMenuItem>
           </>
         )}
-      </AppMenu.Dropdown>
-    </AppMenu>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

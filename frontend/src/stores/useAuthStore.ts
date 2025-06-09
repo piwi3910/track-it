@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api } from '@/api';
 import type { RouterOutputs } from '@track-it/shared';
+import { logger } from '@/services/logger.service';
 
 type User = RouterOutputs['users']['getCurrentUser'];
 
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
       
       // Login function
       login: async (email, password) => {
-        console.log('[AuthStore] Login called with:', { email, password: password ? '***' : 'undefined' });
+        logger.debug('[AuthStore] Login called with:', { email, password: password ? '***' : 'undefined' });
         set({ isLoading: true, error: null });
         
         try {
@@ -43,9 +44,9 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Email and password are required');
           }
           
-          console.log('[AuthStore] Calling api.auth.login with:', { email, password: '***' });
+          logger.debug('[AuthStore] Calling api.auth.login with:', { email, password: '***' });
           const response = await api.auth.login({ email, password });
-          console.log('[AuthStore] Login response:', response);
+          logger.debug('[AuthStore] Login response:', { response });
           
           set({
             user: response as User,
@@ -60,7 +61,7 @@ export const useAuthStore = create<AuthState>()(
           
           return { success: true };
         } catch (err) {
-          console.error('[AuthStore] Login error:', err);
+          logger.error('[AuthStore] Login error', err);
           const errorMessage = err instanceof Error ? err.message : 'Login failed';
           set({ 
             isLoading: false, 

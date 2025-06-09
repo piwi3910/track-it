@@ -1,24 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Title,
-  Text,
-  Button,
-  Paper,
-  Group,
-  Card,
-  Stack,
-  Loader,
-  Avatar,
-  ActionIcon,
-  ScrollArea,
-  Image,
-  List,
-  Box,
-  Divider
-} from '@mantine/core';
-import { AppTabs } from '@/components/ui/AppTabs';
-import { AppAlert } from '@/components/ui/AppAlert';
-import { AppSwitch } from '@/components/ui/AppSwitch';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import {
   IconCalendar,
   IconChecklist,
@@ -30,7 +19,8 @@ import {
   IconRefresh,
   IconCheck,
   IconAlertCircle,
-  IconSettings
+  IconSettings,
+  IconX
 } from '@tabler/icons-react';
 import { useGoogle } from '@/hooks/useGoogle';;
 import { useApp } from '@/hooks/useApp';
@@ -244,123 +234,139 @@ export function GoogleIntegrationPanel() {
 
   // Settings section if authenticated
   const renderSettings = () => (
-    <Stack>
-      <Group align="start">
-        <Avatar 
-          src={accountStatus?.picture || 
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(google?.email || 'User')}&background=random`
-          } 
-          color="red" 
-          radius="xl"
-        />
-        <Stack gap={0} style={{ flex: 1 }}>
-          <Text fw={500}>{accountStatus?.name || 'Connected to Google'}</Text>
-          <Text size="sm" c="dimmed">{accountStatus?.email || google?.email || 'Google account connected'}</Text>
-        </Stack>
+    <div className="space-y-4">
+      <div className="flex items-start gap-4">
+        <Avatar className="h-10 w-10">
+          <AvatarImage 
+            src={accountStatus?.picture || 
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(google?.email || 'User')}&background=random`
+            } 
+            alt="User avatar"
+          />
+          <AvatarFallback className="bg-red-100 dark:bg-red-900">
+            {(accountStatus?.name || google?.email || 'U').charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 space-y-0">
+          <p className="font-medium">{accountStatus?.name || 'Connected to Google'}</p>
+          <p className="text-sm text-muted-foreground">{accountStatus?.email || google?.email || 'Google account connected'}</p>
+        </div>
         <Button 
           variant="outline" 
-          color="red" 
           onClick={handleDisconnect}
+          className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
         >
           Disconnect
         </Button>
-      </Group>
+      </div>
       
-      <Divider my="md" label="Sync Settings" labelPosition="center" />
+      <Separator className="my-4" />
+      <div className="text-center">
+        <Label className="text-sm font-medium">Sync Settings</Label>
+      </div>
       
-      <Stack>
-        <Group justify="space-between">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <Text fw={500}>Auto-sync</Text>
-            <Text size="xs" c="dimmed">Automatically sync data when changes occur</Text>
+            <p className="font-medium">Auto-sync</p>
+            <p className="text-xs text-muted-foreground">Automatically sync data when changes occur</p>
           </div>
-          <AppSwitch 
+          <Switch 
+            id="auto-sync"
             checked={autoSync} 
-            onChange={(e) => setAutoSync(e.currentTarget.checked)} 
+            onCheckedChange={setAutoSync} 
           />
-        </Group>
+        </div>
         
-        <Group justify="space-between">
+        <div className="flex items-center justify-between">
           <div>
-            <Text fw={500}>Calendar</Text>
-            <Text size="xs" c="dimmed">Sync Google Calendar events</Text>
+            <p className="font-medium">Calendar</p>
+            <p className="text-xs text-muted-foreground">Sync Google Calendar events</p>
           </div>
-          <Group gap="xs">
-            <AppSwitch 
+          <div className="flex items-center gap-2">
+            <Switch 
+              id="calendar-sync"
               checked={calendarSync} 
-              onChange={(e) => setCalendarSync(e.currentTarget.checked)} 
+              onCheckedChange={setCalendarSync} 
             />
-          </Group>
-        </Group>
-        
-        <Group justify="space-between">
-          <div>
-            <Text fw={500}>Tasks</Text>
-            <Text size="xs" c="dimmed">Sync Google Tasks</Text>
           </div>
-          <AppSwitch 
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">Tasks</p>
+            <p className="text-xs text-muted-foreground">Sync Google Tasks</p>
+          </div>
+          <Switch 
+            id="tasks-sync"
             checked={tasksSync} 
-            onChange={(e) => setTasksSync(e.currentTarget.checked)} 
+            onCheckedChange={setTasksSync} 
           />
-        </Group>
+        </div>
         
-        <Group justify="space-between">
+        <div className="flex items-center justify-between">
           <div>
-            <Text fw={500}>Drive</Text>
-            <Text size="xs" c="dimmed">Access Google Drive files</Text>
+            <p className="font-medium">Drive</p>
+            <p className="text-xs text-muted-foreground">Access Google Drive files</p>
           </div>
-          <AppSwitch 
+          <Switch 
+            id="drive-sync"
             checked={driveSync} 
-            onChange={(e) => setDriveSync(e.currentTarget.checked)} 
+            onCheckedChange={setDriveSync} 
           />
-        </Group>
-      </Stack>
+        </div>
+      </div>
       
-      <Box mt="md">
-        <Text size="xs" c="dimmed" ta="center">
+      <div className="mt-4">
+        <p className="text-xs text-muted-foreground text-center">
           Last synced: {google?.lastSyncTime ? 
             new Date(google.lastSyncTime).toLocaleString() : 
             'Never'
           }
-        </Text>
-      </Box>
-    </Stack>
+        </p>
+      </div>
+    </div>
   );
 
   return (
-    <Paper p="xl" withBorder>
+    <Card>
+      <CardContent className="p-6">
       {error && (
-        <AppAlert 
-          icon={<IconAlertCircle size={16} />}
-          title="Error" 
-          color="red" 
-          mb="md"
-          withCloseButton
-          onClose={() => setError(null)}
-        >
-          {error}
-        </AppAlert>
+        <Alert variant="destructive" className="relative mb-4">
+          <IconAlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+          <button
+            onClick={() => setError(null)}
+            className="absolute right-2 top-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+          >
+            <IconX className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </button>
+        </Alert>
       )}
     
       {!isAuthenticated ? (
-        <Stack align="center" gap="lg">
-          <Avatar size={80} color="red" radius={80}>
-            <IconBrandGoogle size={40} />
+        <div className="flex flex-col items-center gap-6">
+          <Avatar className="h-20 w-20 bg-red-100 dark:bg-red-900">
+            <AvatarFallback className="bg-red-100 dark:bg-red-900">
+              <IconBrandGoogle size={40} className="text-red-600 dark:text-red-400" />
+            </AvatarFallback>
           </Avatar>
-          <Title order={3}>Connect your Google account</Title>
-          <Text c="dimmed" ta="center">
+          <h3 className="text-xl font-semibold">Connect your Google account</h3>
+          <p className="text-center text-muted-foreground max-w-md">
             Connect your Google account to sync your calendar, tasks, and documents.
             This allows you to view and import data from Google services directly into Track-It.
-          </Text>
+          </p>
           
           {/* Legacy button */}
           <Button 
-            leftSection={<IconBrandGoogle size={16} />} 
-            color="red" 
+            variant="destructive" 
             onClick={handleAuth}
-            loading={authenticating}
+            disabled={authenticating}
           >
-            Connect with Google
+            <IconBrandGoogle size={16} className="mr-2" />
+            {authenticating ? 'Connecting...' : 'Connect with Google'}
           </Button>
           
           {/* Google Identity Services button */}
@@ -373,71 +379,77 @@ export function GoogleIntegrationPanel() {
               marginTop: '8px' 
             }}
           />
-        </Stack>
+        </div>
       ) : (
         <>
-          <AppTabs value={activeTab} onChange={(value) => setActiveTab(value || 'calendar')} mb="lg">
-            <AppTabs.List>
-              <AppTabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="mb-8">
+            <TabsList>
+              <TabsTrigger value="calendar">
+                <IconCalendar className="mr-2 h-4 w-4" />
                 Calendar
-              </AppTabs.Tab>
-              <AppTabs.Tab value="tasks" leftSection={<IconChecklist size={16} />}>
+              </TabsTrigger>
+              <TabsTrigger value="tasks">
+                <IconChecklist className="mr-2 h-4 w-4" />
                 Tasks
-              </AppTabs.Tab>
-              <AppTabs.Tab value="drive" leftSection={<IconFileDescription size={16} />}>
+              </TabsTrigger>
+              <TabsTrigger value="drive">
+                <IconFileDescription className="mr-2 h-4 w-4" />
                 Drive
-              </AppTabs.Tab>
-              <AppTabs.Tab value="settings" leftSection={<IconSettings size={16} />}>
+              </TabsTrigger>
+              <TabsTrigger value="settings">
+                <IconSettings className="mr-2 h-4 w-4" />
                 Settings
-              </AppTabs.Tab>
-            </AppTabs.List>
-          </AppTabs>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           
-          {activeTab === 'settings' && renderSettings()}
+          <TabsContent value="settings">
+            {renderSettings()}
+          </TabsContent>
           
-          {activeTab === 'calendar' && (
-            <Stack>
-              <Group justify="space-between" mb="md">
-                <Title order={3}>Google Calendar</Title>
-                <Group>
+          <TabsContent value="calendar" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Google Calendar</h3>
+                <div className="flex items-center gap-2">
                   <Button 
-                    leftSection={<IconRefresh size={16} />} 
                     variant="outline"
                     onClick={handleSyncCalendar}
-                    loading={calendarSyncing}
+                    disabled={calendarSyncing}
                   >
-                    Sync Calendar
+                    <IconRefresh size={16} className="mr-2" />
+                    {calendarSyncing ? 'Syncing...' : 'Sync Calendar'}
                   </Button>
                   <Button 
-                    leftSection={<IconDownload size={16} />}
-                    disabled={selectedCalendarEvents.length === 0 || calendarEvents.length === 0}
+                    disabled={selectedCalendarEvents.length === 0 || calendarEvents.length === 0 || importingEvents}
                     onClick={importSelectedEvents}
-                    loading={importingEvents}
                   >
-                    Import Selected ({selectedCalendarEvents.length})
+                    <IconDownload size={16} className="mr-2" />
+                    {importingEvents ? 'Importing...' : `Import Selected (${selectedCalendarEvents.length})`}
                   </Button>
-                </Group>
-              </Group>
+                </div>
+              </div>
               
               {calendarSyncing ? (
-                <Stack align="center" my="xl">
-                  <Loader size="md" />
-                  <Text c="dimmed">Syncing your calendar...</Text>
-                </Stack>
+                <div className="flex flex-col items-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                  <p className="text-muted-foreground mt-4">Syncing your calendar...</p>
+                </div>
               ) : calendarEvents.length === 0 ? (
-                <Stack align="center" my="xl">
-                  <Text c="dimmed">No calendar events found. Sync your calendar to see events.</Text>
+                <div className="flex flex-col items-center py-12">
+                  <p className="text-muted-foreground">No calendar events found. Sync your calendar to see events.</p>
                   <Button 
-                    leftSection={<IconRefresh size={16} />}
-                    variant="light"
+                    variant="secondary"
                     onClick={handleSyncCalendar}
+                    className="mt-4"
                   >
+                    <IconRefresh size={16} className="mr-2" />
                     Sync Now
                   </Button>
-                </Stack>
+                </div>
               ) : (
-                <ScrollArea h={400}>
-                  <Stack gap="md">
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
                     {calendarEvents.map(event => (
                       <CalendarEventCard 
                         key={event.id}
@@ -446,92 +458,103 @@ export function GoogleIntegrationPanel() {
                         onToggleSelect={() => toggleEventSelection(event.id)}
                       />
                     ))}
-                  </Stack>
+                  </div>
                 </ScrollArea>
               )}
-            </Stack>
-          )}
+            </div>
+          </TabsContent>
           
-          {activeTab === 'tasks' && (
-            <Stack>
-              <Group justify="space-between" mb="md">
-                <Title order={3}>Google Tasks</Title>
+          <TabsContent value="tasks" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Google Tasks</h3>
                 <Button
-                  leftSection={<IconDownload size={16} />}
                   onClick={handleImportTasks}
-                  loading={tasksSyncing}
+                  disabled={tasksSyncing}
                 >
-                  Import Tasks
+                  <IconDownload size={16} className="mr-2" />
+                  {tasksSyncing ? 'Importing...' : 'Import Tasks'}
                 </Button>
-              </Group>
+              </div>
               
               {tasksSyncing ? (
-                <Stack align="center" my="xl">
-                  <Loader size="md" />
-                  <Text c="dimmed">Importing your tasks...</Text>
-                </Stack>
+                <div className="flex flex-col items-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                  <p className="text-muted-foreground mt-4">Importing your tasks...</p>
+                </div>
               ) : (
-                <Stack align="center" gap="md" my="xl">
-                  <IconChecklist size={48} stroke={1.5} opacity={0.5} />
-                  <Title order={4}>Import Tasks from Google</Title>
-                  <Text c="dimmed" ta="center" maw={500}>
+                <div className="flex flex-col items-center gap-4 py-12">
+                  <IconChecklist size={48} className="opacity-50" stroke={1.5} />
+                  <h4 className="text-lg font-semibold">Import Tasks from Google</h4>
+                  <p className="text-muted-foreground text-center max-w-[500px]">
                     Click the Import button to fetch and import your tasks from Google Tasks.
                     They will be added to your project with the appropriate status and due dates.
-                  </Text>
-                  <List>
-                    <List.Item>Maintains task titles and descriptions</List.Item>
-                    <List.Item>Preserves due dates when available</List.Item>
-                    <List.Item>Tasks are tagged with 'google' for easy identification</List.Item>
-                  </List>
-                </Stack>
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={16} className="text-green-600" />
+                      Maintains task titles and descriptions
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={16} className="text-green-600" />
+                      Preserves due dates when available
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={16} className="text-green-600" />
+                      Tasks are tagged with 'google' for easy identification
+                    </li>
+                  </ul>
+                </div>
               )}
-            </Stack>
-          )}
+            </div>
+          </TabsContent>
           
-          {activeTab === 'drive' && (
-            <Stack>
-              <Group justify="space-between" mb="md">
-                <Title order={3}>Google Drive</Title>
+          <TabsContent value="drive" className="mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Google Drive</h3>
                 <Button
-                  leftSection={<IconRefresh size={16} />}
                   variant="outline"
                   onClick={handleFetchDriveFiles}
-                  loading={driveSyncing}
+                  disabled={driveSyncing}
                 >
-                  Fetch Files
+                  <IconRefresh size={16} className="mr-2" />
+                  {driveSyncing ? 'Fetching...' : 'Fetch Files'}
                 </Button>
-              </Group>
+              </div>
               
               {driveSyncing ? (
-                <Stack align="center" my="xl">
-                  <Loader size="md" />
-                  <Text c="dimmed">Fetching your files...</Text>
-                </Stack>
+                <div className="flex flex-col items-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                  <p className="text-muted-foreground mt-4">Fetching your files...</p>
+                </div>
               ) : driveFiles.length === 0 ? (
-                <Stack align="center" my="xl">
-                  <Text c="dimmed">No files found. Fetch your files to see them here.</Text>
+                <div className="flex flex-col items-center py-12">
+                  <p className="text-muted-foreground">No files found. Fetch your files to see them here.</p>
                   <Button 
-                    leftSection={<IconRefresh size={16} />}
-                    variant="light"
+                    variant="secondary"
                     onClick={handleFetchDriveFiles}
+                    className="mt-4"
                   >
+                    <IconRefresh size={16} className="mr-2" />
                     Fetch Now
                   </Button>
-                </Stack>
+                </div>
               ) : (
-                <ScrollArea h={400}>
-                  <Stack gap="md">
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
                     {driveFiles.map(file => (
                       <DriveFileCard key={file.id} file={file} />
                     ))}
-                  </Stack>
+                  </div>
                 </ScrollArea>
               )}
-            </Stack>
-          )}
+            </div>
+          </TabsContent>
         </>
       )}
-    </Paper>
+    </CardContent>
+    </Card>
   );
 }
 
@@ -565,38 +588,46 @@ function CalendarEventCard({
   });
   
   return (
-    <Card p="sm" withBorder>
-      <Group justify="space-between">
-        <Group>
-          <ActionIcon 
-            color={selected ? 'blue' : 'gray'} 
-            variant={selected ? 'filled' : 'subtle'}
-            onClick={onToggleSelect}
-          >
-            {selected ? <IconCheck size={16} /> : <IconPlus size={16} />}
-          </ActionIcon>
-          <div>
-            <Text fw={500}>{event.title}</Text>
-            <Text size="xs" c="dimmed">
-              {formattedDate} • {formattedStartTime} - {formattedEndTime}
-            </Text>
-            {event.location && (
-              <Text size="xs" c="dimmed">
-                {event.location}
-              </Text>
-            )}
+    <Card>
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant={selected ? 'default' : 'outline'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={onToggleSelect}
+            >
+              {selected ? <IconCheck size={16} /> : <IconPlus size={16} />}
+            </Button>
+            <div>
+              <p className="font-medium">{event.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {formattedDate} • {formattedStartTime} - {formattedEndTime}
+              </p>
+              {event.location && (
+                <p className="text-xs text-muted-foreground">
+                  {event.location}
+                </p>
+              )}
+            </div>
           </div>
-        </Group>
-        <ActionIcon 
-          variant="subtle" 
-          component="a" 
-          href={event.link} 
-          target="_blank" 
-          rel="noopener noreferrer"
-        >
-          <IconExternalLink size={16} />
-        </ActionIcon>
-      </Group>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="h-8 w-8"
+            asChild
+          >
+            <a 
+              href={event.link} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <IconExternalLink size={16} />
+            </a>
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -614,25 +645,32 @@ function DriveFileCard({ file }: { file: GoogleDriveFile }) {
   };
   
   return (
-    <Card p="sm" withBorder>
-      <Group>
-        <Image src={getFileIcon()} w={24} h={24} alt="File icon" />
-        <div style={{ flex: 1 }}>
-          <Text fw={500}>{file.name}</Text>
-          <Text size="xs" c="dimmed">
-            {file.mimeType.split('/').pop()}
-          </Text>
+    <Card>
+      <CardContent className="p-3">
+        <div className="flex items-center gap-3">
+          <img src={getFileIcon()} width={24} height={24} alt="File icon" />
+          <div className="flex-1">
+            <p className="font-medium">{file.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {file.mimeType.split('/').pop()}
+            </p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="h-8 w-8"
+            asChild
+          >
+            <a 
+              href={file.webViewLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <IconExternalLink size={16} />
+            </a>
+          </Button>
         </div>
-        <ActionIcon 
-          variant="subtle" 
-          component="a" 
-          href={file.webViewLink} 
-          target="_blank" 
-          rel="noopener noreferrer"
-        >
-          <IconExternalLink size={16} />
-        </ActionIcon>
-      </Group>
+      </CardContent>
     </Card>
   );
 }

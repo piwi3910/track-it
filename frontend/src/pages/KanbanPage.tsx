@@ -1,46 +1,25 @@
 import { useState } from 'react';
-// Using centralized theme system
-import {
-  Container,
-  Title,
-  Group,
-  Paper,
-  Text,
-  Stack,
-  ScrollArea,
-  Box,
-  Badge
-} from '@mantine/core';
-// Import drag and drop library
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import TaskModal from '@/components/TaskModal';
 import TaskCard from '@/components/TaskCard';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task, TaskStatus } from '@/types/task';
-import { useTheme } from '@/hooks/useTheme';;
 import { useApp } from '@/hooks/useApp';
 
 // Column definitions
 const columns: { id: TaskStatus; title: string }[] = [
-  { id: 'BACKLOG', title: 'Backlog' },
-  { id: 'TODO', title: 'To Do' },
-  { id: 'IN_PROGRESS', title: 'In Progress' },
-  { id: 'REVIEW', title: 'In Review' },
-  { id: 'DONE', title: 'Done' }
+  { id: 'backlog', title: 'Backlog' },
+  { id: 'todo', title: 'To Do' },
+  { id: 'in_progress', title: 'In Progress' },
+  { id: 'review', title: 'In Review' },
+  { id: 'done', title: 'Done' }
 ];
 
-// Frontend-to-backend status mapping
-const statusMapping: Record<TaskStatus, FrontendTaskStatus> = {
-  'BACKLOG': 'backlog',
-  'TODO': 'todo',
-  'IN_PROGRESS': 'in_progress',
-  'REVIEW': 'in_review',
-  'DONE': 'done',
-  'ARCHIVED': 'archived'
-};
+// Status mapping no longer needed - using lowercase everywhere
 
 export function KanbanPage() {
-  const { colors } = useTheme();
   const { tasks: appTasks, updateTask, createTask, deleteTask } = useApp();
   
   // Cast tasks to our frontend Task type which includes taskNumber
@@ -125,66 +104,56 @@ export function KanbanPage() {
   };
   
   return (
-    <Container size="xl" fluid className="kanban-board">
-      <Group justify="space-between" align="center" mb="md">
-        <Title>Kanban Board</Title>
-      </Group>
+    <div className="kanban-board">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Kanban Board</h1>
+      </div>
 
-      <Box mb="xl">
+      <div className="mb-8">
         <QuickAddTask
-          defaultStatus={selectedColumn ? statusMapping[selectedColumn] : 'todo'}
+          defaultStatus={selectedColumn || 'todo'}
           onTaskAdded={() => {
             // Task will be automatically added to the store
           }}
         />
-      </Box>
+      </div>
 
       <DragDropContext
         onDragEnd={handleDragEnd}
         onDragStart={() => document.body.style.cursor = 'grabbing'}>
-        <Group align="flex-start" grow>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {columns.map(column => {
             const columnTasks = getTasksByStatus(column.id);
-            const columnColor = column.id === 'REVIEW' ? 'blue' :
-                               column.id === 'DONE' ? 'green' : 'gray';
+            const columnColor = column.id === 'review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                               column.id === 'done' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                               'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
 
             return (
-              <Paper
+              <Card
                 key={column.id}
-                p="6px" /* Reduced padding to maximize usable space */
-                radius="md"
-                style={{
-                  backgroundColor: colors.cardBackground,
-                  height: 'calc(100vh - 160px)',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}
-                withBorder
+                className="h-[calc(100vh-12rem)] flex flex-col p-3"
               >
-                <Group
-                  justify="space-between"
-                  className={`column-header column-header-${column.id}`}
-                  bg={colors.cardBackground}
-                >
-                  <Group gap={8}>
-                    <Text fw={700}>{column.title}</Text>
-                    <Badge color={columnColor} className="column-task-count">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">{column.title}</h3>
+                    <Badge className={`text-xs ${columnColor}`}>
                       {columnTasks.length}
                     </Badge>
-                  </Group>
-                </Group>
+                  </div>
+                </div>
 
                 <Droppable droppableId={column.id}>
                   {(provided, snapshot) => (
-                    <ScrollArea
-                      className={`kanban-column-scroll ${snapshot.isDraggingOver ? 'kanban-column-highlight' : ''}`}
-                      style={{ height: '100%' }}
+                    <div
+                      className={`flex-1 overflow-y-auto px-1 ${
+                        snapshot.isDraggingOver ? 'bg-accent/50 rounded-md transition-colors' : ''
+                      }`}
                       {...provided.droppableProps}
-                      viewportRef={provided.innerRef}
+                      ref={provided.innerRef}
                       onDragEnter={() => setDragOverColumn(column.id)}
                       onDragLeave={() => setDragOverColumn(null)}
                     >
-                      <Stack gap="xs" p="4px 2px">
+                      <div className="space-y-2 pb-2">
                         {columnTasks.map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index}>
                             {(provided) => (
@@ -205,14 +174,14 @@ export function KanbanPage() {
                           </Draggable>
                         ))}
                         {provided.placeholder}
-                      </Stack>
-                    </ScrollArea>
+                      </div>
+                    </div>
                   )}
                 </Droppable>
-              </Paper>
+              </Card>
             );
           })}
-        </Group>
+        </div>
       </DragDropContext>
       
       <TaskModal
@@ -221,6 +190,6 @@ export function KanbanPage() {
         task={selectedTask}
         onSubmit={handleTaskSubmit}
       />
-    </Container>
+    </div>
   );
 }

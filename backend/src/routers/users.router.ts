@@ -6,14 +6,14 @@ import {
   createNotFoundError, 
   createUnauthorizedError, 
   handleError
-} from '../utils/error-handler';
-import * as userService from '../db/services/user.service';
+} from '../utils/unified-error-handler';
+import repositories from '../repositories/container';
 import { Prisma, UserRole } from '@prisma/client';
-import { USER_ROLE } from '../utils/constants';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { config } from '../config';
 import { logger } from '../server';
+import { rateLimitAuth, resetRateLimit } from '../middleware/rate-limit';
 
 // Type for normalized user data
 export interface NormalizedUser {
@@ -37,22 +37,20 @@ export interface NormalizedUser {
   [key: string]: unknown;
 }
 
-// Helper function to format enum values for API
-const formatEnumForApi = (value: unknown): string => {
-  return String(value);
-};
-
 // Helper function to normalize user data for API response
 const normalizeUserData = (user: { 
-  role: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   lastLogin?: Date | string | null;
+  passwordHash?: string | null;
   [key: string]: unknown;
 }): NormalizedUser => {
+  // Explicitly exclude sensitive fields
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { passwordHash, ...safeUser } = user;
+  
   return {
-    ...user,
-    role: formatEnumForApi(user.role),
+    ...safeUser,
     // Format dates as ISO strings if they exist as Date objects
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
     updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
@@ -97,14 +95,8 @@ async function verifyGoogleIdToken(idToken: string): Promise<{
     // Log token verification attempt (only show prefix for security)
     logger.info({ tokenPrefix: idToken.substring(0, 10) }, 'Verifying Google ID token');
     
-    // For development purposes, we're mocking this by assuming the token is valid
-    // In production, you would verify this token with Google OAuth2 library
-    // Example with real implementation:
-    // const ticket = await googleClient.verifyIdToken({
-    //   idToken,
-    //   audience: config.googleClientId
-    // });
-    // const payload = ticket.getPayload();
+    // TODO: Implement proper Google OAuth2 token verification
+    // This is currently mocked for development
     
     // Mock decoded token payload (in production this would come from Google)
     return {
@@ -132,6 +124,9 @@ export const usersRouter = router({
     .input(userLoginSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
+        // Rate limit by email to prevent brute force
+        rateLimitAuth(input.email);
+        
         // Log login attempt for debugging
         logger.info({ 
           input,
@@ -139,13 +134,13 @@ export const usersRouter = router({
           inputKeys: Object.keys(input || {}),
           email: input?.email,
           hasPassword: !!input?.password,
-          rawBody: (ctx.req as any).body,
-          rawBodyType: typeof (ctx.req as any).body,
-          rawBodyKeys: Object.keys((ctx.req as any).body || {})
+          rawBody: (ctx.req as { body?: unknown }).body,
+          rawBodyType: typeof (ctx.req as { body?: unknown }).body,
+          rawBodyKeys: Object.keys((ctx.req as { body?: Record<string, unknown> }).body || {})
         }, 'Login attempt - detailed debug');
         
         // Get user by email
-        const user = await userService.getUserByEmail(input.email);
+        const user = await repositories.users.findByEmail(input.email);
         
         if (!user || !user.passwordHash) {
           logger.warn({ email: input.email }, 'Login failed: User not found or no password');
@@ -153,7 +148,7 @@ export const usersRouter = router({
         }
         
         // Verify password
-        const isPasswordValid = await userService.verifyPassword(input.password, user.passwordHash);
+        const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
         
         if (!isPasswordValid) {
           logger.warn({ email: input.email }, 'Login failed: Invalid password');
@@ -161,13 +156,13 @@ export const usersRouter = router({
         }
         
         // Update login timestamp
-        await userService.updateLoginTimestamp(user.id);
+        await repositories.users.updateLastLogin(user.id);
         
         // Generate JWT token
         const token = jwt.sign(
           {
             id: user.id,
-            role: formatEnumForApi(user.role)
+            role: user.role
           },
           config.jwtSecret,
           { expiresIn: config.jwtExpiresIn } as jwt.SignOptions
@@ -176,13 +171,16 @@ export const usersRouter = router({
         // Log successful login
         logger.info({ userId: user.id, email: user.email }, 'Login successful');
         
+        // Reset rate limit on successful login
+        resetRateLimit(input.email);
+        
         // Return data exactly as specified in API spec
         // Format exactly as the LoginResponse interface requires
         return {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: formatEnumForApi(user.role),
+          role: user.role,
           token
         };
       } catch (error) {
@@ -208,45 +206,41 @@ export const usersRouter = router({
         }
         
         // Check if user already exists with this Google ID
-        let user = await userService.getUserByGoogleId(payload.sub);
+        let user = await repositories.users.findByGoogleId(payload.sub);
         
         // If no user with this Google ID, check for user with same email
         if (!user) {
-          user = await userService.getUserByEmail(payload.email);
+          user = await repositories.users.findByEmail(payload.email);
         }
         
         // If user exists, update Google connection
         if (user) {
           // Update Google information
-          await userService.connectGoogleAccount(
-            user.id,
-            payload.sub,
-            input.idToken,
-            undefined, // Refresh token would be handled in a full implementation
-            { ...payload, id: payload.sub } // Store the full profile with id mapping
-          );
+          await repositories.users.update(user.id, {
+            googleId: payload.sub,
+            googleRefreshToken: undefined, // Refresh token would be handled in a full implementation
+            googleProfile: { ...payload, id: payload.sub } // Store the full profile with id mapping
+          });
           
           // Update login timestamp
-          await userService.updateLoginTimestamp(user.id);
+          await repositories.users.updateLastLogin(user.id);
         } else {
           // If user doesn't exist, create a new user
-          const newUser = await userService.createUser({
+          const newUser = await repositories.users.create({
             name: payload.name,
             email: payload.email,
             avatarUrl: payload.picture
           });
           
           // Then connect Google account
-          await userService.connectGoogleAccount(
-            newUser.id,
-            payload.sub,
-            input.idToken,
-            undefined,
-            { ...payload, id: payload.sub }
-          );
+          await repositories.users.update(newUser.id, {
+            googleId: payload.sub,
+            googleRefreshToken: undefined,
+            googleProfile: { ...payload, id: payload.sub }
+          });
           
           // Get the full user object with all fields
-          user = await userService.getUserById(newUser.id);
+          user = await repositories.users.findById(newUser.id);
         }
         
         if (!user) {
@@ -257,7 +251,7 @@ export const usersRouter = router({
         const token = jwt.sign(
           {
             id: user.id,
-            role: formatEnumForApi(user.role)
+            role: user.role
           },
           config.jwtSecret,
           { expiresIn: config.jwtExpiresIn } as jwt.SignOptions
@@ -267,7 +261,7 @@ export const usersRouter = router({
           id: user.id,
           name: user.name,
           email: user.email,
-          role: formatEnumForApi(user.role),
+          role: user.role,
           token,
           googleConnected: true
         };
@@ -293,7 +287,7 @@ export const usersRouter = router({
         }
         
         // Check if user with this email already exists
-        const existingUser = await userService.getUserByEmail(payload.email);
+        const existingUser = await repositories.users.findByEmail(payload.email);
         
         return {
           valid: true,
@@ -312,6 +306,9 @@ export const usersRouter = router({
     .input(userRegisterSchema)
     .mutation(({ input }) => safeProcedure(async () => {
       try {
+        // Rate limit by email to prevent spam registrations
+        rateLimitAuth(input.email);
+        
         // Log registration attempt (don't log the password for security)
         logger.info({ 
           email: input.email, 
@@ -319,7 +316,7 @@ export const usersRouter = router({
         }, 'User registration attempt');
         
         // Check if user already exists 
-        const existingUser = await userService.getUserByEmail(input.email);
+        const existingUser = await repositories.users.findByEmail(input.email);
         
         if (existingUser) {
           logger.warn({ email: input.email }, 'Registration failed: Email already exists');
@@ -336,11 +333,11 @@ export const usersRouter = router({
         }
         
         // Create new user with hashed password
-        const newUser = await userService.createUser({
+        const newUser = await repositories.users.create({
           name: input.name,
           email: input.email,
           passwordHash: await bcrypt.hash(input.password, 10),
-          role: UserRole.MEMBER,
+          role: 'member',
           preferences: { theme: 'light', defaultView: 'dashboard' } // Default preferences
         } as Prisma.UserCreateInput);
         
@@ -387,7 +384,7 @@ export const usersRouter = router({
   getCurrentUser: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(ctx.user.id);
+        const user = await repositories.users.findById(ctx.user.id);
         
         if (!user) {
           throw createNotFoundError('User', ctx.user.id);
@@ -433,7 +430,7 @@ export const usersRouter = router({
     }))
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(ctx.user.id);
+        const user = await repositories.users.findById(ctx.user.id);
         
         if (!user) {
           throw createNotFoundError('User', ctx.user.id);
@@ -447,24 +444,24 @@ export const usersRouter = router({
         // Handle avatar update with validation if provided
         if (input.avatarUrl !== undefined) {
           // Use the specialized avatar update service for validation
-          await userService.updateUserAvatar(ctx.user.id, input.avatarUrl);
+          await repositories.users.update(ctx.user.id, { avatarUrl: input.avatarUrl });
         } else {
           // Update other fields only
           if (Object.keys(updateData).length > 0) {
-            await userService.updateUser(ctx.user.id, updateData);
+            await repositories.users.update(ctx.user.id, updateData);
           } else {
             // No updates needed, just get current user
-            await userService.getUserById(ctx.user.id);
+            await repositories.users.findById(ctx.user.id);
           }
         }
         
         // If preferences provided, update them separately
         if (input.preferences) {
-          await userService.updateUserPreferences(ctx.user.id, input.preferences);
+          await repositories.users.update(ctx.user.id, { preferences: input.preferences });
         }
         
         // Get fresh user data with updated preferences
-        const refreshedUser = await userService.getUserById(ctx.user.id);
+        const refreshedUser = await repositories.users.findById(ctx.user.id);
         
         if (!refreshedUser) {
           throw createNotFoundError('User', ctx.user.id);
@@ -512,14 +509,47 @@ export const usersRouter = router({
     }))
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(ctx.user.id);
+        const user = await repositories.users.findById(ctx.user.id);
         
         if (!user) {
           throw createNotFoundError('User', ctx.user.id);
         }
         
-        // Update avatar using the specialized service function
-        const updatedUser = await userService.updateUserAvatar(ctx.user.id, input.avatarUrl);
+        // Validate avatar if it's a base64 data URL
+        if (input.avatarUrl && input.avatarUrl.startsWith('data:')) {
+          // Extract the MIME type and base64 data
+          const matches = input.avatarUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (!matches) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Invalid base64 data URL format'
+            });
+          }
+          
+          const [, mimeType, base64Data] = matches;
+          
+          // Validate MIME type (only allow images)
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+          if (!allowedTypes.includes(mimeType)) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Unsupported image format. Allowed formats: ${allowedTypes.join(', ')}`
+            });
+          }
+          
+          // Validate file size (5MB max)
+          const sizeInBytes = Buffer.from(base64Data, 'base64').length;
+          const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+          if (sizeInBytes > maxSizeInBytes) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `Image size too large. Maximum size: 5MB, provided: ${(sizeInBytes / 1024 / 1024).toFixed(2)}MB`
+            });
+          }
+        }
+        
+        // Update avatar
+        const updatedUser = await repositories.users.update(ctx.user.id, { avatarUrl: input.avatarUrl });
         
         const normalized = normalizeUserData(updatedUser);
         
@@ -560,7 +590,7 @@ export const usersRouter = router({
   disconnectGoogleAccount: protectedProcedure
     .mutation(({ ctx }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(ctx.user.id);
+        const user = await repositories.users.findById(ctx.user.id);
         
         if (!user) {
           throw createNotFoundError('User', ctx.user.id);
@@ -571,7 +601,11 @@ export const usersRouter = router({
         }
         
         // Disconnect Google account
-        await userService.disconnectGoogleAccount(ctx.user.id);
+        await repositories.users.update(ctx.user.id, {
+          googleId: null,
+          googleRefreshToken: null,
+          googleProfile: Prisma.JsonNull
+        });
         
         return { success: true };
       } catch (error) {
@@ -583,7 +617,7 @@ export const usersRouter = router({
   getAllUsers: adminProcedure
     .query(() => safeProcedure(async () => {
       try {
-        const users = await userService.getAllUsers();
+        const users = await repositories.users.findAll();
         return users.map(normalizeUserData);
       } catch (error) {
         return handleError(error);
@@ -593,23 +627,23 @@ export const usersRouter = router({
   updateUserRole: adminProcedure
     .input(z.object({
       userId: z.string(),
-      role: z.enum(Object.values(USER_ROLE) as [string, ...string[]])
+      role: z.enum(['admin', 'member', 'guest'])
     }))
     .mutation(({ input }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(input.userId);
+        const user = await repositories.users.findById(input.userId);
         
         if (!user) {
           throw createNotFoundError('User', input.userId);
         }
         
         // Update user role
-        const updatedUser = await userService.updateUserRole(input.userId, input.role);
+        const updatedUser = await repositories.users.updateRole(input.userId, input.role);
         
         return {
           id: updatedUser.id,
           name: updatedUser.name,
-          role: formatEnumForApi(updatedUser.role)
+          role: updatedUser.role
         };
       } catch (error) {
         return handleError(error);
@@ -622,12 +656,12 @@ export const usersRouter = router({
       name: z.string().min(2),
       email: z.string().email(),
       password: z.string().min(6),
-      role: z.enum(Object.values(USER_ROLE) as [string, ...string[]]).default('MEMBER')
+      role: z.enum(['admin', 'member', 'guest']).default('member')
     }))
     .mutation(({ input }) => safeProcedure(async () => {
       try {
         // Check if user already exists
-        const existingUser = await userService.getUserByEmail(input.email);
+        const existingUser = await repositories.users.findByEmail(input.email);
         if (existingUser) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -643,7 +677,7 @@ export const usersRouter = router({
           role: input.role as UserRole
         };
 
-        const newUser = await userService.createUser(userData);
+        const newUser = await repositories.users.create(userData);
         return normalizeUserData(newUser);
       } catch (error) {
         const err = error as { message?: string };
@@ -660,11 +694,11 @@ export const usersRouter = router({
       userId: z.string(),
       name: z.string().min(2).optional(),
       email: z.string().email().optional(),
-      role: z.enum(Object.values(USER_ROLE) as [string, ...string[]]).optional()
+      role: z.enum(['admin', 'member', 'guest']).optional()
     }))
     .mutation(({ input }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(input.userId);
+        const user = await repositories.users.findById(input.userId);
         
         if (!user) {
           throw createNotFoundError('User', input.userId);
@@ -672,7 +706,7 @@ export const usersRouter = router({
 
         // Check if email is being changed and if it already exists
         if (input.email && input.email !== user.email) {
-          const existingUser = await userService.getUserByEmail(input.email);
+          const existingUser = await repositories.users.findByEmail(input.email);
           if (existingUser) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
@@ -687,7 +721,7 @@ export const usersRouter = router({
         if (input.email) updateData.email = input.email;
         if (input.role) updateData.role = input.role as UserRole;
 
-        const updatedUser = await userService.updateUser(input.userId, updateData);
+        const updatedUser = await repositories.users.update(input.userId, updateData);
         return normalizeUserData(updatedUser);
       } catch (error) {
         const err = error as { message?: string };
@@ -705,7 +739,33 @@ export const usersRouter = router({
     }))
     .query(({ input }) => safeProcedure(async () => {
       try {
-        return await userService.getUserDeletionStats(input.userId);
+        // Implement inline counting logic
+        const user = await repositories.users.findById(input.userId);
+        if (!user) {
+          throw createNotFoundError('User', input.userId);
+        }
+        
+        // Count related entities that would be affected by deletion
+        // Since countByUserId doesn't exist, we'll use findAll with filtering
+        const allTasks = await repositories.tasks.findAll();
+        const taskCount = allTasks.filter(task => task.assigneeId === input.userId).length;
+        
+        const allComments = await repositories.comments.findAll();
+        const commentCount = allComments.filter(comment => comment.authorId === input.userId).length;
+        
+        // TaskTemplate doesn't have a createdById field, so we can't filter by user
+        const templateCount = 0;
+        
+        return {
+          userId: input.userId,
+          userName: user.name,
+          userEmail: user.email,
+          stats: {
+            tasksCreated: taskCount,
+            comments: commentCount,
+            templates: templateCount
+          }
+        };
       } catch (error) {
         return handleError(error);
       }
@@ -726,7 +786,7 @@ export const usersRouter = router({
           });
         }
 
-        const user = await userService.getUserById(input.userId);
+        const user = await repositories.users.findById(input.userId);
         
         if (!user) {
           throw createNotFoundError('User', input.userId);
@@ -740,7 +800,7 @@ export const usersRouter = router({
           });
         }
 
-        await userService.deleteUser(input.userId);
+        await repositories.users.delete(input.userId);
         
         return {
           id: input.userId,
@@ -763,13 +823,14 @@ export const usersRouter = router({
     }))
     .mutation(({ input }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(input.userId);
+        const user = await repositories.users.findById(input.userId);
         
         if (!user) {
           throw createNotFoundError('User', input.userId);
         }
 
-        await userService.updateUserPassword(input.userId, input.newPassword);
+        const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+        await repositories.users.updatePassword(input.userId, hashedPassword);
         
         return {
           id: input.userId,
@@ -788,7 +849,7 @@ export const usersRouter = router({
     }))
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        const user = await userService.getUserById(ctx.user.id);
+        const user = await repositories.users.findById(ctx.user.id);
         
         if (!user) {
           throw createNotFoundError('User', ctx.user.id);
@@ -804,7 +865,11 @@ export const usersRouter = router({
         
         // If Google is disabled, disconnect Google account
         if (!input.googleEnabled && user.googleId) {
-          await userService.disconnectGoogleAccount(ctx.user.id);
+          await repositories.users.update(ctx.user.id, {
+            googleId: null,
+            googleRefreshToken: null,
+            googleProfile: Prisma.JsonNull
+          });
         }
         
         // Google integration preferences are stored separately

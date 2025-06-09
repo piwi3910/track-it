@@ -15,10 +15,12 @@ Track-It is a task tracking and collaboration application with Google Suite inte
 ### Frontend
 - Vite for build tooling
 - React with TypeScript
-- Mantine UI component library
+- shadcn/ui components (based on Radix UI)
 - React Router for navigation
 - TanStack Query for data fetching
 - tRPC for type-safe API integration
+- Zustand for state management
+- Tailwind CSS for styling
 
 ### Backend
 - Fastify server
@@ -69,24 +71,30 @@ The application follows a feature-based architecture:
 
 ### Frontend Structure
 - `/src/components`: Reusable UI components
-- `/src/features`: Feature-specific components and logic
+  - `/ui`: shadcn/ui components
+  - `/providers`: React providers for initialization
+  - `/error`: Error handling components
 - `/src/hooks`: Custom React hooks
-- `/src/api`: API client and mock functions
+- `/src/api`: API client configuration
 - `/src/utils`: Utility functions
 - `/src/types`: TypeScript type definitions
 - `/src/pages`: Page components
 - `/src/layouts`: Layout components
-- `/src/context`: React context providers
+- `/src/stores`: Zustand state stores
+- `/src/styles`: CSS and theme files
 - `/src/assets`: Static assets
 
 ### Backend Structure
 - `/src/server.ts`: Main server entry point
 - `/src/routers/`: tRPC router definitions
-- `/src/modules/`: Business logic modules
-- `/src/db/`: Database models and connections
+- `/src/repositories/`: Repository pattern data access layer
+  - `/base.repository.ts`: Base repository class
+  - `/container.ts`: Dependency injection container
+- `/src/db/`: Database client and migrations
+  - `/services/`: Legacy service layer (being phased out)
 - `/src/utils/`: Utility functions
 - `/src/types/`: TypeScript type definitions
-- `/src/middleware/`: Request middleware
+- `/src/trpc/`: tRPC configuration and context
 
 ## Code Style and Best Practices
 

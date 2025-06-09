@@ -1,12 +1,16 @@
-import { Avatar, AvatarProps } from '@mantine/core';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
-interface InitialsAvatarProps extends Omit<AvatarProps, 'children'> {
+interface InitialsAvatarProps {
   name: string;
   src?: string | null;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  radius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  className?: string;
 }
 
-export function InitialsAvatar({ name, src, ...props }: InitialsAvatarProps) {
+export function InitialsAvatar({ name, src, size = 'md', radius = 'full', className }: InitialsAvatarProps) {
   // Generate initials from name
   const initials = useMemo(() => {
     if (!name) return '?';
@@ -38,18 +42,40 @@ export function InitialsAvatar({ name, src, ...props }: InitialsAvatarProps) {
     return `hsl(${hue}, 65%, 55%)`;
   }, [name]);
 
+  const sizeClasses = {
+    sm: 'h-8 w-8 text-xs',
+    md: 'h-10 w-10 text-sm',
+    lg: 'h-12 w-12 text-base',
+    xl: 'h-14 w-14 text-lg'
+  };
+
+  const radiusClasses = {
+    none: 'rounded-none',
+    sm: 'rounded-sm',
+    md: 'rounded-md',
+    lg: 'rounded-lg',
+    xl: 'rounded-xl',
+    full: 'rounded-full'
+  };
+
   return (
-    <Avatar
-      src={src}
-      {...props}
-      style={{
-        backgroundColor: src ? undefined : backgroundColor,
-        color: 'white',
-        fontWeight: 600,
-        ...props.style,
-      }}
+    <Avatar 
+      className={cn(
+        sizeClasses[size],
+        radiusClasses[radius],
+        className
+      )}
     >
-      {!src && initials}
+      <AvatarImage src={src || undefined} alt={name} />
+      <AvatarFallback 
+        style={{ 
+          backgroundColor: backgroundColor,
+          color: 'white',
+          fontWeight: 600
+        }}
+      >
+        {initials}
+      </AvatarFallback>
     </Avatar>
   );
 }

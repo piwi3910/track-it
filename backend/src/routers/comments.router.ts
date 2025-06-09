@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
-import * as commentService from '../db/services/comment.service';
-import * as taskService from '../db/services/task.service';
+import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
+import repositories from '../repositories/container';
+import { extractMentions, resolveUserIds } from '../utils/comment.utils';
 
 // Define the Comment type from the service response
 export type CommentAuthor = {
@@ -117,14 +117,14 @@ export const commentsRouter = router({
     }>> => {
       try {
         // Verify task exists
-        const task = await taskService.getTaskById(input.taskId);
+        const task = await repositories.tasks.findById(input.taskId);
         
         if (!task) {
           throw createNotFoundError('Task', input.taskId);
         }
         
         // Get all comments for the task
-        const comments = await commentService.getCommentsByTaskId(input.taskId);
+        const comments = await repositories.comments.findByTaskId(input.taskId);
         
         // Return normalized comments
         return comments.map(normalizeCommentData);
@@ -138,14 +138,14 @@ export const commentsRouter = router({
     .query(({ input }) => safeProcedure(async (): Promise<number> => {
       try {
         // Verify task exists
-        const task = await taskService.getTaskById(input.taskId);
+        const task = await repositories.tasks.findById(input.taskId);
         
         if (!task) {
           throw createNotFoundError('Task', input.taskId);
         }
         
         // Get comment count for the task
-        const count = await commentService.getCommentCount(input.taskId);
+        const count = await repositories.comments.countByTaskId(input.taskId);
         
         // Return just the number as per API specification
         return count;
@@ -174,17 +174,17 @@ export const commentsRouter = router({
     }> => {
       try {
         // Verify task exists
-        const task = await taskService.getTaskById(input.taskId);
+        const task = await repositories.tasks.findById(input.taskId);
         
         if (!task) {
           throw createNotFoundError('Task', input.taskId);
         }
         
         // Extract mentions from text
-        const mentionedUsernames = commentService.extractMentions(input.text);
+        const mentionedUsernames = extractMentions(input.text);
         
         // Create new comment
-        const newComment = await commentService.createComment({
+        const newComment = await repositories.comments.create({
           text: input.text,
           task: {
             connect: { id: input.taskId }
@@ -198,7 +198,7 @@ export const commentsRouter = router({
         // For example, create notifications for mentioned users
         if (mentionedUsernames.length > 0) {
           // Resolve usernames to user IDs
-          await commentService.resolveUserIds(mentionedUsernames);
+          await resolveUserIds(mentionedUsernames);
           
           // In a real app, you would create notifications for mentioned users here
           // This could be done in a background job to avoid blocking the response
@@ -230,7 +230,7 @@ export const commentsRouter = router({
     }> => {
       try {
         // Get comment by ID
-        const comment = await commentService.getCommentById(input.id);
+        const comment = await repositories.comments.findById(input.id);
         
         if (!comment) {
           throw createNotFoundError('Comment', input.id);
@@ -242,10 +242,10 @@ export const commentsRouter = router({
         }
         
         // Extract mentions from text
-        const mentionedUsernames = commentService.extractMentions(input.text);
+        const mentionedUsernames = extractMentions(input.text);
         
         // Update comment
-        const updatedComment = await commentService.updateComment(input.id, {
+        const updatedComment = await repositories.comments.update(input.id, {
           text: input.text,
           updatedAt: new Date()
         });
@@ -253,7 +253,7 @@ export const commentsRouter = router({
         // If there are mentions, we would handle them here
         if (mentionedUsernames.length > 0) {
           // Resolve usernames to user IDs
-          await commentService.resolveUserIds(mentionedUsernames);
+          await resolveUserIds(mentionedUsernames);
           
           // In a real app, you would create notifications for mentioned users here
           // This could be done in a background job to avoid blocking the response
@@ -270,7 +270,7 @@ export const commentsRouter = router({
     .mutation(({ input, ctx }) => safeProcedure(async (): Promise<{ success: boolean }> => {
       try {
         // Get comment by ID
-        const comment = await commentService.getCommentById(input.id);
+        const comment = await repositories.comments.findById(input.id);
         
         if (!comment) {
           throw createNotFoundError('Comment', input.id);
@@ -282,7 +282,7 @@ export const commentsRouter = router({
         }
         
         // Delete comment
-        await commentService.deleteComment(input.id);
+        await repositories.comments.delete(input.id);
         
         // Return success response as per API specification
         return { success: true };

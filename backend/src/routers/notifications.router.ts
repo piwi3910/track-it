@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
-import * as notificationService from '../db/services/notification.service';
-import { formatEnumForApi } from '../utils/constants';
+import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
+import repositories from '../repositories/container';
 
 // Define the Notification type from the service response
 type NotificationFromService = {
@@ -32,7 +31,7 @@ const normalizeNotificationData = (notification: NotificationFromService): {
   return {
     ...notification,
     // Map database field names to API spec names
-    type: formatEnumForApi(notification.type),
+    type: notification.type,
     relatedEntityId: notification.resourceId,
     relatedEntityType: notification.resourceType,
     // Format dates as ISO strings if they exist as Date objects
@@ -61,7 +60,7 @@ export const notificationsRouter = router({
     }>> => {
       try {
         // Get all notifications for the user
-        const notifications = await notificationService.getUserNotifications(ctx.user.id);
+        const notifications = await repositories.notifications.findByUserId(ctx.user.id, true);
         
         // Return normalized notifications
         return notifications.map(normalizeNotificationData);
@@ -78,7 +77,7 @@ export const notificationsRouter = router({
     }> => {
       try {
         // Get notification by ID
-        const notification = await notificationService.getNotificationById(input.id);
+        const notification = await repositories.notifications.findById(input.id);
         
         if (!notification) {
           throw createNotFoundError('Notification', input.id);
@@ -90,7 +89,7 @@ export const notificationsRouter = router({
         }
         
         // Mark as read
-        const updatedNotification = await notificationService.markAsRead(input.id);
+        const updatedNotification = await repositories.notifications.markAsRead(input.id);
         
         return { 
           id: updatedNotification.id, 
@@ -108,7 +107,7 @@ export const notificationsRouter = router({
     }> => {
       try {
         // Mark all notifications as read for the user
-        const markedCount = await notificationService.markAllAsRead(ctx.user.id);
+        const markedCount = await repositories.notifications.markAllAsReadForUser(ctx.user.id);
         
         return { 
           markedCount,
@@ -123,7 +122,7 @@ export const notificationsRouter = router({
     .query(({ ctx }) => safeProcedure(async (): Promise<{ count: number }> => {
       try {
         // Get unread notification count for the user
-        const count = await notificationService.getUnreadCount(ctx.user.id);
+        const count = await repositories.notifications.countUnreadByUserId(ctx.user.id);
         
         return { count };
       } catch (error) {

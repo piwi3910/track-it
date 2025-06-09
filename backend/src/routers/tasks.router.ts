@@ -1,67 +1,36 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
+import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
 import { logger } from '../server';
-import * as taskService from '../db/services/task.service';
-import * as templateService from '../db/services/template.service';
-import { formatEnumForApi } from '../utils/constants';
-import { TaskStatus, TaskPriority, Prisma } from '@prisma/client';
+import repositories from '../repositories/container';
+import { Task, TaskStatus, TaskPriority, Prisma } from '@prisma/client';
 
 // Define helper function to normalize task data for API response
 const normalizeTaskData = (task: {
-  status: string;
-  priority: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   dueDate?: Date | string | null;
   [key: string]: unknown;
 }): Record<string, unknown> => {
-  // Ensure consistent casing of status and priority
+  // Format dates as ISO strings if they exist as Date objects
   return {
     ...task,
-    status: formatEnumForApi(task.status),
-    priority: formatEnumForApi(task.priority),
-    // Format dates as ISO strings if they exist as Date objects
     createdAt: task.createdAt instanceof Date ? task.createdAt.toISOString() : task.createdAt,
     updatedAt: task.updatedAt instanceof Date ? task.updatedAt.toISOString() : task.updatedAt,
     dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString() : task.dueDate
   };
 };
 
-// Frontend-compatible enum schemas that accept lowercase values and transform to backend format
-const frontendTaskStatusSchema = z.enum(['backlog', 'todo', 'in_progress', 'blocked', 'in_review', 'done', 'archived'])
-  .transform((val) => {
-    // Map frontend values to backend enum values
-    const statusMap: Record<string, TaskStatus> = {
-      'backlog': TaskStatus.BACKLOG,
-      'todo': TaskStatus.TODO,
-      'in_progress': TaskStatus.IN_PROGRESS,
-      'blocked': TaskStatus.TODO, // Fallback since BLOCKED doesn't exist in schema
-      'in_review': TaskStatus.REVIEW,
-      'done': TaskStatus.DONE,
-      'archived': TaskStatus.ARCHIVED
-    };
-    return statusMap[val] || TaskStatus.TODO;
-  });
-
-const frontendTaskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent'])
-  .transform((val) => {
-    // Map frontend values to backend enum values
-    const priorityMap: Record<string, TaskPriority> = {
-      'low': TaskPriority.LOW,
-      'medium': TaskPriority.MEDIUM,
-      'high': TaskPriority.HIGH,
-      'urgent': TaskPriority.URGENT
-    };
-    return priorityMap[val] || TaskPriority.MEDIUM;
-  });
+// Task enum schemas using lowercase values (matching Prisma schema)
+const taskStatusSchema = z.enum(['backlog', 'todo', 'in_progress', 'review', 'done', 'archived']);
+const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 
 // Input validation schemas
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  status: frontendTaskStatusSchema.default('todo'),
-  priority: frontendTaskPrioritySchema,
+  status: taskStatusSchema.default('todo'),
+  priority: taskPrioritySchema,
   tags: z.array(z.string()).optional(),
   dueDate: z.string().nullable().optional(),
   assigneeId: z.string().nullable().optional(),
@@ -78,8 +47,8 @@ const updateTaskSchema = z.object({
     // Core fields that exist in database
     title: z.string().min(1).optional(),
     description: z.string().optional(),
-    status: frontendTaskStatusSchema.optional(),
-    priority: frontendTaskPrioritySchema.optional(),
+    status: taskStatusSchema.optional(),
+    priority: taskPrioritySchema.optional(),
     tags: z.array(z.string()).optional(),
     dueDate: z.string().nullable().optional(),
     assigneeId: z.string().nullable().optional(),
@@ -167,7 +136,7 @@ export const tasksRouter = router({
   getAll: protectedProcedure
     .query(() => safeProcedure(async () => {
       try {
-        const tasks = await taskService.getAllTasks();
+        const tasks = await repositories.tasks.findAllWithRelations();
         return tasks.map(normalizeTaskData);
       } catch (error) {
         return handleError(error);
@@ -178,7 +147,7 @@ export const tasksRouter = router({
     .input(getTaskByIdSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
       try {
-        const task = await taskService.getTaskById(input.id);
+        const task = await repositories.tasks.findWithRelations(input.id);
         
         if (!task) {
           throw createNotFoundError('Task', input.id);
@@ -201,7 +170,7 @@ export const tasksRouter = router({
     .input(getTasksByStatusSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
       try {
-        const tasks = await taskService.getTasksByStatus(input.status, ctx.user.id);
+        const tasks = await repositories.tasks.findByStatus(input.status, ctx.user.id);
         return tasks.map(normalizeTaskData);
       } catch (error) {
         return handleError(error);
@@ -233,7 +202,7 @@ export const tasksRouter = router({
           } : undefined
         };
 
-        const newTask = await taskService.createTask(taskData);
+        const newTask = await repositories.tasks.create(taskData);
         return normalizeTaskData(newTask);
       } catch (error) {
         return handleError(error);
@@ -251,7 +220,7 @@ export const tasksRouter = router({
         });
         
         // First get the task to check permissions
-        const task = await taskService.getTaskById(input.id);
+        const task = await repositories.tasks.findById(input.id);
         
         if (!task) {
           throw createNotFoundError('Task', input.id);
@@ -329,7 +298,7 @@ export const tasksRouter = router({
         });
 
         // Update the task
-        const updatedTask = await taskService.updateTask(input.id, updateData);
+        const updatedTask = await repositories.tasks.update(input.id, updateData);
         logger.info('Task updated successfully:', { taskId: input.id });
         return normalizeTaskData(updatedTask);
       } catch (error) {
@@ -347,7 +316,7 @@ export const tasksRouter = router({
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
         // First get the task to check permissions
-        const task = await taskService.getTaskById(input.id);
+        const task = await repositories.tasks.findById(input.id);
         
         if (!task) {
           throw createNotFoundError('Task', input.id);
@@ -359,7 +328,7 @@ export const tasksRouter = router({
         }
         
         // Delete the task
-        await taskService.deleteTask(input.id);
+        await repositories.tasks.delete(input.id);
         
         return { id: input.id, deleted: true };
       } catch (error) {
@@ -371,7 +340,7 @@ export const tasksRouter = router({
     .input(searchTasksSchema)
     .query(({ input }) => safeProcedure(async () => {
       try {
-        const tasks = await taskService.searchTasks(input.query);
+        const tasks = await repositories.tasks.search(input.query);
         return tasks.map(normalizeTaskData);
       } catch (error) {
         return handleError(error);
@@ -383,7 +352,7 @@ export const tasksRouter = router({
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
         // First get the task to check permissions
-        const task = await taskService.getTaskById(input.taskId);
+        const task = await repositories.tasks.findWithRelations(input.taskId);
         
         if (!task) {
           throw createNotFoundError('Task', input.taskId);
@@ -395,10 +364,11 @@ export const tasksRouter = router({
         }
         
         // Extract subtasks data for template
-        const subtasksData = task.subtasks.map(subtask => ({
+        const taskWithSubtasks = task as Task & { subtasks?: Array<{ title: string; description: string | null; priority: TaskPriority }> };
+        const subtasksData = taskWithSubtasks.subtasks?.map((subtask) => ({
           title: subtask.title,
           completed: false // Always set to false in templates
-        }));
+        })) || [];
         
         // Create template data
         const templateData = {
@@ -415,10 +385,10 @@ export const tasksRouter = router({
         };
         
         // Create the template
-        const newTemplate = await templateService.createTemplate(templateData);
+        const newTemplate = await repositories.templates.create(templateData);
         
         // Mark the task as saved as template
-        await taskService.updateTask(input.taskId, { savedAsTemplate: true });
+        await repositories.tasks.update(input.taskId, { savedAsTemplate: true });
         
         return {
           id: newTemplate.id,
@@ -435,7 +405,7 @@ export const tasksRouter = router({
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
         // First get the template to check permissions
-        const template = await templateService.getTemplateById(input.templateId);
+        const template = await repositories.templates.findById(input.templateId);
         
         if (!template) {
           throw createNotFoundError('Template', input.templateId);
@@ -453,7 +423,7 @@ export const tasksRouter = router({
         const taskData = {
           title: input.taskData?.title || template.name,
           description: input.taskData?.description || template.description,
-          status: (input.taskData?.status as TaskStatus) || TaskStatus.TODO,
+          status: (input.taskData?.status as TaskStatus) || 'todo',
           priority: (input.taskData?.priority as TaskPriority) || template.priority,
           tags: template.tags,
           dueDate: input.taskData?.dueDate ? new Date(input.taskData.dueDate) : null,
@@ -471,10 +441,10 @@ export const tasksRouter = router({
         };
         
         // Create the task
-        const newTask = await taskService.createTask(taskData);
+        const newTask = await repositories.tasks.create(taskData);
         
         // Increment template usage count
-        await templateService.incrementTemplateUsage(input.templateId);
+        await repositories.templates.incrementUsageCount(input.templateId);
         
         return normalizeTaskData(newTask);
       } catch (error) {

@@ -1,23 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  Paper,
-  Text,
-  Group,
-  Avatar,
-  Stack,
-  Textarea,
-  ActionIcon,
-  Divider,
-  ScrollArea,
-  Popover,
-  Loader,
-  Box,
-  Anchor
-} from '@mantine/core';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AppTooltip } from '@/components/ui/AppTooltip';
-import { AppMenu } from '@/components/ui/AppMenu';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import {
   IconSend,
   IconPaperclip,
@@ -37,16 +33,14 @@ import { useGoogle } from '@/hooks/useGoogle';
 import { api } from '@/api';
 import { Comment, Attachment, User } from '@/types/task';
 import { notifications } from '@/components/ui/notifications';
-import { useTheme } from '@/hooks/useTheme';;
 
 interface TaskChatProps {
   taskId: string;
   onCommentCountChange?: (count: number) => void;
 }
 
-export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
+function TaskChatContent({ taskId, onCommentCountChange }: TaskChatProps) {
   const { currentUser } = useApp();
-  const { colors } = useTheme();
   const { driveFiles, fetchDriveFiles, isAuthenticated } = useGoogle();
   
   const [comments, setComments] = useState<Comment[]>([]);
@@ -391,14 +385,15 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
               
               // Add the url as a link
               urlParts.push(
-                <Anchor 
+                <a 
                   key={`url-${urlStartIndex}`} 
                   href={url} 
                   target="_blank" 
                   rel="noopener noreferrer"
+                  className="text-primary hover:underline"
                 >
                   {url}
-                </Anchor>
+                </a>
               );
               
               lastUrlIndex = urlStartIndex + url.length;
@@ -426,18 +421,21 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
             const url = linkMatch[2];
             
             return (
-              <Box key={`link-${index}`} mt={5}>
-                <Anchor href={url} target="_blank" rel="noopener noreferrer">
-                  <Group gap="xs">
-                    {url.includes('drive.google.com') ? (
-                      <IconBrandGoogleDrive size={16} />
-                    ) : (
-                      <IconLink size={16} />
-                    )}
-                    <span>{linkText}</span>
-                  </Group>
-                </Anchor>
-              </Box>
+              <div key={`link-${index}`} className="mt-2">
+                <a 
+                  href={url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  {url.includes('drive.google.com') ? (
+                    <IconBrandGoogleDrive size={16} />
+                  ) : (
+                    <IconLink size={16} />
+                  )}
+                  <span>{linkText}</span>
+                </a>
+              </div>
             );
           })}
         </>
@@ -493,126 +491,114 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
   
   if (loading) {
     return (
-      <Paper p="md" withBorder>
-        <Stack align="center" py="xl">
-          <Loader size="md" />
-          <Text c="dimmed">Loading conversation...</Text>
-        </Stack>
-      </Paper>
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col items-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <p className="text-muted-foreground mt-2">Loading conversation...</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
   
   return (
-    <Paper 
-      p="md" 
-      withBorder 
-      style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        height: '500px' 
-      }}
+    <Card 
+      className="flex flex-col h-[500px]"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
-      <Group justify="space-between" mb="md">
-        <Text fw={500}>Task Conversation</Text>
-        <Group>
-          <Text size="sm" c="dimmed">{comments.length} comments</Text>
-          <Text size="sm" c="dimmed">•</Text>
-          <Text size="sm" c="dimmed">{attachments.length} attachments</Text>
-        </Group>
-      </Group>
+      <CardContent className="p-4 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4">
+          <p className="font-medium">Task Conversation</p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">{comments.length} comments</span>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">{attachments.length} attachments</span>
+          </div>
+        </div>
+        
+        <Separator className="mb-4" />
       
-      <Divider mb="md" />
-      
-      <ScrollArea flex={1} viewportRef={scrollAreaRef}>
-        {comments.length === 0 ? (
-          <Stack align="center" justify="center" h="100%" py="xl">
-            <IconFileText size={48} opacity={0.5} />
-            <Text c="dimmed">No comments yet</Text>
-            <Text size="sm" c="dimmed">
-              Start the conversation or drag & drop files to share
-            </Text>
-          </Stack>
-        ) : (
-          <Stack gap="md">
+        <ScrollArea className="flex-1" ref={scrollAreaRef}>
+          {comments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full py-12">
+              <IconFileText size={48} className="opacity-50" />
+              <p className="text-muted-foreground">No comments yet</p>
+              <p className="text-sm text-muted-foreground">
+                Start the conversation or drag & drop files to share
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
             {comments.map(comment => {
               const user = getUserById(comment.authorId);
               const isCurrentUser = user?.id === currentUser?.id;
               
               return (
-                <Box key={comment.id}>
-                  <Group justify={isCurrentUser ? 'flex-end' : 'flex-start'} wrap="nowrap" align="flex-start">
+                <div key={comment.id}>
+                  <div className={`flex items-start gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
                     {!isCurrentUser && (
-                      <Avatar 
-                        src={user?.avatarUrl} 
-                        radius="xl" 
-                        size="sm"
-                        color={user ? undefined : 'blue'}
-                      >
-                        {!user?.avatarUrl && <IconUser size={20} />}
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatarUrl} />
+                        <AvatarFallback>{user?.name?.[0] || <IconUser size={20} />}</AvatarFallback>
                       </Avatar>
                     )}
                     
-                    <Box
-                      style={{
-                        maxWidth: '75%',
-                        backgroundColor: isCurrentUser ? colors.highlight : colors.cardBackground,
-                        padding: '10px 14px',
-                        borderRadius: '12px',
-                        position: 'relative'
-                      }}
+                    <div
+                      className={`max-w-[75%] p-3 rounded-xl ${
+                        isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                      }`}
                     >
-                      <Group justify="space-between" mb={4}>
-                        <Text size="sm" fw={500}>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium">
                           {user?.name || 'Unknown User'}
-                        </Text>
+                        </p>
                         
-                        <Group gap={8}>
-                          <Text size="xs" c="dimmed">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs opacity-70">
                             {formatDate(comment.createdAt)}
-                          </Text>
+                          </span>
                           
                           {isCurrentUser && (
-                            <AppMenu position="bottom-end" withArrow>
-                              <AppMenu.Target>
-                                <ActionIcon size="xs" variant="subtle">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
                                   <IconDotsVertical size={12} />
-                                </ActionIcon>
-                              </AppMenu.Target>
+                                </Button>
+                              </DropdownMenuTrigger>
                               
-                              <AppMenu.Dropdown>
-                                <AppMenu.Item
-                                  leftSection={<IconEdit size={14} />}
+                                <DropdownMenuContent align="end">
+                                <DropdownMenuItem
                                   onClick={() => {
                                     setEditingComment(comment.id);
                                     setEditText(comment.text);
                                   }}
                                 >
+                                  <IconEdit size={14} className="mr-2 h-4 w-4" />
                                   Edit
-                                </AppMenu.Item>
-                                <AppMenu.Item
-                                  leftSection={<IconTrash size={14} />}
-                                  color="red"
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
                                   onClick={() => handleDeleteComment(comment.id)}
+                                  className="text-destructive focus:text-destructive"
                                 >
+                                  <IconTrash size={14} className="mr-2 h-4 w-4" />
                                   Delete
-                                </AppMenu.Item>
-                              </AppMenu.Dropdown>
-                            </AppMenu>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
-                        </Group>
-                      </Group>
+                        </div>
+                      </div>
                       
                       {editingComment === comment.id ? (
-                        <Stack>
+                        <div className="space-y-2">
                           <Textarea
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
-                            minRows={2}
-                            autosize
+                            className="min-h-[60px]"
                           />
-                          <Group justify="flex-end">
+                          <div className="flex justify-end gap-2">
                             <Button 
                               variant="ghost" 
                               size="sm"
@@ -631,152 +617,124 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                             >
                               Save
                             </Button>
-                          </Group>
-                        </Stack>
+                          </div>
+                        </div>
                       ) : (
-                        <Text size="sm">
+                        <div className="text-sm">
                           {formatMessage(comment.text)}
-                        </Text>
+                        </div>
                       )}
-                    </Box>
+                    </div>
                     
                     {isCurrentUser && (
-                      <Avatar 
-                        src={user?.avatarUrl} 
-                        radius="xl" 
-                        size="sm"
-                        color={user ? undefined : 'blue'}
-                      >
-                        {!user?.avatarUrl && <IconUser size={20} />}
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatarUrl} />
+                        <AvatarFallback>{user?.name?.[0] || <IconUser size={20} />}</AvatarFallback>
                       </Avatar>
                     )}
-                  </Group>
+                  </div>
                   
                   {comment.updatedAt && (
-                    <Text
-                      size="xs"
-                      c="dimmed"
-                      ta={isCurrentUser ? 'right' : 'left'}
-                      mt={4}
-                      style={{
-                        marginLeft: isCurrentUser ? 0 : 35,
-                        marginRight: isCurrentUser ? 35 : 0
-                      }}
+                    <p
+                      className={`text-xs text-muted-foreground mt-1 ${
+                        isCurrentUser ? 'text-right mr-10' : 'ml-10'
+                      }`}
                     >
                       Edited {formatDate(comment.updatedAt)}
-                    </Text>
+                    </p>
                   )}
-                </Box>
+                </div>
               );
             })}
-          </Stack>
-        )}
-      </ScrollArea>
-      
-      <Divider my="md" />
-      
-      {uploadLoading && (
-        <Group justify="center" my="xs">
-          <Loader size="sm" />
-          <Text size="sm">Uploading file...</Text>
-        </Group>
-      )}
-      
-      <Popover
-        position="top"
-        width={300}
-        opened={mentionPopupOpen}
-        onChange={setMentionPopupOpen}
-        withArrow
-        closeOnClickOutside
-        shadow="md"
-      >
-        <Popover.Target>
-          <div>
-            <Textarea
-              ref={textareaRef}
-              placeholder="Type your message... Use @ to mention someone"
-              value={message}
-              onChange={handleMessageChange}
-              minRows={2}
-              maxRows={5}
-              autosize
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
-            />
-          </div>
-        </Popover.Target>
+            </div>
+          )}
+        </ScrollArea>
         
-        <Popover.Dropdown>
-          <Stack gap="xs">
-            <Text size="xs" fw={700} c="dimmed">MENTION SOMEONE</Text>
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map(user => (
-                <Button
-                  key={user.id}
-                  variant="ghost"
-                  onClick={() => handleSelectMention(user.name.replace(/\s+/g, ''))}
-                  className="w-full justify-start"
-                >
-                  <Avatar 
-                    src={user.avatarUrl} 
-                    size="xs" 
-                    radius="xl"
-                    className="mr-2 h-4 w-4"
-                  />
-                  {user.name}
-                </Button>
-              ))
-            ) : (
-              <Text size="sm" c="dimmed" ta="center">No users found</Text>
-            )}
-          </Stack>
-        </Popover.Dropdown>
-      </Popover>
+        <Separator className="my-4" />
       
-      <Group mt="md" align="flex-end">
-        <div style={{ position: 'relative', flex: 1 }}>
-          {message === '' && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                padding: '8px 12px',
-                pointerEvents: 'none'
-              }}
+        {uploadLoading && (
+          <div className="flex items-center justify-center gap-2 my-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary"></div>
+            <span className="text-sm">Uploading file...</span>
+          </div>
+        )}
+      
+        <Popover
+          open={mentionPopupOpen}
+          onOpenChange={setMentionPopupOpen}
+        >
+          <PopoverTrigger asChild>
+            <div>
+              <Textarea
+                ref={textareaRef}
+                placeholder="Type your message... Use @ to mention someone"
+                value={message}
+                onChange={handleMessageChange}
+                className="min-h-[60px] max-h-[120px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+              />
+            </div>
+          </PopoverTrigger>
+          
+          <PopoverContent side="top" className="w-[300px] p-3">
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-muted-foreground">MENTION SOMEONE</p>
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map(user => (
+                  <Button
+                    key={user.id}
+                    variant="ghost"
+                    onClick={() => handleSelectMention(user.name.replace(/\s+/g, ''))}
+                    className="w-full justify-start h-auto p-2"
+                  >
+                    <Avatar className="h-6 w-6 mr-2">
+                      <AvatarImage src={user.avatarUrl} />
+                      <AvatarFallback>{user.name?.[0]}</AvatarFallback>
+                    </Avatar>
+                    {user.name}
+                  </Button>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center">No users found</p>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      
+        <div className="flex items-end gap-2 mt-4">
+          <div className="relative flex-1">
+            {message === '' && (
+              <div className="absolute bottom-0 left-0 right-0 p-2 pointer-events-none"
             >
-              <AppTooltip label="Drop files here to upload">
-                <span style={{ display: 'inline-block' }}>
-                  <Group gap={6} opacity={0.6}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 opacity-60">
                     <IconDragDrop size={16} />
-                    <Text size="xs">Drop files here to upload</Text>
-                  </Group>
-                </span>
-              </AppTooltip>
+                    <span className="text-xs">Drop files here to upload</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Drop files here to upload</TooltipContent>
+              </Tooltip>
             </div>
           )}
         </div>
         
-        <Group>
+        <div className="flex gap-2">
           <Popover
-            position="top-end"
-            width={300}
-            opened={drivePopupOpen}
-            onChange={setDrivePopupOpen}
-            withArrow
-            shadow="md"
+            open={drivePopupOpen}
+            onOpenChange={setDrivePopupOpen}
           >
-            <Popover.Target>
-              <AppTooltip label="Attach from Google Drive">
-                <span style={{ display: 'inline-block' }}>
-                  <ActionIcon
-                    variant="light"
+            <PopoverTrigger asChild>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => {
                       if (isAuthenticated) {
                         setDrivePopupOpen(true);
@@ -790,17 +748,18 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                   }}
                 >
                   <IconBrandGoogleDrive size={18} />
-                </ActionIcon>
-                </span>
-              </AppTooltip>
-            </Popover.Target>
+                </Button>
+                </TooltipTrigger>
+                <TooltipContent>Attach from Google Drive</TooltipContent>
+              </Tooltip>
+            </PopoverTrigger>
             
-            <Popover.Dropdown>
-              <Stack gap="xs">
-                <Text size="xs" fw={700} c="dimmed">SELECT FROM GOOGLE DRIVE</Text>
+            <PopoverContent side="top" align="end" className="w-[300px] p-3">
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-muted-foreground">SELECT FROM GOOGLE DRIVE</p>
                 {driveFiles.length > 0 ? (
-                  <ScrollArea h={200}>
-                    <Stack gap="xs">
+                  <ScrollArea className="h-[200px]">
+                    <div className="space-y-1">
                       {driveFiles.map(file => (
                         <Button
                           key={file.id}
@@ -810,42 +769,47 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
                             name: file.name,
                             url: file.webViewLink
                           })}
-                          className="w-full justify-start"
+                          className="w-full justify-start h-auto p-2"
                         >
                           <IconFileText size={14} className="mr-2 h-4 w-4" />
                           {file.name}
                         </Button>
                       ))}
-                    </Stack>
+                    </div>
                   </ScrollArea>
                 ) : (
-                  <Text size="sm" c="dimmed" ta="center">
+                  <p className="text-sm text-muted-foreground text-center">
                     No files found in Google Drive
-                  </Text>
+                  </p>
                 )}
-              </Stack>
-            </Popover.Dropdown>
+              </div>
+            </PopoverContent>
           </Popover>
           
-          <AppTooltip label="Attach file">
-            <span style={{ display: 'inline-block' }}>
+          <Tooltip>
+            <TooltipTrigger asChild>
               <div>
                 <input
                   type="file"
                   id="file-upload"
-                  style={{ display: 'none' }}
+                  className="hidden"
                   onChange={handleFileInputChange}
                 />
-                <ActionIcon
-                  variant="light"
-                  component="label"
-                  htmlFor="file-upload"
-                >
-                  <IconPaperclip size={18} />
-                </ActionIcon>
+                <label htmlFor="file-upload">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    asChild
+                  >
+                    <span>
+                      <IconPaperclip size={18} />
+                    </span>
+                  </Button>
+                </label>
               </div>
-            </span>
-          </AppTooltip>
+            </TooltipTrigger>
+            <TooltipContent>Attach file</TooltipContent>
+          </Tooltip>
           
           <Button
             disabled={!message.trim()}
@@ -854,54 +818,65 @@ export function TaskChat({ taskId, onCommentCountChange }: TaskChatProps) {
             Send
             <IconSend size={14} className="ml-2 h-4 w-4" />
           </Button>
-        </Group>
-      </Group>
-      
-      {attachments.length > 0 && (
-        <>
-          <Divider my="md" label="Attachments" labelPosition="center" />
-          
-          <ScrollArea h={100}>
-            <Group>
-              {attachments.map(attachment => {
-                const isImage = attachment.fileType.startsWith('image/');
-                
-                return (
-                  <Paper key={attachment.id} p="xs" withBorder>
-                    <Group gap="xs">
-                      {isImage ? (
-                        <IconPhoto size={24} />
-                      ) : (
-                        <IconFileText size={24} />
-                      )}
-                      
-                      <div>
-                        <Text size="sm" lineClamp={1}>
-                          {attachment.name}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {formatFileSize(attachment.size)}
-                        </Text>
+        </div>
+      </div>
+        
+        {attachments.length > 0 && (
+          <>
+            <div className="relative my-4">
+              <Separator />
+              <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-background px-2 text-sm text-muted-foreground">
+                Attachments
+              </span>
+            </div>
+            
+            <ScrollArea className="h-[100px]">
+              <div className="flex gap-2 flex-wrap">
+                {attachments.map(attachment => {
+                  const isImage = attachment.fileType.startsWith('image/');
+                  
+                  return (
+                    <Card key={attachment.id} className="p-2">
+                      <div className="flex items-center gap-2">
+                        {isImage ? (
+                          <IconPhoto size={24} />
+                        ) : (
+                          <IconFileText size={24} />
+                        )}
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">
+                            {attachment.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(attachment.size)}
+                          </p>
+                        </div>
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          asChild
+                        >
+                          <a
+                            href={attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <IconDownload size={16} />
+                          </a>
+                        </Button>
                       </div>
-                      
-                      <ActionIcon
-                        variant="subtle"
-                        component="a"
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <IconDownload size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Paper>
-                );
-              })}
-            </Group>
-          </ScrollArea>
-        </>
-      )}
-    </Paper>
+                    </Card>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -911,4 +886,12 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+}
+
+export function TaskChat(props: TaskChatProps) {
+  return (
+    <TooltipProvider>
+      <TaskChatContent {...props} />
+    </TooltipProvider>
+  );
 }

@@ -1,25 +1,12 @@
 import { useState } from 'react';
-// Using centralized theme system
-import {
-  Container,
-  Title,
-  Group,
-  Card,
-  Text,
-  SimpleGrid,
-  Stack,
-  RingProgress,
-  ThemeIcon,
-  Box,
-  Badge,
-  rem
-} from '@mantine/core';
 import {
   IconListCheck,
   IconCheckbox,
   IconClockHour4,
   IconCalendarEvent
 } from '@tabler/icons-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import TaskModal from '@/components/TaskModal';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task } from '@/types/task';
@@ -76,16 +63,16 @@ export function DashboardPage() {
   };
 
   return (
-    <Container size="xl">
-      <Group justify="space-between" align="center" mb="md">
-        <Title>Dashboard</Title>
-      </Group>
+    <div className="container mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+      </div>
 
-      <Box mb="xl">
+      <div className="mb-8">
         <QuickAddTask onTaskAdded={() => console.log('Task added from quick add')} />
-      </Box>
+      </div>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         <StatCard
           title="My Tasks"
           value={totalMyTasks.toString()}
@@ -104,135 +91,136 @@ export function DashboardPage() {
           title="My To Do"
           value={myTodoTasks.toString()}
           icon={<IconCalendarEvent />}
-          color="grape"
+          color="orange"
         />
 
-        <Card p="xs" radius="md" withBorder h={180} pos="relative" className="dashboard-stat-card dashboard-completion-card">
-          <Group gap="xs" justify="center" mb={5}>
-            <ThemeIcon size="sm" radius="sm" variant="light" color="green">
-              <IconCheckbox style={{ width: rem(14), height: rem(14) }} />
-            </ThemeIcon>
-            <Text fw={700} size="sm">My Completion</Text>
-          </Group>
-          <div style={{ position: 'relative', height: '80%', width: '100%' }}>
-            <RingProgress
-              size={120}
-              thickness={12}
-              roundCaps
-              sections={[{ value: completionPercentage, color: 'green' }]}
-              style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-            />
-            <Text
-              className="stat-card-value"
-              c="green"
-            >
-              {completionPercentage}%
-            </Text>
-          </div>
-        </Card>
-      </SimpleGrid>
+        <StatCard
+          title="Completion"
+          value={`${completionPercentage}%`}
+          icon={<IconCheckbox />}
+          color="green"
+          showProgress
+          progress={completionPercentage}
+        />
+      </div>
 
-      {/* My Tasks Section */}
-      <Stack mt="xl">
-        <Title order={3}>My Tasks</Title>
-        {myTasks.length === 0 ? (
-          <Card p="md" radius="md" withBorder>
-            <Text ta="center" c="dimmed">You don't have any assigned tasks yet.</Text>
-          </Card>
-        ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-            {myTasks.map(task => (
-              <Card
-                key={task.id}
-                p="md"
-                radius="md"
-                withBorder
-                className="hover-card"
-                onClick={() => handleEditTask(task)}
-              >
-                <Group justify="space-between" mb="xs">
-                  <Text fw={500}>{task.title}</Text>
-                  <Badge color={
-                    task.status === 'IN_PROGRESS' ? 'yellow' :
-                    task.status === 'DONE' ? 'green' : 'blue'
-                  }>
-                    {task.status.replace('_', ' ')}
-                  </Badge>
-                </Group>
-                {task.dueDate && (
-                  <Text size="sm" c="dimmed">
-                    Due: {new Date(task.dueDate).toLocaleDateString()}
-                  </Text>
-                )}
-              </Card>
-            ))}
-          </SimpleGrid>
+      <div className="space-y-8 mt-8">
+        {/* My In Progress Tasks */}
+        {myInProgressTasks > 0 && (
+          <section>
+            <h2 className="text-xl font-semibold mb-4">My In Progress Tasks</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {myTasks
+                .filter(task => task.status === 'IN_PROGRESS')
+                .map(task => (
+                  <Card
+                    key={task.id}
+                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleEditTask(task)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-base line-clamp-2">{task.title}</CardTitle>
+                        <Badge 
+                          variant={
+                            task.priority === 'URGENT' ? 'destructive' :
+                            task.priority === 'HIGH' ? 'destructive' :
+                            'default'
+                          }
+                          className={
+                            task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                            task.priority === 'LOW' ? 'bg-blue-100 text-blue-800' : ''
+                          }
+                        >
+                          {task.priority}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </section>
         )}
-      </Stack>
 
-      {/* My In Progress Tasks */}
-      <Stack mt="xl">
-        <Title order={3}>My In Progress Tasks</Title>
-        {myInProgressTasks <= 0 ? (
-          <Card p="md" radius="md" withBorder>
-            <Text ta="center" c="dimmed">You don't have any tasks in progress.</Text>
-          </Card>
-        ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-            {myTasks
-              .filter(task => task.status === 'IN_PROGRESS')
-              .map(task => (
-                <Card
-                  key={task.id}
-                  p="md"
-                  radius="md"
-                  withBorder
-                  className="hover-card"
-                  onClick={() => handleEditTask(task)}
-                >
-                  <Text fw={500}>{task.title}</Text>
-                  {task.dueDate && (
-                    <Text size="sm" c="dimmed" mt="xs">
-                      Due: {new Date(task.dueDate).toLocaleDateString()}
-                    </Text>
-                  )}
-                </Card>
-              ))}
-          </SimpleGrid>
+        {/* My To Do Tasks */}
+        {myTodoTasks > 0 && (
+          <section>
+            <h2 className="text-xl font-semibold mb-4">My To Do Tasks</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {myTasks
+                .filter(task => task.status === 'TODO')
+                .slice(0, 4)
+                .map(task => (
+                  <Card
+                    key={task.id}
+                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleEditTask(task)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-base line-clamp-2">{task.title}</CardTitle>
+                        <Badge 
+                          variant={
+                            task.priority === 'URGENT' ? 'destructive' :
+                            task.priority === 'HIGH' ? 'destructive' :
+                            'default'
+                          }
+                          className={
+                            task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                            task.priority === 'LOW' ? 'bg-blue-100 text-blue-800' : ''
+                          }
+                        >
+                          {task.priority}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </section>
         )}
-      </Stack>
 
-      {/* My Todo Tasks */}
-      <Stack mt="xl">
-        <Title order={3}>My Todo Tasks</Title>
-        {myTodoTasks <= 0 ? (
-          <Card p="md" radius="md" withBorder>
-            <Text ta="center" c="dimmed">You don't have any tasks in your todo list.</Text>
-          </Card>
-        ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-            {myTasks
-              .filter(task => task.status === 'TODO')
-              .map(task => (
-                <Card
-                  key={task.id}
-                  p="md"
-                  radius="md"
-                  withBorder
-                  className="hover-card"
-                  onClick={() => handleEditTask(task)}
-                >
-                  <Text fw={500}>{task.title}</Text>
-                  {task.dueDate && (
-                    <Text size="sm" c="dimmed" mt="xs">
-                      Due: {new Date(task.dueDate).toLocaleDateString()}
-                    </Text>
-                  )}
-                </Card>
-              ))}
-          </SimpleGrid>
+        {/* Recently Completed Tasks */}
+        {myCompletedTasks > 0 && (
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Recently Completed</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {myTasks
+                .filter(task => task.status === 'DONE')
+                .slice(0, 4)
+                .map(task => (
+                  <Card
+                    key={task.id}
+                    className="cursor-pointer hover:shadow-lg transition-shadow opacity-75"
+                    onClick={() => handleEditTask(task)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-base line-clamp-2 line-through">{task.title}</CardTitle>
+                        <Badge variant="secondary">DONE</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </section>
         )}
-      </Stack>
+      </div>
 
       <TaskModal
         opened={taskModalOpen}
@@ -240,23 +228,83 @@ export function DashboardPage() {
         task={selectedTask}
         onSubmit={handleTaskSubmit}
       />
-    </Container>
+    </div>
   );
 }
 
 // Helper component for stat cards
-function StatCard({ title, value, icon, color }: { title: string; value: string; icon: React.ReactNode; color: string }) {
+function StatCard({ 
+  title, 
+  value, 
+  icon, 
+  color, 
+  showProgress = false, 
+  progress = 0 
+}: { 
+  title: string; 
+  value: string; 
+  icon: React.ReactNode; 
+  color: string;
+  showProgress?: boolean;
+  progress?: number;
+}) {
+  const colorClasses = {
+    blue: 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-200',
+    yellow: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-200',
+    orange: 'text-orange-600 bg-orange-100 dark:bg-orange-900 dark:text-orange-200',
+    green: 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-200',
+  }[color] || 'text-gray-600 bg-gray-100';
+
+  const textColorClass = {
+    blue: 'text-blue-600 dark:text-blue-400',
+    yellow: 'text-yellow-600 dark:text-yellow-400',
+    orange: 'text-orange-600 dark:text-orange-400',
+    green: 'text-green-600 dark:text-green-400',
+  }[color] || 'text-gray-600';
+
   return (
-    <Card p="xs" radius="md" withBorder h={180} pos="relative" className="dashboard-stat-card">
-      <Group gap="xs" justify="center" mb={5}>
-        <ThemeIcon size="sm" radius="sm" variant="light" color={color}>
-          {icon}
-        </ThemeIcon>
-        <Text fw={700} size="sm">{title}</Text>
-      </Group>
-      <Text className="stat-card-value" c={color}>
-        {value}
-      </Text>
+    <Card className="h-44 relative">
+      <CardContent className="p-4 h-full flex flex-col">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className={`w-8 h-8 rounded flex items-center justify-center ${colorClasses}`}>
+            {icon}
+          </div>
+          <span className="font-semibold text-sm">{title}</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          {showProgress ? (
+            <div className="relative w-24 h-24">
+              <svg className="w-24 h-24 transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="36"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="none"
+                  className="text-gray-200 dark:text-gray-700"
+                />
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="36"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="none"
+                  strokeDasharray={`${2 * Math.PI * 36}`}
+                  strokeDashoffset={`${2 * Math.PI * 36 * (1 - progress / 100)}`}
+                  className={textColorClass}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className={`text-2xl font-bold ${textColorClass}`}>{value}</span>
+              </div>
+            </div>
+          ) : (
+            <span className={`text-5xl font-bold ${textColorClass}`}>{value}</span>
+          )}
+        </div>
+      </CardContent>
     </Card>
   );
 }

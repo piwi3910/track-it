@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { handleError } from '../utils/error-handler';
-import * as analyticsService from '../db/services/analytics.service';
+import { handleError } from '../utils/unified-error-handler';
+import repositories from '../repositories/container';
 
 
 // Input validation schemas
@@ -14,7 +14,7 @@ export const analyticsRouter = router({
     .input(tasksCompletionStatsSchema)
     .query(({ input }) => safeProcedure(async () => {
       try {
-        return await analyticsService.getTaskCompletionStats(input.timeframe);
+        return await repositories.analytics.getTaskCompletionStats(input.timeframe);
       } catch (error) {
         return handleError(error);
       }
@@ -23,7 +23,7 @@ export const analyticsRouter = router({
   getUserWorkload: protectedProcedure
     .query(() => safeProcedure(async () => {
       try {
-        return await analyticsService.getUserWorkload();
+        return await repositories.analytics.getUserWorkload();
       } catch (error) {
         return handleError(error);
       }
@@ -32,7 +32,7 @@ export const analyticsRouter = router({
   getTasksByPriority: protectedProcedure
     .query(() => safeProcedure(async () => {
       try {
-        return await analyticsService.getTasksByPriority();
+        return await repositories.analytics.getTasksByPriority();
       } catch (error) {
         return handleError(error);
       }
@@ -41,7 +41,7 @@ export const analyticsRouter = router({
   getCompletionTimeByPriority: protectedProcedure
     .query(() => safeProcedure(async () => {
       try {
-        return await analyticsService.getCompletionTimeByPriority();
+        return await repositories.analytics.getCompletionTimeByPriority();
       } catch (error) {
         return handleError(error);
       }

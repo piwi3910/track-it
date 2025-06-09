@@ -1,19 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  TextInput,
-  ActionIcon,
-  Popover,
-  Stack,
-  Paper,
-  Text,
-  Group,
-  Badge,
-  ScrollArea,
-  Loader,
-  rem
-} from '@mantine/core';
-import { useHotkeys, useDisclosure, useDebouncedValue } from '@mantine/hooks';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   IconSearch,
   IconX,
@@ -23,25 +14,43 @@ import {
   IconFlag
 } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
-import { useTheme } from '@/hooks/useTheme';;
+import { useTheme } from '@/hooks/useTheme';
 import { Task } from '@/types/task';
 
 export function GlobalSearch() {
   const { searchTasks } = useApp();
   const { getPriorityColor } = useTheme();
   const navigate = useNavigate();
-  const [opened, { open, close }] = useDisclosure(false);
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  
+  // Debounce hook implementation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [query]);
   
   // Hotkey to focus search (Ctrl+K or Command+K)
-  useHotkeys([['mod+K', () => {
-    inputRef.current?.focus();
-    open();
-  }]]);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setOpen(true);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
   
   // Load recent searches from localStorage
   useEffect(() => {
@@ -52,7 +61,6 @@ export function GlobalSearch() {
       }
     } catch (error) {
       console.error('Failed to load recent searches:', error);
-      // If localStorage fails, continue with empty recent searches
     }
   }, []);
   
@@ -63,7 +71,7 @@ export function GlobalSearch() {
     const updatedSearches = [
       searchQuery,
       ...recentSearches.filter(s => s !== searchQuery)
-    ].slice(0, 5); // Keep only the 5 most recent searches
+    ].slice(0, 5);
     
     setRecentSearches(updatedSearches);
     
@@ -71,11 +79,10 @@ export function GlobalSearch() {
       localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
     } catch (error) {
       console.error('Failed to save recent searches:', error);
-      // Continue even if localStorage fails
     }
   }, [recentSearches]);
   
-  // Handle search - memoized to avoid unnecessary re-renders
+  // Handle search
   const handleSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
@@ -84,9 +91,7 @@ export function GlobalSearch() {
 
     setLoading(true);
     try {
-      // Use API search for all queries - it handles task ID, title, description, and tags
       const searchResults = await searchTasks(searchQuery);
-      // Map results to frontend Task type with taskNumber
       const mappedResults = (Array.isArray(searchResults) ? searchResults : []).map((task, index) => ({
         ...task,
         taskNumber: 'taskNumber' in task && typeof task.taskNumber === 'number' ? task.taskNumber : index + 1
@@ -100,9 +105,6 @@ export function GlobalSearch() {
     }
   }, [searchTasks]);
   
-  // Use Mantine's built-in debounce hook
-  const [debouncedQuery] = useDebouncedValue(query, 300);
-  
   // Run search when debounced query changes
   useEffect(() => {
     if (debouncedQuery !== undefined) {
@@ -114,21 +116,19 @@ export function GlobalSearch() {
   const handleResultClick = (task: Task) => {
     saveSearch(query);
     
-    // Navigate to the appropriate page based on task status
     if (task.status === 'BACKLOG') {
       navigate(`/backlog?task=${task.taskNumber}`);
     } else {
       navigate(`/kanban?task=${task.taskNumber}`);
     }
     
-    close();
+    setOpen(false);
     setQuery('');
   };
   
   // Handle clicking on a recent search
   const handleRecentSearchClick = useCallback((searchQuery: string) => {
     setQuery(searchQuery);
-    // No need to call handleSearch directly as it will be triggered by the debounced query effect
   }, []);
   
   // Clear search
@@ -137,142 +137,138 @@ export function GlobalSearch() {
     setResults([]);
   }, []);
   
-  // We don't need a custom priority color mapping function as it's provided by ThemeContext
+  // Get priority badge color classes
+  const getPriorityBadgeClass = (priority: string) => {
+    const color = getPriorityColor(priority);
+    if (color.includes('red')) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    if (color.includes('yellow')) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    if (color.includes('orange')) return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  };
   
   return (
-    <Popover
-      width={400}
-      position="bottom"
-      shadow="md"
-      opened={opened}
-      onChange={open}
-    >
-      <Popover.Target>
-        <TextInput
-          ref={inputRef}
-          placeholder="Search tasks by ID, title, or tags... (Ctrl+K)"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={open}
-          aria-label="Search tasks"
-          aria-controls="search-results"
-          aria-expanded={opened}
-          rightSection={
-            query ? (
-              <ActionIcon variant="subtle" onClick={clearSearch}>
-                <IconX size={16} />
-              </ActionIcon>
-            ) : (
-              <Text c="dimmed" size="xs">⌘K</Text>
-            )
-          }
-          leftSection={<IconSearch size={16} />}
-          styles={{
-            root: {
-              width: rem(350)
-            }
-          }}
-        />
-      </Popover.Target>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div className="relative w-[350px]">
+          <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            ref={inputRef}
+            placeholder="Search tasks by ID, title, or tags... (⌘K)"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setOpen(true)}
+            className="pl-9 pr-16"
+            aria-label="Search tasks"
+            aria-controls="search-results"
+            aria-expanded={open}
+          />
+          {query ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3"
+              onClick={clearSearch}
+            >
+              <IconX className="h-4 w-4" />
+            </Button>
+          ) : (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              ⌘K
+            </span>
+          )}
+        </div>
+      </PopoverTrigger>
       
-      <Popover.Dropdown>
+      <PopoverContent className="w-[400px] p-0" align="start">
         {loading ? (
-          <Stack align="center" gap="sm" py="md">
-            <Loader size="sm" />
-            <Text size="sm" c="dimmed">Searching...</Text>
-          </Stack>
+          <div className="flex flex-col items-center gap-2 py-6">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground">Searching...</p>
+          </div>
         ) : results.length > 0 ? (
-          <ScrollArea h={400}>
-            <Stack gap="xs">
-              <Text size="xs" fw={700} c="dimmed">SEARCH RESULTS</Text>
-              <div id="search-results" role="listbox" aria-label="Search results">
+          <div className="max-h-[400px] overflow-y-auto">
+            <div className="p-2">
+              <p className="mb-2 px-2 text-xs font-semibold text-muted-foreground">SEARCH RESULTS</p>
+              <div id="search-results" role="listbox" aria-label="Search results" className="space-y-2">
                 {results.map((task, index) => (
-                  <Paper
+                  <Card
                     key={task.id}
-                    p="xs"
-                    withBorder
+                    className="cursor-pointer p-3 transition-colors hover:bg-accent"
                     onClick={() => handleResultClick(task)}
-                    style={{ cursor: 'pointer' }}
                     role="option"
                     aria-selected={index === 0}
                   >
-                  <Group justify="space-between" wrap="nowrap">
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                      <Text truncate fw={500}>{task.title}</Text>
-                      {task.description && (
-                        <Text size="xs" c="dimmed" lineClamp={1}>
-                          {task.description}
-                        </Text>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 overflow-hidden">
+                        <p className="font-medium truncate">{task.title}</p>
+                        {task.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {task.description}
+                          </p>
+                        )}
+                      </div>
+                      <IconArrowRight className="h-4 w-4 opacity-50" />
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        <IconHash className="mr-1 h-3 w-3" />
+                        {task.taskNumber}
+                      </Badge>
+
+                      <Badge className={`text-xs ${getPriorityBadgeClass(task.priority)}`}>
+                        <IconFlag className="mr-1 h-3 w-3" />
+                        {task.priority}
+                      </Badge>
+
+                      <Badge variant="outline" className="text-xs">
+                        <IconHash className="mr-1 h-3 w-3" />
+                        {task.status.replace(/_/g, ' ')}
+                      </Badge>
+
+                      {task.tags && task.tags.length > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {task.tags[0]}
+                          {task.tags.length > 1 && ` +${task.tags.length - 1}`}
+                        </Badge>
                       )}
                     </div>
-                    <IconArrowRight size={16} opacity={0.5} />
-                  </Group>
-
-                  <Group gap="xs" mt="xs">
-                    <Badge size="xs" variant="filled" color="blue">
-                      <Group gap={4}>
-                        <IconHash size={10} />
-                        <span>{task.taskNumber}</span>
-                      </Group>
-                    </Badge>
-
-                    <Badge size="xs" color={getPriorityColor(task.priority)}>
-                      <Group gap={4}>
-                        <IconFlag size={10} />
-                        <span>{task.priority}</span>
-                      </Group>
-                    </Badge>
-
-                    <Badge size="xs" variant="outline">
-                      <Group gap={4}>
-                        <IconHash size={10} />
-                        <span>{task.status.replace(/_/g, ' ')}</span>
-                      </Group>
-                    </Badge>
-
-                    {task.tags && task.tags.length > 0 && (
-                      <Badge size="xs" variant="dot">
-                        {task.tags[0]}
-                        {task.tags.length > 1 && `+${task.tags.length - 1}`}
-                      </Badge>
-                    )}
-                  </Group>
-                  </Paper>
+                  </Card>
                 ))}
               </div>
-            </Stack>
-          </ScrollArea>
+            </div>
+          </div>
         ) : query.length === 0 && recentSearches.length > 0 ? (
-          <Stack gap="xs">
-            <Text size="xs" fw={700} c="dimmed">RECENT SEARCHES</Text>
-            {recentSearches.map((search, index) => (
-              <Paper
-                key={index}
-                p="xs"
-                withBorder
-                onClick={() => handleRecentSearchClick(search)}
-                style={{ cursor: 'pointer' }}
-              >
-                <Group>
-                  <IconClock size={16} opacity={0.5} />
-                  <Text>{search}</Text>
-                </Group>
-              </Paper>
-            ))}
-          </Stack>
+          <div className="p-2">
+            <p className="mb-2 px-2 text-xs font-semibold text-muted-foreground">RECENT SEARCHES</p>
+            <div className="space-y-2">
+              {recentSearches.map((search, index) => (
+                <Card
+                  key={index}
+                  className="cursor-pointer p-3 transition-colors hover:bg-accent"
+                  onClick={() => handleRecentSearchClick(search)}
+                >
+                  <div className="flex items-center gap-2">
+                    <IconClock className="h-4 w-4 opacity-50" />
+                    <span>{search}</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
         ) : query.length > 0 ? (
-          <Stack align="center" gap="sm" py="md">
-            <Text size="sm" c="dimmed">No results found</Text>
-            <Text size="xs" c="dimmed">Try different keywords</Text>
-          </Stack>
+          <div className="flex flex-col items-center gap-2 py-6">
+            <p className="text-sm text-muted-foreground">No results found</p>
+            <p className="text-xs text-muted-foreground">Try different keywords</p>
+          </div>
         ) : (
-          <Stack align="center" gap="sm" py="md">
-            <Text size="sm" c="dimmed">Start typing to search</Text>
-            <Text size="xs" c="dimmed">Search for tasks by ID, title, description, or tags</Text>
-            <Text size="xs" c="dimmed">Tip: Enter a task ID directly to quickly find a specific task</Text>
-          </Stack>
+          <div className="flex flex-col items-center gap-2 py-6 px-4 text-center">
+            <p className="text-sm text-muted-foreground">Start typing to search</p>
+            <p className="text-xs text-muted-foreground">Search for tasks by ID, title, description, or tags</p>
+            <p className="text-xs text-muted-foreground">Tip: Enter a task ID directly to quickly find a specific task</p>
+          </div>
         )}
-      </Popover.Dropdown>
+      </PopoverContent>
     </Popover>
   );
 }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
-import * as templateService from '../db/services/template.service';
+import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
+import repositories from '../repositories/container';
 import { TaskPriority, Prisma } from '@prisma/client';
 
 // Define helper function to normalize template data for API response
@@ -21,18 +21,16 @@ export interface TemplateData {
 }
 
 const normalizeTemplateData = (template: TemplateData): TemplateData => {
-  // Ensure consistent casing of priority
   return {
     ...template,
-    priority: template.priority as TaskPriority,
     // Format dates as ISO strings if they exist as Date objects
     createdAt: template.createdAt instanceof Date ? template.createdAt.toISOString() : template.createdAt,
     updatedAt: template.updatedAt instanceof Date ? template.updatedAt.toISOString() : template.updatedAt
   };
 };
 
-// Enum definitions for template properties using constants
-const taskPriorityEnum = z.nativeEnum(TaskPriority);
+// Task priority enum schema
+const taskPriorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
 
 // Schema definitions
 const getTemplateByIdSchema = z.object({
@@ -87,7 +85,7 @@ export const templatesRouter = router({
   getAll: protectedProcedure
     .query(() => safeProcedure(async () => {
       try {
-        const templates = await templateService.getAllTemplates();
+        const templates = await repositories.templates.findAll();
         return templates.map(normalizeTemplateData);
       } catch (error) {
         return handleError(error);
@@ -98,7 +96,7 @@ export const templatesRouter = router({
     .input(getTemplateByIdSchema)
     .query(({ input, ctx }) => safeProcedure(async () => {
       try {
-        const template = await templateService.getTemplateById(input.id);
+        const template = await repositories.templates.findById(input.id);
         
         if (!template) {
           throw createNotFoundError('Template', input.id);
@@ -119,7 +117,7 @@ export const templatesRouter = router({
     .input(getByCategorySchema)
     .query(({ input }) => safeProcedure(async () => {
       try {
-        const templates = await templateService.getTemplatesByCategory(input.category);
+        const templates = await repositories.templates.findByCategory(input.category);
         return templates.map(normalizeTemplateData);
       } catch (error) {
         return handleError(error);
@@ -129,7 +127,15 @@ export const templatesRouter = router({
   getCategories: protectedProcedure
     .query(() => safeProcedure(async () => {
       try {
-        const categories = await templateService.getTemplateCategories();
+        // Get all templates and extract unique categories
+        const templates = await repositories.templates.findAll();
+        const categoriesSet = new Set<string>();
+        templates.forEach(template => {
+          if (template.category) {
+            categoriesSet.add(template.category);
+          }
+        });
+        const categories = Array.from(categoriesSet);
         return categories;
       } catch (error) {
         return handleError(error);
@@ -160,7 +166,7 @@ export const templatesRouter = router({
           templateData: { subtasks }
         };
         
-        const newTemplate = await templateService.createTemplate(templateData);
+        const newTemplate = await repositories.templates.create(templateData);
         return normalizeTemplateData(newTemplate);
       } catch (error) {
         return handleError(error);
@@ -172,7 +178,7 @@ export const templatesRouter = router({
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
         // First get the template to check permissions
-        const template = await templateService.getTemplateById(input.id);
+        const template = await repositories.templates.findById(input.id);
         
         if (!template) {
           throw createNotFoundError('Template', input.id);
@@ -211,7 +217,7 @@ export const templatesRouter = router({
         }
         
         // Update the template
-        const updatedTemplate = await templateService.updateTemplate(input.id, updateData);
+        const updatedTemplate = await repositories.templates.update(input.id, updateData);
         return normalizeTemplateData(updatedTemplate);
       } catch (error) {
         return handleError(error);
@@ -223,7 +229,7 @@ export const templatesRouter = router({
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
         // First get the template to check permissions
-        const template = await templateService.getTemplateById(input.id);
+        const template = await repositories.templates.findById(input.id);
         
         if (!template) {
           throw createNotFoundError('Template', input.id);
@@ -235,7 +241,7 @@ export const templatesRouter = router({
         }
         
         // Delete the template
-        await templateService.deleteTemplate(input.id);
+        await repositories.templates.delete(input.id);
         
         return { success: true, id: input.id };
       } catch (error) {
@@ -247,7 +253,7 @@ export const templatesRouter = router({
     .input(searchTemplatesSchema)
     .query(({ input }) => safeProcedure(async () => {
       try {
-        const templates = await templateService.searchTemplates(input.query);
+        const templates = await repositories.templates.search(input.query);
         return templates.map(normalizeTemplateData);
       } catch (error) {
         return handleError(error);

@@ -2,8 +2,22 @@
   "name": "@track-it/shared",
   "version": "1.0.0",
   "description": "Shared code between frontend and backend",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/shared/index.js",
+  "types": "dist/shared/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/shared/types/index.d.ts",
+      "default": "./dist/shared/index.js"
+    },
+    "./types": {
+      "types": "./dist/shared/types/index.d.ts",
+      "default": "./dist/shared/types/index.js"
+    },
+    "./types/enums": {
+      "types": "./dist/shared/types/enums.d.ts",
+      "default": "./dist/shared/types/enums.js"
+    }
+  },
   "scripts": {
     "build": "tsc"
   },

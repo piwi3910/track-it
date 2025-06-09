@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createValidationError, handleError } from '../utils/error-handler';
+import { createValidationError, handleError } from '../utils/unified-error-handler';
 import { logger } from '../server';
-import * as googleService from '../db/services/google.service';
+import repositories from '../repositories/container';
 
 
 // Input validation schemas
@@ -46,7 +46,7 @@ export const googleIntegrationRouter = router({
   getGoogleAccountStatus: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.getConnectionStatus(ctx.user.id);
+        return await repositories.google.getConnectionStatus(ctx.user.id);
       } catch (error) {
         return handleError(error);
       }
@@ -56,7 +56,7 @@ export const googleIntegrationRouter = router({
   getCalendarEvents: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.getCalendarEvents(ctx.user.id);
+        return await repositories.google.getCalendarEvents(ctx.user.id);
       } catch (error) {
         return handleError(error);
       }
@@ -66,7 +66,7 @@ export const googleIntegrationRouter = router({
     .input(createEventSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.createCalendarEvent(ctx.user.id, {
+        return await repositories.google.createCalendarEvent(ctx.user.id, {
           ...input,
           start: { dateTime: input.start },
           end: { dateTime: input.end }
@@ -90,7 +90,7 @@ export const googleIntegrationRouter = router({
         if (input.data.end) {
           updateData.end = { dateTime: input.data.end };
         }
-        return await googleService.updateCalendarEvent(ctx.user.id, input.eventId, updateData);
+        return await repositories.google.updateCalendarEvent(ctx.user.id, input.eventId, updateData);
       } catch (error) {
         return handleError(error);
       }
@@ -100,7 +100,7 @@ export const googleIntegrationRouter = router({
     .input(deleteEventSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.deleteCalendarEvent(ctx.user.id, input.eventId);
+        return await repositories.google.deleteCalendarEvent(ctx.user.id, input.eventId);
       } catch (error) {
         return handleError(error);
       }
@@ -110,7 +110,7 @@ export const googleIntegrationRouter = router({
     .mutation(({ ctx }) => safeProcedure(async () => {
       try {
         logger.info({ userId: ctx.user.id }, 'Syncing calendar for user');
-        return await googleService.syncCalendar(ctx.user.id);
+        return await repositories.google.syncCalendar(ctx.user.id);
       } catch (error) {
         return handleError(error);
       }
@@ -121,7 +121,7 @@ export const googleIntegrationRouter = router({
     .query(({ ctx }) => safeProcedure(async () => {
       try {
         // Just return a mock array for now since we don't have a dedicated Google Task service
-        const connectionStatus = await googleService.getConnectionStatus(ctx.user.id);
+        const connectionStatus = await repositories.google.getConnectionStatus(ctx.user.id);
         
         if (!connectionStatus.connected) {
           throw createValidationError('Google account not connected', 'connection');
@@ -153,7 +153,7 @@ export const googleIntegrationRouter = router({
     .input(importGoogleTaskSchema)
     .mutation(({ input, ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.importGoogleTaskAsTask(ctx.user.id, input.googleTaskId);
+        return await repositories.google.importGoogleTaskAsTask(ctx.user.id, input.googleTaskId);
       } catch (error) {
         return handleError(error);
       }
@@ -164,7 +164,7 @@ export const googleIntegrationRouter = router({
     .query(({ ctx }) => safeProcedure(async () => {
       try {
         // Just check connection status for now
-        const connectionStatus = await googleService.getConnectionStatus(ctx.user.id);
+        const connectionStatus = await repositories.google.getConnectionStatus(ctx.user.id);
         
         if (!connectionStatus.connected) {
           throw createValidationError('Google account not connected', 'connection');
@@ -204,7 +204,7 @@ export const googleIntegrationRouter = router({
   getConnectionStatus: protectedProcedure
     .query(({ ctx }) => safeProcedure(async () => {
       try {
-        return await googleService.getConnectionStatus(ctx.user.id);
+        return await repositories.google.getConnectionStatus(ctx.user.id);
       } catch (error) {
         return handleError(error);
       }

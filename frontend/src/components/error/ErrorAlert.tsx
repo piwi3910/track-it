@@ -1,8 +1,9 @@
-import { Group, Stack, Text, Button } from '@mantine/core';
-import { IconAlertCircle, IconInfoCircle, IconExclamationMark } from '@tabler/icons-react';
+import { IconAlertCircle, IconInfoCircle, IconExclamationMark, IconX } from '@tabler/icons-react';
 import { ReactNode, useEffect, useState } from 'react';
 import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared';
-import { AppAlert } from '@/components/ui/AppAlert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface ErrorAlertProps {
   error: AppError | AppErrorDetails | string | Error | null;
@@ -81,7 +82,7 @@ export function ErrorAlert({
   
   // Determine the alert color and icon based on severity
   let color: string;
-  let Icon: React.ComponentType<{ size?: string | number }> | null = null;
+  let Icon: React.ComponentType<{ size?: string | number; className?: string }> | null = null;
   
   switch (severity) {
     case ErrorSeverity.INFO:
@@ -145,42 +146,70 @@ export function ErrorAlert({
     'aria-atomic': true
   };
   
+  // Map color to alert variant and className
+  let variant: 'default' | 'destructive' = 'default';
+  let className = '';
+  
+  switch (color) {
+    case 'red':
+      variant = 'destructive';
+      break;
+    case 'yellow':
+      className = 'border-yellow-200 bg-yellow-50 text-yellow-900 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-100';
+      break;
+    case 'blue':
+      className = 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-100';
+      break;
+  }
+  
   return (
-    <AppAlert
-      icon={<Icon size={16} />}
-      color={color as 'blue' | 'red' | 'yellow' | 'green'}
-      title={alertTitle}
-      withCloseButton={!!onClose}
-      onClose={() => {
-        setIsVisible(false);
-        if (onClose) {
-          onClose();
-        }
-      }}
+    <Alert
+      variant={variant}
+      className={cn(className, onClose && 'relative pr-8')}
       {...alertAttributes}
     >
-      <Stack gap="xs">
-        <Text>{errorMessage}</Text>
-        
-        {children}
-        
-        {showDetails && errorDetails && (
-          <Text size="xs" c="dimmed">
-            {Object.entries(errorDetails).map(([key, value]) => (
-              <div key={key}>{key}: {value?.toString()}</div>
-            ))}
-          </Text>
-        )}
-        
-        {onRetry && isRetryable && (
-          <Group justify="flex-end">
-            <Button size="xs" variant="light" color={color} onClick={onRetry}>
-              Retry
-            </Button>
-          </Group>
-        )}
-      </Stack>
-    </AppAlert>
+      {Icon && <Icon size={16} className="h-4 w-4" />}
+      <div className="flex-1">
+        <AlertTitle>{alertTitle}</AlertTitle>
+        <AlertDescription>
+          <div className="space-y-2">
+            <p>{errorMessage}</p>
+            
+            {children}
+            
+            {showDetails && errorDetails && (
+              <div className="text-xs text-muted-foreground space-y-1">
+                {Object.entries(errorDetails).map(([key, value]) => (
+                  <div key={key}>{key}: {value?.toString()}</div>
+                ))}
+              </div>
+            )}
+            
+            {onRetry && isRetryable && (
+              <div className="flex justify-end">
+                <Button size="sm" variant="outline" onClick={onRetry}>
+                  Retry
+                </Button>
+              </div>
+            )}
+          </div>
+        </AlertDescription>
+      </div>
+      {onClose && (
+        <button
+          onClick={() => {
+            setIsVisible(false);
+            if (onClose) {
+              onClose();
+            }
+          }}
+          className="absolute right-2 top-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+        >
+          <IconX className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
+      )}
+    </Alert>
   );
 }
 
@@ -203,9 +232,9 @@ export function ConnectionErrorAlert({
       onClose={onClose}
       onRetry={onRetry}
     >
-      <Text size="sm">
+      <p className="text-sm">
         There was a problem connecting to the server. Please check your internet connection and try again.
-      </Text>
+      </p>
     </ErrorAlert>
   );
 }
@@ -235,7 +264,7 @@ export function ValidationErrorAlert({
       onClose={onClose}
       showDetails={false}
     >
-      {fieldInfo && <Text size="sm" c="dimmed">{fieldInfo}</Text>}
+      {fieldInfo && <p className="text-sm text-muted-foreground">{fieldInfo}</p>}
     </ErrorAlert>
   );
 }

@@ -23,11 +23,10 @@
     "noFallthroughCasesInSwitch": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "shared/*": ["../shared/*"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "../shared/**/*.ts"],
+  "include": ["src"],
   "exclude": ["node_modules", "src/api/trpc-mock", "src/api/trpc-server-types.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
-import { createNotFoundError, createForbiddenError, handleError } from '../utils/error-handler';
-import * as attachmentService from '../db/services/attachment.service';
-import * as taskService from '../db/services/task.service';
+import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
+import repositories from '../repositories/container';
 
 // Helper function to normalize attachment data for API response
 const normalizeAttachmentData = (attachment: {
@@ -83,14 +82,14 @@ export const attachmentsRouter = router({
     }>> => {
       try {
         // Verify task exists
-        const task = await taskService.getTaskById(input.taskId);
+        const task = await repositories.tasks.findById(input.taskId);
         
         if (!task) {
           throw createNotFoundError('Task', input.taskId);
         }
         
         // Get all attachments for the task
-        const attachments = await attachmentService.getAttachmentsByTaskId(input.taskId);
+        const attachments = await repositories.attachments.findByTaskId(input.taskId);
         
         // Return normalized attachments
         return attachments.map(normalizeAttachmentData);
@@ -117,18 +116,18 @@ export const attachmentsRouter = router({
     }> => {
       try {
         // Verify task exists
-        const task = await taskService.getTaskById(input.taskId);
+        const task = await repositories.tasks.findById(input.taskId);
         
         if (!task) {
           throw createNotFoundError('Task', input.taskId);
         }
         
         // Generate URLs for the file
-        const url = attachmentService.generateFileUrl(input.file.name);
-        const thumbnailUrl = attachmentService.generateThumbnailUrl(input.file.name, input.file.type);
+        const url = repositories.attachments.generateFileUrl(input.file.name);
+        const thumbnailUrl = repositories.attachments.generateThumbnailUrl(input.file.name, input.file.type);
         
         // Create new attachment
-        const newAttachment = await attachmentService.createAttachment({
+        const newAttachment = await repositories.attachments.create({
           fileName: input.file.name,
           fileSize: input.file.size,
           fileType: input.file.type,
@@ -156,14 +155,14 @@ export const attachmentsRouter = router({
     .mutation(({ input, ctx }) => safeProcedure(async (): Promise<{ success: boolean }> => {
       try {
         // Get attachment by ID
-        const attachment = await attachmentService.getAttachmentById(input.id);
+        const attachment = await repositories.attachments.findByIdWithTask(input.id);
         
         if (!attachment) {
           throw createNotFoundError('Attachment', input.id);
         }
         
         // Get task to check permissions
-        const task = await taskService.getTaskById(attachment.taskId);
+        const task = await repositories.tasks.findById(attachment.taskId);
         
         if (!task) {
           throw createNotFoundError('Task', attachment.taskId);
@@ -175,7 +174,7 @@ export const attachmentsRouter = router({
         }
         
         // Delete attachment
-        await attachmentService.deleteAttachment(input.id);
+        await repositories.attachments.delete(input.id);
         
         // Return success response as per API specification
         return { success: true };

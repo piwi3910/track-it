@@ -1,31 +1,26 @@
 import { useState, useEffect } from 'react';
-import {
-  TextInput,
-  Textarea,
-  Select,
-  Group,
-  Stack,
-  TagsInput,
-  Paper,
-  ActionIcon,
-  NumberInput,
-  Divider,
-  Text,
-  Avatar,
-  Progress
-} from '@mantine/core';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AppModal } from '@/components/ui/AppModal';
-import { AppTooltip } from '@/components/ui/AppTooltip';
-import { AppTabs } from '@/components/ui/AppTabs';
-import { AppSwitch } from '@/components/ui/AppSwitch';
-import { AppCheckbox } from '@/components/ui/AppCheckbox';
-import { DatePickerInput } from '@mantine/dates';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 import {
   IconPlus,
   IconTrash,
-  IconClock,
   IconSubtask,
   IconRepeat,
   IconCalendarEvent,
@@ -35,8 +30,8 @@ import {
 } from '@tabler/icons-react';
 import { TaskChat } from './TaskChat';
 import { api } from '@/api';
-import type { Task } from '@track-it/shared/types/trpc';
-import type { FrontendTaskStatus, FrontendTaskPriority } from '@/types/frontend-enums';
+import type { Task, TaskStatus, TaskPriority } from '@track-it/shared/types';
+import { logger } from '@/services/logger.service';
 
 // Define interfaces for properties that don't exist in the shared Task type
 interface TaskRecurrence {
@@ -72,7 +67,7 @@ interface TaskWithConversation extends Task {
   openConversation?: boolean;
 }
 
-export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModalProps) {
+function TaskModalContent({ opened, onClose, onSubmit, task }: TaskModalProps) {
   // Check if we should open the conversation tab directly
   const taskWithConversation = task as TaskWithConversation | null;
   const initialTab = taskWithConversation?.openConversation ? 'conversation' : 'details';
@@ -83,8 +78,8 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
   const [formData, setFormData] = useState<{
     title: string;
     description: string;
-    status: FrontendTaskStatus;
-    priority: FrontendTaskPriority;
+    status: TaskStatus;
+    priority: TaskPriority;
     dueDate: string | null;
     startDate: string | null;
     endDate: string | null;
@@ -99,8 +94,8 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
   }>({
     title: '',
     description: '',
-    status: 'todo' as FrontendTaskStatus,
-    priority: 'medium' as FrontendTaskPriority,
+    status: 'todo' as TaskStatus,
+    priority: 'medium' as TaskPriority,
     dueDate: null,
     startDate: null,
     endDate: null,
@@ -120,8 +115,8 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       setFormData({
         title: task.title || '',
         description: task.description || '',
-        status: (task.status?.toLowerCase() || 'todo') as FrontendTaskStatus,
-        priority: (task.priority?.toLowerCase() || 'medium') as FrontendTaskPriority,
+        status: (task.status?.toLowerCase() || 'todo') as TaskStatus,
+        priority: (task.priority?.toLowerCase() || 'medium') as TaskPriority,
         dueDate: task.dueDate || null,
         startDate: null, // Property doesn't exist in shared Task type
         endDate: null, // Property doesn't exist in shared Task type
@@ -143,7 +138,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
             setCommentCount(count);
           }
         } catch (error) {
-          console.error('Failed to fetch comment count:', error);
+          logger.error('Failed to fetch comment count', error);
         }
       };
 
@@ -164,8 +159,8 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       setFormData({
         title: '',
         description: '',
-        status: 'todo' as FrontendTaskStatus,
-        priority: 'medium' as FrontendTaskPriority,
+        status: 'todo' as TaskStatus,
+        priority: 'medium' as TaskPriority,
         dueDate: null,
         startDate: null,
         endDate: null,
@@ -191,30 +186,18 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
         const data = await api.admin.getAllUsers();
         setUsers(data as User[]);
       } catch (error) {
-        console.error('Error fetching users:', error);
+        logger.error('Error fetching users', error);
       }
     };
 
     fetchUsers();
   }, []);
 
-  // Helper function to highlight today's date
-  const getTodayHighlightProps = (date: Date) => {
-    const today = new Date();
-    const isToday = date.toDateString() === today.toDateString();
-    return isToday ? {
-      style: {
-        backgroundColor: 'var(--mantine-color-blue-1)',
-        borderRadius: '50%',
-        fontWeight: 'bold'
-      }
-    } : {};
-  };
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    console.log('TaskModal handleSubmit called with formData:', formData);
+    logger.debug('TaskModal handleSubmit called with formData:', { formData });
 
     // Basic validation
     if (!formData.title.trim()) {
@@ -252,7 +235,7 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
       };
     }
 
-    console.log('TaskModal calling onSubmit with taskData:', taskData);
+    logger.debug('TaskModal calling onSubmit with taskData:', { taskData });
     // @ts-expect-error - Temporary bypass for type mismatch with extra properties
     onSubmit(taskData);
   };
@@ -358,300 +341,340 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
 
 
   return (
-    <AppModal
-      opened={opened}
-      onClose={onClose}
-      zIndex={200}
-      overlayProps={{ backgroundOpacity: 0.3 }}
-      lockScroll={false}
-      title={
-        <Group gap={8}>
-          <Text>{task ? 'Edit Task' : 'Create New Task'}</Text>
-          {task && task.id && (
-            <Group gap={4}>
-              <Badge variant="outline" className="text-sm" style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  navigator.clipboard.writeText(task.id);
-                  alert('ID copied to clipboard!');
-                }}
-              >
-                {task.id.replace('task', '')}
-              </Badge>
-              <AppTooltip label="Copy ID to clipboard">
-                <span style={{ display: 'inline-block' }}>
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    onClick={() => {
-                      navigator.clipboard.writeText(task.id);
-                      alert('ID copied to clipboard!');
-                    }}
-                  >
-                    <IconCopy size={14} />
-                  </ActionIcon>
-                </span>
-              </AppTooltip>
-            </Group>
-          )}
-        </Group>
-      }
-      size="xl"
-    >
-      <Group justify="space-between" mb="md">
-        <AppTabs value={activeTab} onChange={setActiveTab} style={{ flex: 1 }}>
-          <AppTabs.List>
-            <AppTabs.Tab value="details">Details</AppTabs.Tab>
-            <AppTabs.Tab value="subtasks">
-              <Group gap={4}>
-                <IconSubtask size={16} />
-                <Text>Subtasks {formData.subtasks.length > 0 ? `(${formData.subtasks.length})` : ''}</Text>
-              </Group>
-            </AppTabs.Tab>
-            <AppTabs.Tab value="recurrence">
-              <Group gap={4}>
-                <IconRepeat size={16} />
-                <Text>Recurrence {formData.isRecurring ? '(Active)' : ''}</Text>
-              </Group>
-            </AppTabs.Tab>
+    <Dialog open={opened} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[800px]" style={{ zIndex: 200 }}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span>{task ? 'Edit Task' : 'Create New Task'}</span>
+            {task && task.id && (
+              <div className="flex items-center gap-1">
+                <Badge variant="outline" className="text-sm cursor-pointer"
+                  onClick={() => {
+                    navigator.clipboard.writeText(task.id);
+                    alert('ID copied to clipboard!');
+                  }}
+                >
+                  {task.id.replace('task', '')}
+                </Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(task.id);
+                          alert('ID copied to clipboard!');
+                        }}
+                      >
+                        <IconCopy size={14} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Copy ID to clipboard</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+      <div className="flex justify-between mb-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+          <TabsList>
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="subtasks">
+              <IconSubtask className="mr-2 h-4 w-4" />
+              Subtasks {formData.subtasks.length > 0 ? `(${formData.subtasks.length})` : ''}
+            </TabsTrigger>
+            <TabsTrigger value="recurrence">
+              <IconRepeat className="mr-2 h-4 w-4" />
+              Recurrence {formData.isRecurring ? '(Active)' : ''}
+            </TabsTrigger>
             {task && task.id && (
               <>
-                <AppTabs.Tab value="time">Time Tracking</AppTabs.Tab>
-                <AppTabs.Tab value="conversation">
-                  <Group gap={4}>
-                    <IconMessageCircle2 size={16} />
-                    <Text>Conversation {commentCount > 0 && (
-                      <Badge className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ml-1">
-                        {commentCount}
-                      </Badge>
-                    )}</Text>
-                  </Group>
-                </AppTabs.Tab>
+                <TabsTrigger value="time">Time Tracking</TabsTrigger>
+                <TabsTrigger value="conversation">
+                  <IconMessageCircle2 className="mr-2 h-4 w-4" />
+                  Conversation {commentCount > 0 && (
+                    <Badge className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ml-1">
+                      {commentCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
               </>
             )}
-          </AppTabs.List>
-        </AppTabs>
+          </TabsList>
+        </Tabs>
 
-        {/* Template save button - DISABLED */}
-        {/* {task && task.id && (
-          <Popover
-            opened={saveAsTemplateOpen}
-            onChange={setSaveAsTemplateOpen}
-            width={300}
-            position="bottom-end"
-          >
-            <Popover.Target>
-              <AppButton
-                variant="light"
-                leftSection={<IconTemplate size={16} />}
-                onClick={() => {
-                  setSaveAsTemplateOpen(true);
-                  setTemplateName(task.title || '');
-                }}
-              >
-                Save as Template
-              </AppButton>
-            </Popover.Target>
-            <Popover.Dropdown>
-              <Stack>
-                <Text size="sm" weight={500}>Save Task as Template</Text>
-                <TextInput
-                  label="Template Name"
-                  placeholder="Enter a name for this template"
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                  required
-                />
-                <Group justify="flex-end">
-                  <AppButton
-                    variant="subtle"
-                    onClick={() => setSaveAsTemplateOpen(false)}
-                    size="xs"
-                  >
-                    Cancel
-                  </AppButton>
-                  <AppButton
-                    leftSection={<IconDeviceFloppy size={14} />}
-                    onClick={handleSaveAsTemplate}
-                    disabled={!templateName.trim()}
-                    size="xs"
-                  >
-                    Save
-                  </AppButton>
-                </Group>
-              </Stack>
-            </Popover.Dropdown>
-          </Popover>
-        )} */}
-      </Group>
+      </div>
 
-      {(!task || !task.id || activeTab === 'details') && (
+      <TabsContent value="details">
         <form onSubmit={handleSubmit}>
-          <Stack gap="md">
-            <TextInput
-              label="Title"
-              placeholder="Task title"
-              value={formData.title}
-              onChange={(e) => handleChange('title', e.target.value)}
-              required
-            />
-
-            <Textarea
-              label="Description"
-              placeholder="Task description"
-              value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              minRows={3}
-            />
-
-            <Group grow>
-              <Select
-                label="Status"
-                placeholder="Select status"
-                value={formData.status}
-                onChange={(value) => handleChange('status', value)}
-                data={[
-                  { value: 'backlog', label: 'Backlog' },
-                  { value: 'todo', label: 'To Do' },
-                  { value: 'in_progress', label: 'In Progress' },
-                  { value: 'in_review', label: 'In Review' },
-                  { value: 'done', label: 'Done' }
-                ]}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                placeholder="Task title"
+                value={formData.title}
+                onChange={(e) => handleChange('title', e.target.value)}
+                required
               />
+            </div>
 
-              <Select
-                label="Priority"
-                placeholder="Select priority"
-                value={formData.priority}
-                onChange={(value) => handleChange('priority', value)}
-                data={[
-                  { value: 'low', label: 'Low' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'high', label: 'High' },
-                  { value: 'urgent', label: 'Urgent' }
-                ]}
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Task description"
+                value={formData.description}
+                onChange={(e) => handleChange('description', e.target.value)}
+                className="min-h-[80px]"
               />
-            </Group>
+            </div>
 
-            <Group align="flex-start">
-              <AppSwitch
-                label="Multi-day task"
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleChange('status', value)}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="backlog">Backlog</SelectItem>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="in_review">In Review</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) => handleChange('priority', value)}
+                >
+                  <SelectTrigger id="priority">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="multi-day-task"
                 checked={formData.isMultiDay}
-                onChange={(event) => handleChange('isMultiDay', event.currentTarget.checked)}
+                onCheckedChange={(checked) => handleChange('isMultiDay', checked)}
               />
-            </Group>
+              <Label htmlFor="multi-day-task">Multi-day task</Label>
+            </div>
 
             {!formData.isMultiDay ? (
-              <Group grow>
-                <DatePickerInput
-                  label="Due Date"
-                  placeholder="Select due date"
-                  value={formData.dueDate ? new Date(formData.dueDate) : null}
-                  onChange={(date) => {
-                    const dateStr = date ? date.toISOString().split('T')[0] : null;
-                    handleChange('dueDate', dateStr);
-                  }}
-                  clearable
-                  leftSection={<IconCalendarEvent size={16} />}
-                  getDayProps={getTodayHighlightProps}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Due Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.dueDate && "text-muted-foreground"
+                        )}
+                      >
+                        <IconCalendarEvent className="mr-2 h-4 w-4" />
+                        {formData.dueDate ? format(new Date(formData.dueDate), "PPP") : "Select due date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                        onSelect={(date) => {
+                          const dateStr = date ? date.toISOString().split('T')[0] : null;
+                          handleChange('dueDate', dateStr);
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-                <div style={{ flex: 1 }}></div>
-              </Group>
+                <div></div>
+              </div>
             ) : (
-              <Group grow>
-                <DatePickerInput
-                  label="Start Date"
-                  placeholder="Select start date"
-                  value={formData.startDate ? new Date(formData.startDate) : null}
-                  onChange={(date) => {
-                    const dateStr = date ? date.toISOString().split('T')[0] : null;
-                    handleChange('startDate', dateStr);
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <IconCalendarEvent className="mr-2 h-4 w-4" />
+                        {formData.startDate ? format(new Date(formData.startDate), "PPP") : "Select start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.startDate ? new Date(formData.startDate) : undefined}
+                        onSelect={(date) => {
+                          const dateStr = date ? date.toISOString().split('T')[0] : null;
+                          handleChange('startDate', dateStr);
 
-                    // If end date is not set or is before start date, set it to start date
-                    if (dateStr && (!formData.endDate || new Date(dateStr) > new Date(formData.endDate))) {
-                      handleChange('endDate', dateStr);
-                    }
-                  }}
-                  clearable
-                  leftSection={<IconCalendarEvent size={16} />}
-                  getDayProps={getTodayHighlightProps}
-                />
+                          // If end date is not set or is before start date, set it to start date
+                          if (dateStr && (!formData.endDate || new Date(dateStr) > new Date(formData.endDate))) {
+                            handleChange('endDate', dateStr);
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-                <DatePickerInput
-                  label="End Date"
-                  placeholder="Select end date"
-                  value={formData.endDate ? new Date(formData.endDate) : null}
-                  onChange={(date) => {
-                    const dateStr = date ? date.toISOString().split('T')[0] : null;
-                    handleChange('endDate', dateStr);
-                  }}
-                  clearable
-                  leftSection={<IconCalendarEvent size={16} />}
-                  minDate={formData.startDate ? new Date(formData.startDate) : undefined}
-                  getDayProps={getTodayHighlightProps}
-                />
-              </Group>
+                <div>
+                  <Label>End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <IconCalendarEvent className="mr-2 h-4 w-4" />
+                        {formData.endDate ? format(new Date(formData.endDate), "PPP") : "Select end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.endDate ? new Date(formData.endDate) : undefined}
+                        onSelect={(date) => {
+                          const dateStr = date ? date.toISOString().split('T')[0] : null;
+                          handleChange('endDate', dateStr);
+                        }}
+                        disabled={(date) => formData.startDate ? date < new Date(formData.startDate) : false}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
             )}
 
-            <Group grow>
+            <div>
+              <Label htmlFor="assignee">Assignee</Label>
               <Select
-                label="Assignee"
-                placeholder="Select assignee"
                 value={formData.assignee}
-                onChange={(value) => handleChange('assignee', value)}
-                data={users.map(user => ({
-                  value: user.id,
-                  label: `${user.name} (${user.role})`,
-                  image: user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`
-                }))}
-                clearable
-                searchable
-                maxDropdownHeight={200}
-                nothingFoundMessage="No matching user found"
-                renderOption={({ option }) => (
-                  <Group gap="xs">
-                    <Avatar src={(option as { image?: string }).image} size="sm" radius="xl" />
-                    <div>
-                      <Text size="sm">{option.label.split(' (')[0]}</Text>
-                      <Text size="xs" c="dimmed">{option.label.match(/\((.*?)\)/)?.[1] || ''}</Text>
-                    </div>
-                  </Group>
-                )}
-              />
-            </Group>
+                onValueChange={(value) => handleChange('assignee', value)}
+              >
+                <SelectTrigger id="assignee">
+                  <SelectValue placeholder="Select assignee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} />
+                          <AvatarFallback>{user.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">{user.role}</p>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <TagsInput
-              label="Tags"
-              placeholder="Enter tags"
-              value={formData.tags}
-              onChange={(tags) => handleChange('tags', tags)}
-            />
+            <div>
+              <Label htmlFor="tags">Tags</Label>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="px-2 py-1">
+                      {tag}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
+                        onClick={() => {
+                          const newTags = formData.tags.filter((_, i) => i !== index);
+                          handleChange('tags', newTags);
+                        }}
+                      >
+                        ×
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+                <Input
+                  id="tags"
+                  placeholder="Enter tag and press Enter"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const input = e.currentTarget;
+                      const tag = input.value.trim();
+                      if (tag && !formData.tags.includes(tag)) {
+                        handleChange('tags', [...formData.tags, tag]);
+                        input.value = '';
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
 
-            <Group justify="flex-end" mt="xl">
+            <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit">Save Task</Button>
-            </Group>
-          </Stack>
+            </div>
+          </div>
         </form>
-      )}
+      </TabsContent>
 
-      {activeTab === 'subtasks' && (
-        <Stack>
-          <Paper p="md" withBorder>
-            <Stack gap="md">
-              <Group justify="space-between">
-                <Text fw={500}>Subtasks</Text>
-                <Text size="sm" c="dimmed">
-                  {formData.subtasks.filter(s => s.completed).length}/{formData.subtasks.length} completed
-                </Text>
-              </Group>
-              <Divider />
+      <TabsContent value="subtasks">
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">Subtasks</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formData.subtasks.filter(s => s.completed).length}/{formData.subtasks.length} completed
+                  </p>
+                </div>
+                <Separator />
 
-              {formData.subtasks.length === 0 ? (
-                <Text c="dimmed" ta="center" py="md">
-                  No subtasks yet. Add subtasks to break down this task into smaller steps.
-                </Text>
-              ) : (
+                {formData.subtasks.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    No subtasks yet. Add subtasks to break down this task into smaller steps.
+                  </p>
+                ) : (
                 <>
                   {/* Display completed subtasks at the bottom */}
                   {[...formData.subtasks]
@@ -659,104 +682,124 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                       if (a.completed === b.completed) return 0;
                       return a.completed ? 1 : -1;
                     })
-                    .map((subtask) => (
-                      <Group key={subtask.id} gap="md" align="flex-start">
-                        <AppCheckbox
-                          checked={subtask.completed}
-                          onChange={(e) => handleSubtaskChange(subtask.id, 'completed', e.currentTarget.checked)}
-                          style={{ marginTop: 8 }}
-                        />
-                        <TextInput
-                          style={{
-                            flex: 1,
-                            textDecoration: subtask.completed ? 'line-through' : 'none',
-                            opacity: subtask.completed ? 0.7 : 1
-                          }}
-                          placeholder="Subtask description"
-                          value={subtask.title}
-                          onChange={(e) => handleSubtaskChange(subtask.id, 'title', e.target.value)}
-                        />
-                        <ActionIcon color="red" onClick={() => handleRemoveSubtask(subtask.id)}>
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
-                    ))
+                      .map((subtask) => (
+                        <div key={subtask.id} className="flex items-start gap-3">
+                          <Checkbox
+                            id={`subtask-${subtask.id}`}
+                            checked={subtask.completed}
+                            onCheckedChange={(checked) => handleSubtaskChange(subtask.id, 'completed', !!checked)}
+                            className="mt-2"
+                          />
+                          <Input
+                            className={cn(
+                              "flex-1",
+                              subtask.completed && "line-through opacity-70"
+                            )}
+                            placeholder="Subtask description"
+                            value={subtask.title}
+                            onChange={(e) => handleSubtaskChange(subtask.id, 'title', e.target.value)}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => handleRemoveSubtask(subtask.id)}
+                          >
+                            <IconTrash size={16} />
+                          </Button>
+                        </div>
+                      ))
                   }
 
-                  {/* Show progress bar */}
-                  {formData.subtasks.length > 0 && (
-                    <Progress
-                      value={(formData.subtasks.filter(s => s.completed).length / formData.subtasks.length) * 100}
-                      size="sm"
-                      color="green"
-                    />
-                  )}
-                </>
-              )}
+                    {/* Show progress bar */}
+                    {formData.subtasks.length > 0 && (
+                      <Progress
+                        value={(formData.subtasks.filter(s => s.completed).length / formData.subtasks.length) * 100}
+                        className="w-full"
+                      />
+                    )}
+                  </>
+                )}
 
-              <Button
-                variant="outline"
-                onClick={handleAddSubtask}
-              >
-                <IconPlus size={14} className="mr-2 h-4 w-4" />
-                Add Subtask
-              </Button>
-            </Stack>
-          </Paper>
+                <Button
+                  variant="outline"
+                  onClick={handleAddSubtask}
+                >
+                  <IconPlus size={14} className="mr-2 h-4 w-4" />
+                  Add Subtask
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-          <Group justify="flex-end" mt="xl">
+          <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button onClick={handleSubmit}>Save Task</Button>
-          </Group>
-        </Stack>
-      )}
+          </div>
+        </div>
+      </TabsContent>
 
-      {activeTab === 'recurrence' && (
-        <Stack>
-          <Paper p="md" withBorder>
-            <Stack gap="md">
-              <Group justify="space-between">
-                <Text fw={500}>Recurring Task</Text>
-                <AppSwitch
-                  label="Enable recurrence"
-                  checked={formData.isRecurring}
-                  onChange={(e) => handleToggleRecurrence(e.currentTarget.checked)}
-                />
-              </Group>
-              <Divider />
+      <TabsContent value="recurrence">
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">Recurring Task</p>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="enable-recurrence"
+                      checked={formData.isRecurring}
+                      onCheckedChange={handleToggleRecurrence}
+                    />
+                    <Label htmlFor="enable-recurrence">Enable recurrence</Label>
+                  </div>
+                </div>
+                <Separator />
 
-              {formData.isRecurring ? (
-                <Stack gap="md">
-                  <Select
-                    label="Recurrence Pattern"
-                    placeholder="Select pattern"
-                    value={formData.recurrence?.pattern || 'weekly'}
-                    onChange={(value) => handleRecurrenceChange('pattern', value)}
-                    data={[
-                      { value: 'daily', label: 'Daily' },
-                      { value: 'weekly', label: 'Weekly' },
-                      { value: 'biweekly', label: 'Bi-weekly' },
-                      { value: 'monthly', label: 'Monthly' },
-                      { value: 'quarterly', label: 'Quarterly' },
-                      { value: 'yearly', label: 'Yearly' }
-                    ]}
-                    leftSection={<IconRepeat size={16} />}
-                  />
+                {formData.isRecurring ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="recurrence-pattern">Recurrence Pattern</Label>
+                      <Select
+                        value={formData.recurrence?.pattern || 'weekly'}
+                        onValueChange={(value) => handleRecurrenceChange('pattern', value)}
+                      >
+                        <SelectTrigger id="recurrence-pattern">
+                          <IconRepeat className="mr-2 h-4 w-4" />
+                          <SelectValue placeholder="Select pattern" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <NumberInput
-                    label="Interval"
-                    placeholder="Repeat every X"
-                    description={`Repeat every ${formData.recurrence?.interval || 1} ${formData.recurrence?.pattern || 'week(s)'}`}
-                    value={formData.recurrence?.interval || 1}
-                    onChange={(value) => handleRecurrenceChange('interval', value)}
-                    min={1}
-                    max={99}
-                  />
+                    <div>
+                      <Label htmlFor="interval">Interval</Label>
+                      <Input
+                        id="interval"
+                        type="number"
+                        placeholder="Repeat every X"
+                        value={formData.recurrence?.interval || 1}
+                        onChange={(e) => handleRecurrenceChange('interval', parseInt(e.target.value) || 1)}
+                        min={1}
+                        max={99}
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Repeat every {formData.recurrence?.interval || 1} {formData.recurrence?.pattern || 'week(s)'}
+                      </p>
+                    </div>
 
-                  {formData.recurrence?.pattern === 'weekly' && (
-                    <Stack gap="xs">
-                      <Text size="sm" fw={500}>Days of Week</Text>
-                      <Group>
+                    {formData.recurrence?.pattern === 'weekly' && (
+                      <div className="space-y-2">
+                        <Label>Days of Week</Label>
+                        <div className="flex gap-2 flex-wrap">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
                           const isSelected = formData.recurrence?.daysOfWeek?.includes(index);
                           return (
@@ -777,120 +820,164 @@ export default function TaskModal({ opened, onClose, onSubmit, task }: TaskModal
                             </Badge>
                           );
                         })}
-                      </Group>
-                    </Stack>
-                  )}
+                        </div>
+                      </div>
+                    )}
 
-                  {formData.recurrence?.pattern === 'monthly' && (
-                    <NumberInput
-                      label="Day of Month"
-                      placeholder="Day of month"
-                      value={formData.recurrence?.dayOfMonth || 1}
-                      onChange={(value) => handleRecurrenceChange('dayOfMonth', value)}
-                      min={1}
-                      max={31}
+                    {formData.recurrence?.pattern === 'monthly' && (
+                      <div>
+                        <Label htmlFor="day-of-month">Day of Month</Label>
+                        <Input
+                          id="day-of-month"
+                          type="number"
+                          placeholder="Day of month"
+                          value={formData.recurrence?.dayOfMonth || 1}
+                          onChange={(e) => handleRecurrenceChange('dayOfMonth', parseInt(e.target.value) || 1)}
+                          min={1}
+                          max={31}
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <Label>End Date (Optional)</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !formData.recurrence?.endDate && "text-muted-foreground"
+                            )}
+                          >
+                            <IconCalendar className="mr-2 h-4 w-4" />
+                            {formData.recurrence?.endDate ? format(new Date(formData.recurrence.endDate), "PPP") : "When should recurrence end?"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={formData.recurrence?.endDate ? new Date(formData.recurrence.endDate) : undefined}
+                            onSelect={(date) => {
+                              const dateStr = date ? date.toISOString().split('T')[0] : null;
+                              handleRecurrenceChange('endDate', dateStr);
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-2">
+                          <IconCalendarEvent size={16} />
+                          <p className="text-sm">
+                            {getRecurrenceSummary(formData.recurrence)}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-4">
+                    Enable recurrence to make this task repeat automatically.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSubmit}>Save Task</Button>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="time">
+        {task && task.id && (
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <p className="font-medium">Time Tracking</p>
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="estimated-hours">Estimated Hours</Label>
+                    <Input
+                      id="estimated-hours"
+                      type="number"
+                      placeholder="Enter estimated hours"
+                      value={formData.estimatedHours || ''}
+                      onChange={(e) => handleChange('estimatedHours', parseFloat(e.target.value) || undefined)}
+                      min={0}
+                      step={0.5}
                     />
-                  )}
+                  </div>
 
-                  <DatePickerInput
-                    label="End Date (Optional)"
-                    placeholder="When should recurrence end?"
-                    value={formData.recurrence?.endDate ? new Date(formData.recurrence.endDate) : null}
-                    onChange={(date) => {
-                      const dateStr = date ? date.toISOString().split('T')[0] : null;
-                      handleRecurrenceChange('endDate', dateStr);
-                    }}
-                    clearable
-                    leftSection={<IconCalendar size={16} />}
-                    getDayProps={getTodayHighlightProps}
-                  />
+                  <div>
+                    <Label htmlFor="actual-hours">Actual Hours</Label>
+                    <Input
+                      id="actual-hours"
+                      type="number"
+                      placeholder="Enter actual hours spent"
+                      value={formData.actualHours || ''}
+                      onChange={(e) => handleChange('actualHours', parseFloat(e.target.value) || undefined)}
+                      min={0}
+                      step={0.5}
+                    />
+                  </div>
+                </div>
 
-                  <Paper p="xs" withBorder bg="blue.0">
-                    <Group gap="xs">
-                      <IconCalendarEvent size={16} />
-                      <Text size="sm">
-                        {getRecurrenceSummary(formData.recurrence)}
-                      </Text>
-                    </Group>
-                  </Paper>
-                </Stack>
-              ) : (
-                <Text c="dimmed" ta="center" py="md">
-                  Enable recurrence to make this task repeat automatically.
-                </Text>
-              )}
-            </Stack>
-          </Paper>
+                {formData.estimatedHours && formData.actualHours ? (
+                  <Card className={formData.actualHours > formData.estimatedHours ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800' : 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800'}>
+                    <CardContent className="p-3">
+                      <p className="text-sm">
+                        {formData.actualHours > formData.estimatedHours
+                          ? `Over estimate by ${(formData.actualHours - formData.estimatedHours).toFixed(1)} hours`
+                          : `Under estimate by ${(formData.estimatedHours - formData.actualHours).toFixed(1)} hours`}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
 
-          <Group justify="flex-end" mt="xl">
+          <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button onClick={handleSubmit}>Save Task</Button>
-          </Group>
-        </Stack>
-      )}
+          </div>
+        </div>
+        )}
+      </TabsContent>
 
-      {task && task.id && activeTab === 'time' && (
-        <Stack>
-          <Paper p="md" withBorder>
-            <Stack gap="md">
-              <Text fw={500}>Time Tracking</Text>
-              <Divider />
-
-              <Group grow>
-                <NumberInput
-                  label="Estimated Hours"
-                  placeholder="Enter estimated hours"
-                  value={formData.estimatedHours}
-                  onChange={(value) => handleChange('estimatedHours', value)}
-                  min={0}
-                  decimalScale={1}
-                  step={0.5}
-                  leftSection={<IconClock size={16} />}
-                />
-
-                <NumberInput
-                  label="Actual Hours"
-                  placeholder="Enter actual hours spent"
-                  value={formData.actualHours}
-                  onChange={(value) => handleChange('actualHours', value)}
-                  min={0}
-                  decimalScale={1}
-                  step={0.5}
-                  leftSection={<IconClock size={16} />}
-                />
-              </Group>
-
-              {formData.estimatedHours && formData.actualHours ? (
-                <Paper p="sm" withBorder bg={formData.actualHours > formData.estimatedHours ? 'red.0' : 'green.0'}>
-                  <Text size="sm">
-                    {formData.actualHours > formData.estimatedHours
-                      ? `Over estimate by ${(formData.actualHours - formData.estimatedHours).toFixed(1)} hours`
-                      : `Under estimate by ${(formData.estimatedHours - formData.actualHours).toFixed(1)} hours`}
-                  </Text>
-                </Paper>
-              ) : null}
-            </Stack>
-          </Paper>
-
-          <Group justify="flex-end" mt="xl">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSubmit}>Save Task</Button>
-          </Group>
-        </Stack>
-      )}
-
-      {task && task.id && activeTab === 'conversation' && (
-        <Stack>
+      <TabsContent value="conversation">
+        {task && task.id && (
+        <div className="space-y-4">
           <TaskChat
             taskId={task.id}
             onCommentCountChange={(count) => setCommentCount(count)}
           />
 
-          <Group justify="flex-end" mt="xl">
+          <div className="flex justify-end gap-2 mt-6">
             <Button variant="outline" onClick={onClose}>Close</Button>
-          </Group>
-        </Stack>
-      )}
-    </AppModal>
+          </div>
+        </div>
+        )}
+      </TabsContent>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function TaskModal(props: TaskModalProps) {
+  return (
+    <TooltipProvider>
+      <TaskModalContent {...props} />
+    </TooltipProvider>
   );
 }

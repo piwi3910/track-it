@@ -1,5 +1,6 @@
 import { createContext } from 'react';
-import { MantineColorScheme } from '@mantine/core';
+
+type ColorScheme = 'light' | 'dark';
 
 interface ThemeColors {
   // Base colors
@@ -88,7 +89,7 @@ interface ThemeTypography {
 
 export interface ThemeContextType {
   // Core theme values
-  colorScheme: MantineColorScheme;
+  colorScheme: ColorScheme;
   toggleColorScheme: () => void;
   isDark: boolean;
 

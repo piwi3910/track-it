@@ -1,18 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import {
-  AppShell,
-  Burger,
-  Group,
-  UnstyledButton,
-  Text,
-  ThemeIcon,
-  Stack,
-  Menu,
-  ActionIcon,
-  Divider,
-  rem
-} from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useState } from 'react';
 import {
   IconDashboard,
   IconLayoutKanban,
@@ -23,8 +10,19 @@ import {
   IconSun,
   IconLogout,
   IconTemplate,
-  IconUsers
+  IconUsers,
+  IconMenu2
 } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { NotificationMenu } from '@/components/NotificationMenu';
 import { ApiStatus } from '@/components/ApiStatus';
@@ -33,7 +31,7 @@ import { useStore } from '@/hooks/useStore';
 import { useApp } from '@/hooks/useApp';
 
 export function AppLayout() {
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, setOpened] = useState(false);
   const { theme, auth } = useStore();
   const { currentUser } = useApp();
 
@@ -62,174 +60,194 @@ export function AppLayout() {
     { icon: <IconUsers size={16} />, label: 'Admin', to: '/admin' },
   ] : [];
 
+  const NavContent = () => (
+    <>
+      <div className="space-y-2">
+        {navItems.map((item) => (
+          item.disabled ? (
+            <div
+              key={item.to}
+              className="flex items-center gap-2 p-2 rounded-md text-muted-foreground cursor-not-allowed opacity-50"
+            >
+              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted">
+                {item.icon}
+              </div>
+              <span className="text-sm">{item.label}</span>
+            </div>
+          ) : (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => 
+                `flex items-center gap-2 p-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
+                  isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
+                }`
+              }
+              onClick={() => setOpened(false)}
+            >
+              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted">
+                {item.icon}
+              </div>
+              <span className="text-sm">{item.label}</span>
+            </NavLink>
+          )
+        ))}
+
+        {/* Admin section - only visible to admin users */}
+        {isAdmin && adminNavItems.length > 0 && (
+          <>
+            <Separator className="my-2" />
+            {adminNavItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => 
+                  `flex items-center gap-2 p-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
+                    isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
+                  }`
+                }
+                onClick={() => setOpened(false)}
+              >
+                <div className="flex items-center justify-center w-8 h-8 rounded-md bg-orange-100 dark:bg-orange-900">
+                  {item.icon}
+                </div>
+                <span className="text-sm text-orange-600 dark:text-orange-400">{item.label}</span>
+              </NavLink>
+            ))}
+          </>
+        )}
+      </div>
+
+      <div className="mt-auto">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => 
+            `flex items-center gap-2 p-2 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
+              isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
+            }`
+          }
+          onClick={() => setOpened(false)}
+        >
+          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted">
+            <IconSettings size={16} />
+          </div>
+          <span className="text-sm">Settings</span>
+        </NavLink>
+      </div>
+    </>
+  );
+
   return (
-    <AppShell
-      header={{ height: 60 }}
-      navbar={{ width: 200, breakpoint: 'sm', collapsed: { mobile: !opened } }}
-      padding="md"
-    >
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center">
+          <div className="flex items-center gap-4 flex-1">
+            {/* Mobile menu */}
+            <Sheet open={opened} onOpenChange={setOpened}>
+              <SheetTrigger asChild className="sm:hidden">
+                <Button variant="ghost" size="icon" className="shrink-0">
+                  <IconMenu2 className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0">
+                <div className="flex flex-col h-full p-4">
+                  <img 
+                    src="/logo.png" 
+                    alt="Track-It Logo" 
+                    className="h-8 w-auto mb-6"
+                  />
+                  <NavContent />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Logo */}
             <img 
               src="/logo.png" 
               alt="Track-It Logo" 
-              className="app-logo"
+              className="h-8 w-auto"
             />
-          </Group>
 
-          {/* Global search */}
-          <GlobalSearch />
+            {/* Global search */}
+            <div className="flex-1 max-w-md mx-auto">
+              <GlobalSearch />
+            </div>
+          </div>
 
           {/* Header actions */}
-          <Group>
-            {/* API status indicator (only visible in dev or when there's an issue) */}
+          <div className="flex items-center gap-2">
+            {/* API status indicator */}
             <ApiStatus />
 
-            <ActionIcon
-              variant="light"
+            {/* Theme toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={theme.toggleColorScheme}
               title={theme.isDark ? 'Light mode' : 'Dark mode'}
             >
-              {theme.isDark ? <IconSun size={18} /> : <IconMoon size={18} />}
-            </ActionIcon>
+              {theme.isDark ? <IconSun className="h-5 w-5" /> : <IconMoon className="h-5 w-5" />}
+            </Button>
 
             {/* Notification menu */}
             <NotificationMenu />
 
-            <Menu position="bottom-end" shadow="md">
-              <Menu.Target>
-                <UnstyledButton>
-                  <Group gap="xs">
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-auto p-2">
+                  <div className="flex items-center gap-2">
                     <InitialsAvatar 
                       name={user.name} 
                       src={user.avatarUrl} 
-                      radius="xl" 
+                      radius="full" 
                       size="sm" 
                     />
-                    <div style={{ flex: 1 }}>
-                      <Text size="sm" fw={500} lineClamp={1}>
-                        {user.name}
-                      </Text>
+                    <div className="hidden sm:block">
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
                     </div>
-                  </Group>
-                </UnstyledButton>
-              </Menu.Target>
-
-              <Menu.Dropdown>
-                <Menu.Item leftSection={<IconSettings size={14} />} component={NavLink} to="/settings">Settings</Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconLogout size={14} />}
-                  color="red"
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <NavLink to="/settings" className="flex items-center">
+                    <IconSettings className="mr-2 h-4 w-4" />
+                    Settings
+                  </NavLink>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-red-600 dark:text-red-400"
                   onClick={auth.logout}
                 >
+                  <IconLogout className="mr-2 h-4 w-4" />
                   Logout
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Group>
-      </AppShell.Header>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
 
-      <AppShell.Navbar p="md">
-        <Stack justify="space-between" h="100%">
-          <Stack gap={8}>
-            {navItems.map((item) => (
-              item.disabled ? (
-                <div
-                  key={item.to}
-                  className="nav-link disabled coming-soon"
-                  style={{
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <UnstyledButton className="nav-item-button">
-                    <Group gap="xs">
-                      <ThemeIcon variant="light" size="sm" className="nav-icon">
-                        {item.icon}
-                      </ThemeIcon>
-                      <Text className="nav-text">{item.label}</Text>
-                    </Group>
-                  </UnstyledButton>
-                </div>
-              ) : (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) => isActive ? 'active-nav-link' : 'nav-link'}
-                  style={{
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <UnstyledButton className="nav-item-button">
-                    <Group gap="xs">
-                      <ThemeIcon variant="light" size="sm" className="nav-icon">
-                        {item.icon}
-                      </ThemeIcon>
-                      <Text className="nav-text">{item.label}</Text>
-                    </Group>
-                  </UnstyledButton>
-                </NavLink>
-              )
-            ))}
+      {/* Main layout */}
+      <div className="flex-1 flex">
+        {/* Desktop sidebar */}
+        <aside className="hidden sm:flex w-64 border-r bg-background">
+          <div className="flex flex-col w-full p-4">
+            <NavContent />
+          </div>
+        </aside>
 
-            {/* Admin section - only visible to admin users */}
-            {isAdmin && adminNavItems.length > 0 && (
-              <>
-                <Divider my="sm" />
-                {adminNavItems.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) => isActive ? 'active-nav-link' : 'nav-link'}
-                    style={{
-                      borderRadius: '8px',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <UnstyledButton className="nav-item-button">
-                      <Group gap="xs">
-                        <ThemeIcon variant="light" size="sm" className="nav-icon" color="orange">
-                          {item.icon}
-                        </ThemeIcon>
-                        <Text className="nav-text" c="orange.6">{item.label}</Text>
-                      </Group>
-                    </UnstyledButton>
-                  </NavLink>
-                ))}
-              </>
-            )}
-          </Stack>
-
-          {/* Footer navigation items */}
-          <NavLink
-            to="/settings"
-            className={({ isActive }) => isActive ? 'active-nav-link' : 'nav-link'}
-            style={{
-              borderRadius: '8px',
-              textDecoration: 'none',
-              marginBottom: rem(8),
-            }}
-          >
-            <UnstyledButton className="nav-item-button">
-              <Group gap="xs">
-                <ThemeIcon variant="light" size="sm" className="nav-icon">
-                  <IconSettings size={16} />
-                </ThemeIcon>
-                <Text className="nav-text">Settings</Text>
-              </Group>
-            </UnstyledButton>
-          </NavLink>
-        </Stack>
-      </AppShell.Navbar>
-
-      <AppShell.Main>
-        <Outlet /> {/* This is where routed page components will be rendered */}
-      </AppShell.Main>
-    </AppShell>
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="container py-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }

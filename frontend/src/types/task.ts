@@ -4,7 +4,7 @@
  */
 
 // Re-export all shared types
-export * from '../../../shared/types';
+export * from '@track-it/shared/types';
 
 // Legacy exports for backward compatibility
 export type { 
@@ -20,4 +20,4 @@ export type {
   TaskFilter,
   GoogleCalendarEvent,
   GoogleDriveFile
-} from '../../../shared/types';
+} from '@track-it/shared/types';

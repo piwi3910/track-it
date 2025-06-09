@@ -1,21 +1,23 @@
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Container,
-  Title,
-  Group,
-  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
   Table,
-  Text,
-  Badge,
-  Menu,
-  ActionIcon,
-  TextInput,
-  Select,
-  Stack,
-  Paper,
-  Box,
-  Loader,
-} from '@mantine/core';
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { notifications } from '@/components/ui/notifications';
 import {
   IconSearch,
@@ -29,16 +31,9 @@ import {
 } from '@tabler/icons-react';
 import TaskModal from '@/components/TaskModal';
 import QuickAddTask from '@/components/QuickAddTask';
-import type { Task, TaskPriority } from '@/types/task';
+import type { Task } from '@/types/task';
 import { useApp } from '@/hooks/useApp';
 
-// Map priority to color
-const priorityColorMap: Record<TaskPriority, string> = {
-  LOW: 'blue',
-  MEDIUM: 'yellow',
-  HIGH: 'orange',
-  URGENT: 'red',
-};
 
 export function BacklogPage() {
   const { tasks, updateTask, createTask, deleteTask } = useApp();
@@ -106,15 +101,13 @@ export function BacklogPage() {
             title: 'Permission Denied',
             message: 'You can only delete tasks that you created. Contact an admin to delete this task.',
             color: 'orange',
-            position: 'top-right',
-          });
+            });
         } else {
           notifications.show({
             title: 'Delete Failed',
             message: `Failed to delete task: ${error}`,
             color: 'red',
-            position: 'top-right',
-          });
+            });
         }
         return;
       }
@@ -145,7 +138,6 @@ export function BacklogPage() {
           title: 'Move Failed',
           message: 'Failed to move task. You may not have permission.',
           color: 'red',
-          position: 'top-right',
         });
         return;
       }
@@ -198,193 +190,199 @@ export function BacklogPage() {
   };
   
   return (
-    <Container size="xl">
-      <Group justify="space-between" align="center" mb="md">
-        <Title>Backlog</Title>
-      </Group>
+    <div className="container max-w-7xl mx-auto p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Backlog</h1>
+      </div>
 
-      <Box mb="xl">
+      <div className="mb-8">
         <QuickAddTask 
           defaultStatus="backlog" 
           onTaskAdded={() => {
             // Task will be automatically added to the store
           }} 
         />
-      </Box>
+      </div>
 
-      <Paper withBorder p="md" mb="xl">
+      <Card className="mb-8">
+        <CardContent className="p-6">
         {loading ? (
-          <Stack align="center" p="xl">
-            <Loader size="md" />
-            <Text c="dimmed">Loading tasks...</Text>
-          </Stack>
+          <div className="flex flex-col items-center py-8">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            <p className="text-muted-foreground mt-2">Loading tasks...</p>
+          </div>
         ) : error ? (
-          <Text c="red" p="md" ta="center">
+          <p className="text-red-600 text-center p-4">
             {error}
-          </Text>
+          </p>
         ) : (
         <>
-        <Group mb="md">
-          <TextInput
-            placeholder="Search tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ flex: 1 }}
-            leftSection={<IconSearch size={16} />}
-          />
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           
-          <Select
-            placeholder="Filter by priority"
-            value={priorityFilter}
-            onChange={setPriorityFilter}
-            data={[
-              { value: 'low', label: 'Low' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'high', label: 'High' },
-              { value: 'urgent', label: 'Urgent' },
-            ]}
-            clearable
-            leftSection={<IconFilter size={16} />}
-          />
+          <Select value={priorityFilter || undefined} onValueChange={(value) => setPriorityFilter(value || null)}>
+            <SelectTrigger className="w-48">
+              <div className="flex items-center gap-2">
+                <IconFilter size={16} />
+                <SelectValue placeholder="Filter by priority" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <Menu position="bottom-end">
-            <Menu.Target>
-              <Button variant="outline" leftSection={
-                sortDirection === 'asc'
-                  ? <IconSortAscending size={16} />
-                  : <IconSortDescending size={16} />
-              }>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                {sortDirection === 'asc' ? <IconSortAscending size={16} className="mr-2 h-4 w-4" /> : <IconSortDescending size={16} className="mr-2 h-4 w-4" />}
                 Sort By
               </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
                 onClick={() => { setSortBy('title'); toggleSortDirection(); }}
-                rightSection={sortBy === 'title' ? (
-                  sortDirection === 'asc'
-                    ? <IconSortAscending size={14} />
-                    : <IconSortDescending size={14} />
-                ) : null}
               >
                 Title
-              </Menu.Item>
-              <Menu.Item
-                onClick={() => { setSortBy('priority'); toggleSortDirection(); }}
-                rightSection={sortBy === 'priority' ? (
+                {sortBy === 'title' && (
                   sortDirection === 'asc'
-                    ? <IconSortAscending size={14} />
-                    : <IconSortDescending size={14} />
-                ) : null}
+                    ? <IconSortAscending size={14} className="ml-auto h-4 w-4" />
+                    : <IconSortDescending size={14} className="ml-auto h-4 w-4" />
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => { setSortBy('priority'); toggleSortDirection(); }}
               >
                 Priority
-              </Menu.Item>
-              <Menu.Item
-                onClick={() => { setSortBy('dueDate'); toggleSortDirection(); }}
-                rightSection={sortBy === 'dueDate' ? (
+                {sortBy === 'priority' && (
                   sortDirection === 'asc'
-                    ? <IconSortAscending size={14} />
-                    : <IconSortDescending size={14} />
-                ) : null}
+                    ? <IconSortAscending size={14} className="ml-auto h-4 w-4" />
+                    : <IconSortDescending size={14} className="ml-auto h-4 w-4" />
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => { setSortBy('dueDate'); toggleSortDirection(); }}
               >
                 Due Date
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
+                {sortBy === 'dueDate' && (
+                  sortDirection === 'asc'
+                    ? <IconSortAscending size={14} className="ml-auto h-4 w-4" />
+                    : <IconSortDescending size={14} className="ml-auto h-4 w-4" />
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         
-        <Table>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Title</Table.Th>
-              <Table.Th>Priority</Table.Th>
-              <Table.Th>Due Date</Table.Th>
-              <Table.Th>Tags</Table.Th>
-              <Table.Th style={{ width: 100 }}>Actions</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {filteredAndSortedTasks.length === 0 ? (
-              <Table.Tr>
-                <Table.Td colSpan={5}>
-                  <Text ta="center" fz="sm" p="xl" c="dimmed">
-                    No tasks found in the backlog.
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
-            ) : (
-              filteredAndSortedTasks.map(task => (
-                <Table.Tr key={task.id}>
-                  <Table.Td>
-                    <Stack gap={5}>
-                      <Group gap={8}>
-                        <Text fw={500}>{task.title}</Text>
-                      </Group>
-                      {task.description && (
-                        <Text size="xs" c="dimmed" lineClamp={1}>
-                          {task.description}
-                        </Text>
-                      )}
-                    </Stack>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color={priorityColorMap[task.priority]}>
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    {task.dueDate 
-                      ? new Date(task.dueDate).toLocaleDateString() 
-                      : '—'}
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={5}>
-                      {task.tags?.map(tag => (
-                        <Badge key={tag} size="xs" variant="outline">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </Group>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={5}>
-                      <Menu position="bottom-end">
-                        <Menu.Target>
-                          <ActionIcon variant="subtle">
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Tags</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAndSortedTasks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <p className="text-center text-sm py-8 text-muted-foreground">
+                      No tasks found in the backlog.
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredAndSortedTasks.map(task => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{task.title}</p>
+                        </div>
+                        {task.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {task.description}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={task.priority === 'LOW' ? 'secondary' :
+                               task.priority === 'HIGH' || task.priority === 'URGENT' ? 'destructive' : 'default'}
+                        className={task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' : ''}
+                      >
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {task.dueDate 
+                        ? new Date(task.dueDate).toLocaleDateString() 
+                        : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 flex-wrap">
+                        {task.tags?.map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <IconDotsVertical size={16} />
-                          </ActionIcon>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          <Menu.Item 
-                            leftSection={<IconPencil size={14} />}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
                             onClick={() => handleEditTask(task as unknown as Task)}
                           >
+                            <IconPencil size={14} className="mr-2 h-4 w-4" />
                             Edit
-                          </Menu.Item>
-                          <Menu.Item 
-                            leftSection={<IconTrash size={14} />}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
                             onClick={() => handleDeleteTask(task.id)}
-                            color="red"
+                            className="text-destructive focus:text-destructive"
                           >
+                            <IconTrash size={14} className="mr-2 h-4 w-4" />
                             Delete
-                          </Menu.Item>
-                          <Menu.Item 
-                            leftSection={<IconArrowRight size={14} />}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
                             onClick={() => handleMoveToTodo(task.id)}
                           >
+                            <IconArrowRight size={14} className="mr-2 h-4 w-4" />
                             Move to Todo
-                          </Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))
-            )}
-          </Table.Tbody>
-        </Table>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
         </>
         )}
-      </Paper>
+        </CardContent>
+      </Card>
       
       <TaskModal
         opened={taskModalOpen}
@@ -392,6 +390,6 @@ export function BacklogPage() {
         task={selectedTask}
         onSubmit={handleTaskSubmit}
       />
-    </Container>
+    </div>
   );
 }

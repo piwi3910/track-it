@@ -1,0 +1,97 @@
+/* Styles for the KanbanPage */
+
+/* Make task cards more compact to fit more on screen */
+.kanban-board .compact-card {
+  /* Override styles to make the cards more compact */
+  margin-bottom: 8px !important;
+  padding: 4px 0 !important; /* Reduced horizontal padding to fill column width */
+  width: 100% !important;
+}
+
+/* Apply even more compact styling to card content */
+.kanban-board .compact-card .rounded-lg {
+  padding: 10px 8px !important; /* Reduced horizontal padding inside cards */
+  width: 100% !important;
+}
+
+/* Reduce spacing in task cards */
+.kanban-board .compact-card .flex-col,
+.kanban-board .compact-card .flex {
+  gap: 4px !important;
+}
+
+.kanban-board .compact-card p,
+.kanban-board .compact-card span {
+  font-size: 0.9rem !important;
+  line-height: 1.3 !important;
+}
+
+/* Make badges smaller */
+.kanban-board .compact-card .inline-flex.items-center.rounded-full {
+  padding: 0 6px !important;
+  height: 18px !important;
+  font-size: 0.7rem !important;
+}
+
+/* Custom scrollbar for column scrolling */
+.kanban-column-scroll {
+  scrollbar-width: thin;
+}
+
+.kanban-column-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kanban-column-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+/* Column header */
+.column-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  border-bottom: 2px solid;
+}
+
+/* Column styling based on status */
+.column-header-backlog {
+  border-color: #5c636a;
+}
+
+.column-header-todo {
+  border-color: #0d6efd;
+}
+
+.column-header-in_progress {
+  border-color: #0dcaf0;
+}
+
+.column-header-blocked {
+  border-color: #dc3545;
+}
+
+.column-header-in_review {
+  border-color: #fd7e14;
+}
+
+.column-header-done {
+  border-color: #198754;
+}
+
+/* Column task count badge */
+.column-task-count {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+/* Add highlight to column when dragging over */
+.kanban-column-highlight {
+  background-color: rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease;
+}

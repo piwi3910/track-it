@@ -1,20 +1,14 @@
 import { useState } from 'react';
-import {
-  Container,
-  Title,
-  Paper,
-  Group,
-  Text,
-  Divider,
-  Select,
-  TextInput,
-  Accordion,
-  Stack
-} from '@mantine/core';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AppTabs } from '@/components/ui/AppTabs';
-import { AppSwitch } from '@/components/ui/AppSwitch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import {
   IconUser,
   IconBrandGoogle,
@@ -58,229 +52,253 @@ export function SettingsPage() {
   // Show loading state if user data is not available
   if (userLoading) {
     return (
-      <Container size="xl">
-        <Title mb="xl">Settings</Title>
-        <Text>Loading user settings...</Text>
-      </Container>
+      <div className="container max-w-7xl mx-auto p-8">
+        <h1 className="text-3xl font-bold mb-8">Settings</h1>
+        <p className="text-muted-foreground">Loading user settings...</p>
+      </div>
     );
   }
 
   // Show error state if no user data is available after loading
   if (!currentUser) {
     return (
-      <Container size="xl">
-        <Title mb="xl">Settings</Title>
-        <Text c="red">Unable to load user settings. Please try refreshing the page.</Text>
-      </Container>
+      <div className="container max-w-7xl mx-auto p-8">
+        <h1 className="text-3xl font-bold mb-8">Settings</h1>
+        <p className="text-destructive">Unable to load user settings. Please try refreshing the page.</p>
+      </div>
     );
   }
 
   return (
-    <Container size="xl">
-      <Title mb="xl">Settings</Title>
+    <div className="container max-w-7xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-8">Settings</h1>
       
-      <AppTabs value={activeTab} onChange={setActiveTab}>
-        <AppTabs.List mb="xl">
-          <AppTabs.Tab value="account" leftSection={<IconUser size={16} />}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-8">
+          <TabsTrigger value="account">
+            <IconUser className="mr-2 h-4 w-4" />
             Account
-          </AppTabs.Tab>
-          <AppTabs.Tab value="notifications" leftSection={<IconBell size={16} />}>
+          </TabsTrigger>
+          <TabsTrigger value="notifications">
+            <IconBell className="mr-2 h-4 w-4" />
             Notifications
-          </AppTabs.Tab>
-          <AppTabs.Tab value="appearance" leftSection={<IconPalette size={16} />}>
+          </TabsTrigger>
+          <TabsTrigger value="appearance">
+            <IconPalette className="mr-2 h-4 w-4" />
             Appearance
-          </AppTabs.Tab>
-          <AppTabs.Tab 
+          </TabsTrigger>
+          <TabsTrigger 
             value="integrations" 
-            leftSection={<IconBrandGoogle size={16} />}
             className="disabled coming-soon"
           >
+            <IconBrandGoogle className="mr-2 h-4 w-4" />
             Integrations
-          </AppTabs.Tab>
-        </AppTabs.List>
+          </TabsTrigger>
+        </TabsList>
         
         {/* Account Settings */}
-        {activeTab === 'account' && (
-          <Paper withBorder p="xl">
-            <Group align="flex-start" gap="xl">
-              <ProfilePictureUpload
-                currentAvatarUrl={currentUser.avatarUrl}
-                userName={currentUser.name}
-                onAvatarChange={handleAvatarChange}
-                size="xl"
-              />
-              
-              <div style={{ flex: 1 }}>
-                <Stack>
-                  <TextInput
-                    label="Name"
-                    defaultValue={currentUser.name}
-                  />
+        <TabsContent value="account">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-start gap-8">
+                <ProfilePictureUpload
+                  currentAvatarUrl={currentUser.avatarUrl}
+                  userName={currentUser.name}
+                  onAvatarChange={handleAvatarChange}
+                  size="xl"
+                />
+                
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      defaultValue={currentUser.name}
+                    />
+                  </div>
                   
-                  <TextInput
-                    label="Email"
-                    defaultValue={currentUser.email}
-                  />
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      defaultValue={currentUser.email}
+                    />
+                  </div>
                   
-                  <Group mt="md">
+                  <div className="mt-4">
                     <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{currentUser.role?.toUpperCase() || 'MEMBER'}</Badge>
-                  </Group>
+                  </div>
                   
-                  <Divider my="md" />
+                  <Separator className="my-4" />
                   
-                  <Group justify="space-between">
+                  <div className="flex items-center justify-between">
                     <Button variant="outline">Change Password</Button>
                     <Button variant="destructive">
                       <IconLogout size={16} className="mr-2 h-4 w-4" />
                       Sign Out
                     </Button>
-                  </Group>
-                </Stack>
+                  </div>
+                </div>
               </div>
-            </Group>
-          </Paper>
-        )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         {/* Notification Settings */}
-        {activeTab === 'notifications' && (
-          <Paper withBorder p="xl">
-            <Stack>
-              <Title order={3} mb="md">Notification Preferences</Title>
-              
-              <Accordion defaultValue="email">
-                <Accordion.Item value="email">
-                  <Accordion.Control icon={<IconMailFilled size={16} />}>
-                    Email Notifications
-                  </Accordion.Control>
-                  <Accordion.Panel>
-                    <Stack>
-                      <Group justify="space-between">
-                        <Text>Receive email notifications</Text>
-                        <AppSwitch 
-                          checked={emailNotifications} 
-                          onChange={(e) => setEmailNotifications(e.currentTarget.checked)} 
-                        />
-                      </Group>
-                      
-                      <Divider my="xs" />
-                      
-                      <Group justify="space-between">
-                        <Text>Task assignments</Text>
-                        <AppSwitch defaultChecked disabled={!emailNotifications} />
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text>Task due date reminders</Text>
-                        <AppSwitch defaultChecked disabled={!emailNotifications} />
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text>Mentions in comments</Text>
-                        <AppSwitch defaultChecked disabled={!emailNotifications} />
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text>Status changes</Text>
-                        <AppSwitch disabled={!emailNotifications} />
-                      </Group>
-                    </Stack>
-                  </Accordion.Panel>
-                </Accordion.Item>
+        <TabsContent value="notifications">
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold mb-4">Notification Preferences</h3>
                 
-                <Accordion.Item value="in-app">
-                  <Accordion.Control icon={<IconBell size={16} />}>
-                    In-App Notifications
-                  </Accordion.Control>
-                  <Accordion.Panel>
-                    <Stack>
-                      <Group justify="space-between">
-                        <Text>Show in-app notifications</Text>
-                        <AppSwitch 
-                          checked={inAppNotifications} 
-                          onChange={(e) => setInAppNotifications(e.currentTarget.checked)} 
-                        />
-                      </Group>
-                      
-                      <Divider my="xs" />
-                      
-                      <Group justify="space-between">
-                        <Text>Task assignments</Text>
-                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text>Comments on your tasks</Text>
-                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text>Mentions in comments</Text>
-                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text>Status changes</Text>
-                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
-                      </Group>
-                      
-                      <Group justify="space-between">
-                        <Text>Due date reminders</Text>
-                        <AppSwitch defaultChecked disabled={!inAppNotifications} />
-                      </Group>
-                    </Stack>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              </Accordion>
-            </Stack>
-          </Paper>
-        )}
+                <Accordion defaultValue="email" type="single" collapsible>
+                  <AccordionItem value="email">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <IconMailFilled size={16} />
+                        Email Notifications
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span>Receive email notifications</span>
+                          <Switch 
+                            id="email-notifications"
+                            checked={emailNotifications} 
+                            onCheckedChange={setEmailNotifications} 
+                          />
+                        </div>
+                        
+                        <Separator className="my-2" />
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Task assignments</span>
+                          <Switch defaultChecked disabled={!emailNotifications} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Task due date reminders</span>
+                          <Switch defaultChecked disabled={!emailNotifications} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Mentions in comments</span>
+                          <Switch defaultChecked disabled={!emailNotifications} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Status changes</span>
+                          <Switch disabled={!emailNotifications} />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <AccordionItem value="in-app">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <IconBell size={16} />
+                        In-App Notifications
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span>Show in-app notifications</span>
+                          <Switch 
+                            id="in-app-notifications"
+                            checked={inAppNotifications} 
+                            onCheckedChange={setInAppNotifications} 
+                          />
+                        </div>
+                        
+                        <Separator className="my-2" />
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Task assignments</span>
+                          <Switch defaultChecked disabled={!inAppNotifications} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Comments on your tasks</span>
+                          <Switch defaultChecked disabled={!inAppNotifications} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Mentions in comments</span>
+                          <Switch defaultChecked disabled={!inAppNotifications} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Status changes</span>
+                          <Switch defaultChecked disabled={!inAppNotifications} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span>Due date reminders</span>
+                          <Switch defaultChecked disabled={!inAppNotifications} />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         {/* Appearance Settings */}
-        {activeTab === 'appearance' && (
-          <Paper withBorder p="xl">
-            <Stack>
-              <Title order={3} mb="md">Appearance</Title>
-              
-              <Group justify="space-between" mb="md">
-                <div>
-                  <Text>Dark Mode</Text>
-                  <Text size="sm" c="dimmed">Enable dark mode for the application</Text>
+        <TabsContent value="appearance">
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold mb-4">Appearance</h3>
+                
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p>Dark Mode</p>
+                    <p className="text-sm text-muted-foreground">Enable dark mode for the application</p>
+                  </div>
+                  <Switch 
+                    id="dark-mode"
+                    checked={isDark} 
+                    onCheckedChange={toggleColorScheme}
+                  />
                 </div>
-                <AppSwitch 
-                  checked={isDark} 
-                  onChange={toggleColorScheme}
-                  size="lg"
-                />
-              </Group>
-              
-              <Divider my="md" />
-              
-              <Group justify="space-between" mb="md">
-                <div>
-                  <Text>Default View</Text>
-                  <Text size="sm" c="dimmed">Choose which page to show when you first log in</Text>
+                
+                <Separator className="my-4" />
+                
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p>Default View</p>
+                    <p className="text-sm text-muted-foreground">Choose which page to show when you first log in</p>
+                  </div>
+                  <Select
+                    value={defaultView}
+                    onValueChange={(val) => val && setDefaultView(val)}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dashboard">Dashboard</SelectItem>
+                      <SelectItem value="kanban">Kanban Board</SelectItem>
+                      <SelectItem value="calendar">Calendar</SelectItem>
+                      <SelectItem value="backlog">Backlog</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select
-                  value={defaultView}
-                  onChange={(val) => val && setDefaultView(val)}
-                  data={[
-                    { value: 'dashboard', label: 'Dashboard' },
-                    { value: 'kanban', label: 'Kanban Board' },
-                    { value: 'calendar', label: 'Calendar' },
-                    { value: 'backlog', label: 'Backlog' },
-                  ]}
-                  style={{ width: 200 }}
-                />
-              </Group>
-            </Stack>
-          </Paper>
-        )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         {/* Integrations Tab */}
-        {activeTab === 'integrations' && (
+        <TabsContent value="integrations">
           <GoogleIntegrationPanel />
-        )}
-      </AppTabs>
-    </Container>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

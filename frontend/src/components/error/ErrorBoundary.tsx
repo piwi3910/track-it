@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { Button, Card, Group, Stack, Text, Title } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react';
 import { errorLoggingService } from '@/services/error-logging.service';
 
@@ -77,34 +78,34 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     // Otherwise, render the default error UI
     return (
-      <Card shadow="sm" p="lg" radius="md" withBorder>
-        <Stack align="center" gap="md">
-          <IconAlertTriangle size={48} color="red" />
-          <Title order={3}>Something went wrong</Title>
+      <Card className="w-full max-w-lg mx-auto">
+        <CardContent className="flex flex-col items-center gap-4 p-6">
+          <IconAlertTriangle size={48} className="text-red-600" />
+          <h3 className="text-lg font-semibold">Something went wrong</h3>
           
-          <Text c="dimmed" size="sm" ta="center">
+          <p className="text-sm text-muted-foreground text-center">
             {this.state.error?.message || 
               'An error occurred while rendering this component.'}
-          </Text>
+          </p>
           
           {import.meta.env.DEV && this.state.errorInfo && (
-            <Card withBorder p="xs" bg="gray.0" style={{ overflow: 'auto', maxHeight: '200px', width: '100%' }}>
-              <Text size="xs" style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
-                {this.state.errorInfo.componentStack}
-              </Text>
+            <Card className="w-full border bg-muted/50">
+              <CardContent className="p-3 max-h-48 overflow-auto">
+                <pre className="text-xs whitespace-pre-wrap font-mono">
+                  {this.state.errorInfo.componentStack}
+                </pre>
+              </CardContent>
             </Card>
           )}
           
-          <Group>
-            <Button 
-              leftSection={<IconRefresh size={16} />} 
-              onClick={this.handleReset}
-              color="blue"
-            >
-              Try Again
-            </Button>
-          </Group>
-        </Stack>
+          <Button 
+            onClick={this.handleReset}
+            className="gap-2"
+          >
+            <IconRefresh size={16} />
+            Try Again
+          </Button>
+        </CardContent>
       </Card>
     );
   }
@@ -125,28 +126,26 @@ export function PageErrorBoundary({ children, onReset }: { children: ReactNode; 
   };
   
   const pageFallback = (
-    <Stack align="center" gap="xl" py="xl" maw={500} mx="auto" mt={50}>
-      <IconAlertTriangle size={80} color="red" />
-      <Title order={2} ta="center">Oops! Something went wrong</Title>
-      <Text c="dimmed" ta="center">
+    <div className="flex flex-col items-center gap-8 py-16 px-4 max-w-lg mx-auto mt-12">
+      <IconAlertTriangle size={80} className="text-red-600" />
+      <h2 className="text-2xl font-semibold text-center">Oops! Something went wrong</h2>
+      <p className="text-muted-foreground text-center">
         We've encountered an error while loading this page. Our team has been notified.
-      </Text>
-      <Group>
-        <Button 
-          leftSection={<IconRefresh size={16} />} 
-          onClick={handleReset}
-          color="blue"
-          size="md"
-        >
-          Reload Page
-        </Button>
-      </Group>
+      </p>
+      <Button 
+        onClick={handleReset}
+        size="lg"
+        className="gap-2"
+      >
+        <IconRefresh size={16} />
+        Reload Page
+      </Button>
       {import.meta.env.DEV && (
-        <Text size="xs" c="dimmed" ta="center">
+        <p className="text-xs text-muted-foreground text-center">
           Check the console for more details about this error.
-        </Text>
+        </p>
       )}
-    </Stack>
+    </div>
   );
   
   return (

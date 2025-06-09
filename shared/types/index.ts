@@ -8,16 +8,16 @@ export * from './errors';
 export * from './enums';
 
 // User roles (matching Prisma schema)
-export type UserRole = 'ADMIN' | 'MEMBER' | 'GUEST';
+export type UserRole = 'admin' | 'member' | 'guest';
 
 // Task status types (matching Prisma schema)
-export type TaskStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE' | 'ARCHIVED';
+export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done' | 'archived';
 
 // Task priority types (matching Prisma schema)
-export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 // Notification types (matching Prisma schema)
-export type NotificationType = 'TASK_ASSIGNED' | 'TASK_UPDATED' | 'COMMENT_ADDED' | 'DUE_DATE_REMINDER' | 'MENTION' | 'SYSTEM';
+export type NotificationType = 'task_assigned' | 'task_updated' | 'comment_added' | 'due_date_reminder' | 'mention' | 'system';
 
 // Subtask interface
 export interface Subtask {

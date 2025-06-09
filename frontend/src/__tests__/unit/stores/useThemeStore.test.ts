@@ -2,14 +2,6 @@ import { renderHook, act } from '@testing-library/react';
 import { useThemeStore } from '../../../stores/useThemeStore';
 import { jest } from '@jest/globals';
 
-// Mock Mantine hooks and utilities
-jest.mock('@mantine/core', () => ({
-  useMantineColorScheme: () => ({
-    colorScheme: 'light',
-    setColorScheme: jest.fn(),
-  }),
-}));
-
 // Mock document and localStorage
 const mockSetProperty = jest.fn();
 const mockSetAttribute = jest.fn();
@@ -178,7 +170,7 @@ describe('useThemeStore', () => {
       expect(result.current.isDark).toBe(false);
     });
 
-    it('should update Mantine data attribute when toggling', () => {
+    it('should update HTML data attribute when toggling', () => {
       const mockHtmlElement = {
         setAttribute: jest.fn(),
       };
@@ -191,7 +183,7 @@ describe('useThemeStore', () => {
       });
       
       expect(mockQuerySelector).toHaveBeenCalledWith('html');
-      expect(mockHtmlElement.setAttribute).toHaveBeenCalledWith('data-mantine-color-scheme', 'dark');
+      expect(mockHtmlElement.setAttribute).toHaveBeenCalledWith('data-theme', 'dark');
     });
   });
 

@@ -6,7 +6,7 @@ import {
   createUnauthorizedError, 
   createForbiddenError,
   formatErrorResponse
-} from '../utils/error-handler';
+} from '../utils/unified-error-handler';
 
 // Initialize tRPC with context type
 const t = initTRPC.context<Context>().create({

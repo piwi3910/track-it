@@ -1,21 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Container,
-  Paper,
-  Text,
-  Group,
-  Divider,
-  Stack,
-  Image
-} from '@mantine/core';
 import { IconAlertCircle, IconAt, IconLock } from '@tabler/icons-react';
 import { useApp } from '@/hooks/useApp';
 import { useStore } from '@/hooks/useStore';
 import { Button } from '@/components/ui/button';
-import { AppTextInput } from '@/components/ui/AppTextInput';
-import { AppPasswordInput } from '@/components/ui/AppPasswordInput';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { logger } from '@/services/logger.service';
 
 export default function LoginPage() {
   const { auth } = useStore();
@@ -84,7 +78,7 @@ export default function LoginPage() {
       }, 100);
       
     } catch (err) {
-      console.error('Login failed:', err);
+      logger.error('Login failed', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
       setLoading(false);
     }
@@ -94,15 +88,16 @@ export default function LoginPage() {
   const isRedirected = location.state?.from && location.pathname !== '/dashboard';
 
   return (
-    <Container size="xs" p="xl">
-      <Paper radius="md" p="xl" withBorder>
-        <Stack align="center" mb="lg">
-          <Image
-            src="/logo.png"
-            alt="Track-It Logo"
-            className="login-logo"
-          />
-        </Stack>
+    <div className="container max-w-md mx-auto p-8">
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center mb-6">
+            <img
+              src="/logo.png"
+              alt="Track-It Logo"
+              className="login-logo h-12 w-auto"
+            />
+          </div>
 
         {isRedirected && !error && (
           <Alert className="mb-4">
@@ -129,24 +124,38 @@ export default function LoginPage() {
           </Alert>
         )}
         
-        <Stack gap="md">
-          <AppTextInput
-            label="Email"
-            placeholder="your@email.com"
-            value={email}
-            onChange={(event) => setEmail(event.currentTarget.value)}
-            leftSection={<IconAt size={16} />}
-            required
-          />
+          <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <div className="relative">
+              <IconAt className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(event) => setEmail(event.currentTarget.value)}
+                className="pl-10"
+                required
+              />
+            </div>
+          </div>
           
-          <AppPasswordInput
-            label="Password"
-            placeholder="Your password"
-            value={password}
-            onChange={(event) => setPassword(event.currentTarget.value)}
-            leftSection={<IconLock size={16} />}
-            required
-          />
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Your password"
+                value={password}
+                onChange={(event) => setPassword(event.currentTarget.value)}
+                className="pl-10"
+                required
+              />
+            </div>
+          </div>
           
           <Button
             className="w-full mt-4"
@@ -163,22 +172,23 @@ export default function LoginPage() {
             )}
           </Button>
           
-          <Text size="xs" c="dimmed" ta="center">
-            Default credentials: demo@example.com / password123
-          </Text>
-        </Stack>
+            <p className="text-xs text-muted-foreground text-center">
+              Default credentials: demo@example.com / password123
+            </p>
+          </div>
 
-        <Divider my="lg" />
+          <Separator className="my-6" />
 
-        <Group justify="center" mt="md">
-          <Text size="sm" c="dimmed">
-            Don't have an account?{' '}
-            <Text span c="blue" style={{ cursor: 'pointer' }}>
-              Contact your administrator
-            </Text>
-          </Text>
-        </Group>
-      </Paper>
-    </Container>
+          <div className="flex justify-center">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <span className="text-blue-600 cursor-pointer hover:text-blue-800">
+                Contact your administrator
+              </span>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

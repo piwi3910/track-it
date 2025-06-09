@@ -1,22 +1,17 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { MantineProvider } from '@mantine/core';
 import { ErrorAlert, ConnectionErrorAlert, ValidationErrorAlert } from '../../../components/error/ErrorAlert';
 import { describe, it, afterEach } from '@jest/globals';
 import { jest } from '@jest/globals';
-import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared/types/errors';
+import { AppError, AppErrorDetails, ErrorCode, ErrorSeverity } from '@track-it/shared/types';
 
 
 // Mock timer functions
 jest.useFakeTimers();
 
-// Wrapper component for Mantine provider
-const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <MantineProvider>{children}</MantineProvider>
-);
-
+// No wrapper needed since we're not using Mantine anymore
 const renderWithWrapper = (component: React.ReactElement) => {
-  return render(component, { wrapper: TestWrapper });
+  return render(component);
 };
 
 describe('ErrorAlert', () => {
@@ -28,26 +23,26 @@ describe('ErrorAlert', () => {
 
   describe('basic functionality', () => {
     it('should render error message when error is a string', () => {
-      renderWithWrapper(<ErrorAlert error="Test error message" />);
+      render(<ErrorAlert error="Test error message" />);
       
       expect(screen.getByText('Test error message')).toBeInTheDocument();
       expect(screen.getByText('Error')).toBeInTheDocument(); // Default title
     });
 
     it('should not render when error is null', () => {
-      const { container } = renderWithWrapper(<ErrorAlert error={null} />);
+      const { container } = render(<ErrorAlert error={null} />);
       
       expect(container.firstChild).toBeNull();
     });
 
     it('should not render when error is empty string', () => {
-      const { container } = renderWithWrapper(<ErrorAlert error="" />);
+      const { container } = render(<ErrorAlert error="" />);
       
       expect(container.firstChild).toBeNull();
     });
 
     it('should render custom title when provided', () => {
-      renderWithWrapper(<ErrorAlert error="Test error" title="Custom Title" />);
+      render(<ErrorAlert error="Test error" title="Custom Title" />);
       
       expect(screen.getByText('Custom Title')).toBeInTheDocument();
     });

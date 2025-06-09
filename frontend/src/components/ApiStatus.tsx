@@ -1,16 +1,17 @@
-import { Group, Popover, Stack, Text, ActionIcon, Progress } from '@mantine/core';
 import { IconRefresh, IconCloud, IconCloudOff, IconDatabaseImport, IconDatabase, IconClock } from '@tabler/icons-react';
 import { useApiStore } from '@/stores/useApiStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AppTooltip } from '@/components/ui/AppTooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Progress } from '@/components/ui/progress';
 import { useState, useMemo } from 'react';
 
 /**
  * ApiStatus component displays the current status of the API connection
  * and provides a refresh button to check the connection.
  */
-export function ApiStatus() {
+function ApiStatusContent() {
   const { 
     apiAvailable, 
     apiError, 
@@ -54,76 +55,81 @@ export function ApiStatus() {
   }
   
   return (
-    <Popover 
-      opened={opened} 
-      onChange={setOpened} 
-      position="bottom-end" 
-      shadow="md"
-      width={300}
-    >
-      <Popover.Target>
-        <Group gap="xs">
+    <Popover open={opened} onOpenChange={setOpened}>
+      <PopoverTrigger asChild>
+        <div className="flex items-center gap-2">
           {isMockApi ? (
-            <AppTooltip label="Using mock API" position="bottom">
-              <Badge variant="secondary" className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                <IconDatabaseImport size={14} className="mr-1 inline" />
-                Mock
-              </Badge>
-            </AppTooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  <IconDatabaseImport size={14} className="mr-1 inline" />
+                  Mock
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Using mock API</TooltipContent>
+            </Tooltip>
           ) : apiAvailable ? (
-            <AppTooltip label="API is connected" position="bottom">
-              <Badge variant="secondary" className="text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                <IconCloud size={14} className="mr-1 inline" />
-                API
-              </Badge>
-            </AppTooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <IconCloud size={14} className="mr-1 inline" />
+                  API
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">API is connected</TooltipContent>
+            </Tooltip>
           ) : (
-            <AppTooltip label={apiError || 'API is not available'} position="bottom">
-              <Badge variant="destructive" className="text-sm">
-                <IconCloudOff size={14} className="mr-1 inline" />
-                API Down
-              </Badge>
-            </AppTooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="destructive" className="text-sm">
+                  <IconCloudOff size={14} className="mr-1 inline" />
+                  API Down
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{apiError || 'API is not available'}</TooltipContent>
+            </Tooltip>
           )}
 
           {!isMockApi && (
-            <AppTooltip 
-              label={
-                isApiLoading ? "Checking API connection..." : 
-                connectionAttempts >= maxConnectionAttempts ? "Connection attempts exhausted" :
-                !apiAvailable && timeUntilNextCheck ? `Next check in ${timeUntilNextCheck}s` :
-                !apiAvailable ? "API unavailable" :
-                "Check API connection"
-              } 
-              position="bottom"
-            >
-              <ActionIcon
-                variant="subtle"
-                color={
-                  isApiLoading ? "blue" : 
-                  connectionAttempts >= maxConnectionAttempts ? "red" : 
-                  !apiAvailable ? "yellow" : 
-                  "gray"
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 ${
+                    isApiLoading ? "text-blue-600" : 
+                    connectionAttempts >= maxConnectionAttempts ? "text-red-600" : 
+                    !apiAvailable ? "text-yellow-600" : 
+                    "text-gray-600"
+                  }`}
+                  disabled={isApiLoading}
+                  onClick={() => {
+                    checkApiAvailability(true); // Force check
+                    setOpened(true);
+                  }}
+                >
+                  <IconRefresh size={14} className={isApiLoading ? 'animate-spin' : ''} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {
+                  isApiLoading ? "Checking API connection..." : 
+                  connectionAttempts >= maxConnectionAttempts ? "Connection attempts exhausted" :
+                  !apiAvailable && timeUntilNextCheck ? `Next check in ${timeUntilNextCheck}s` :
+                  !apiAvailable ? "API unavailable" :
+                  "Check API connection"
                 }
-                size="sm"
-                loading={isApiLoading}
-                onClick={() => {
-                  checkApiAvailability(true); // Force check
-                  setOpened(true);
-                }}
-              >
-                <IconRefresh size={14} />
-              </ActionIcon>
-            </AppTooltip>
+              </TooltipContent>
+            </Tooltip>
           )}
-        </Group>
-      </Popover.Target>
+        </div>
+      </PopoverTrigger>
       
-      <Popover.Dropdown>
-        <Stack gap="xs">
-          <Text fw={500}>API Connection Status</Text>
+      <PopoverContent className="w-80" align="end">
+        <div className="space-y-3">
+          <h3 className="font-medium">API Connection Status</h3>
           
-          <Group>
+          <div className="flex items-center gap-2">
             <Badge 
               variant={isMockApi || apiAvailable ? 'default' : 'destructive'}
               className={isMockApi ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
@@ -146,35 +152,33 @@ export function ApiStatus() {
               {isApiLoading ? 'Checking...' : 'Check'}
               {!isApiLoading && <IconRefresh size={14} className="ml-2 h-4 w-4" />}
             </Button>
-          </Group>
+          </div>
           
           {!isMockApi && !apiAvailable && (
             <>
-              <Text size="xs" c="dimmed">
+              <p className="text-sm text-muted-foreground">
                 {apiError || 'Cannot connect to API server'}
-              </Text>
+              </p>
               
               {connectionAttempts > 0 && (
                 <>
-                  <Group gap="xs" align="center">
-                    <Text size="xs">Connection attempts:</Text>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">Connection attempts:</span>
                     <Progress 
                       value={(connectionAttempts / maxConnectionAttempts) * 100} 
-                      color={connectionAttempts >= maxConnectionAttempts ? "red" : "yellow"} 
-                      size="xs" 
-                      w={100}
+                      className={`h-2 w-24 ${connectionAttempts >= maxConnectionAttempts ? "[&>*]:bg-red-600" : "[&>*]:bg-yellow-600"}`}
                     />
-                    <Text size="xs" fw={500}>
+                    <span className="text-xs font-medium">
                       {connectionAttempts}/{maxConnectionAttempts}
-                    </Text>
-                  </Group>
+                    </span>
+                  </div>
                   
                   {timeUntilNextCheck && (
-                    <Group gap="xs" align="center">
+                    <div className="flex items-center gap-2">
                       <IconClock size={14} />
-                      <Text size="xs">
+                      <span className="text-xs">
                         Next check in {timeUntilNextCheck}s
-                      </Text>
+                      </span>
                       <Button 
                         variant="ghost" 
                         size="sm"
@@ -183,18 +187,18 @@ export function ApiStatus() {
                       >
                         Reset
                       </Button>
-                    </Group>
+                    </div>
                   )}
                 </>
               )}
               
               {lastChecked && (
-                <Text size="xs">
+                <p className="text-xs">
                   Last checked: {formatTimeAgo(lastChecked)}
-                </Text>
+                </p>
               )}
               
-              <Group gap="xs">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
@@ -217,15 +221,15 @@ export function ApiStatus() {
                     Retry Connection
                   </Button>
                 )}
-              </Group>
+              </div>
             </>
           )}
           
           {isMockApi && (
             <>
-              <Text size="xs" c="dimmed">
+              <p className="text-sm text-muted-foreground">
                 Using mock API data. No server connection required.
-              </Text>
+              </p>
               
               <Button
                 variant="secondary"
@@ -244,22 +248,30 @@ export function ApiStatus() {
           
           {recentErrors.length > 0 && (
             <>
-              <Text size="xs" mt="xs" fw={500}>Recent Errors</Text>
+              <h4 className="text-xs font-medium mt-2">Recent Errors</h4>
               {recentErrors.slice(0, 3).map((error, i) => (
-                <Text key={i} size="xs" c="dimmed">
+                <p key={i} className="text-xs text-muted-foreground">
                   {new Date(error.timestamp).toLocaleTimeString()}: {error.message}
-                </Text>
+                </p>
               ))}
               
               {recentErrors.length > 3 && (
-                <Text size="xs" c="dimmed" fs="italic">
+                <p className="text-xs text-muted-foreground italic">
                   +{recentErrors.length - 3} more errors
-                </Text>
+                </p>
               )}
             </>
           )}
-        </Stack>
-      </Popover.Dropdown>
+        </div>
+      </PopoverContent>
     </Popover>
+  );
+}
+
+export function ApiStatus() {
+  return (
+    <TooltipProvider>
+      <ApiStatusContent />
+    </TooltipProvider>
   );
 }

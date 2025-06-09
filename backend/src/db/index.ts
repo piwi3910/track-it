@@ -7,15 +7,8 @@ import prisma from './client';
 // Export the Prisma client
 export { prisma };
 
-// Export service modules directly
-export * as taskService from './services/task.service';
-export * as templateService from './services/template.service';
-export * as userService from './services/user.service';
-export * as commentService from './services/comment.service';
-export * as attachmentService from './services/attachment.service';
-export * as notificationService from './services/notification.service';
-export * as analyticsService from './services/analytics.service';
-export * as googleService from './services/google.service';
+// Export repositories instead of services
+export { default as repositories } from '../repositories/container';
 
 // Utility function to connect to the database
 export async function connectToDatabase() {

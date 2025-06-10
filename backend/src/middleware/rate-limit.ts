@@ -2,6 +2,7 @@
  * Rate limiting middleware for authentication endpoints
  */
 import { TRPCError } from '@trpc/server';
+import { RATE_LIMIT, TIME_CONSTANTS } from '@track-it/shared';
 
 interface RateLimitStore {
   attempts: Map<string, { count: number; resetTime: number }>;
@@ -11,10 +12,6 @@ interface RateLimitStore {
 const store: RateLimitStore = {
   attempts: new Map()
 };
-
-// Configuration
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const MAX_ATTEMPTS = 5; // 5 attempts per window
 
 /**
  * Rate limit middleware for authentication procedures
@@ -32,7 +29,7 @@ export function rateLimitAuth(identifier: string) {
   const attempts = store.attempts.get(identifier);
   
   if (attempts) {
-    if (attempts.count >= MAX_ATTEMPTS) {
+    if (attempts.count >= RATE_LIMIT.MAX_ATTEMPTS) {
       const remainingTime = Math.ceil((attempts.resetTime - now) / 1000 / 60);
       throw new TRPCError({
         code: 'TOO_MANY_REQUESTS',
@@ -44,7 +41,7 @@ export function rateLimitAuth(identifier: string) {
   } else {
     store.attempts.set(identifier, {
       count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW
+      resetTime: now + RATE_LIMIT.WINDOW_MS
     });
   }
 }
@@ -68,5 +65,5 @@ export function cleanupRateLimits() {
   }
 }
 
-// Run cleanup every 5 minutes
-setInterval(cleanupRateLimits, 5 * 60 * 1000);
+// Run cleanup periodically
+setInterval(cleanupRateLimits, RATE_LIMIT.CLEANUP_INTERVAL_MS);

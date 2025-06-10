@@ -29,6 +29,7 @@ import { ApiStatus } from '@/components/ApiStatus';
 import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useStore } from '@/hooks/useStore';
 import { useApp } from '@/hooks/useApp';
+import { isAdmin } from '@track-it/shared';
 
 export function AppLayout() {
   const [opened, setOpened] = useState(false);
@@ -44,7 +45,7 @@ export function AppLayout() {
   };
 
   // Check if user is admin
-  const isAdmin = user.role === 'admin';
+  const hasAdminAccess = isAdmin(user);
 
   // Navigation items
   const navItems = [
@@ -56,7 +57,7 @@ export function AppLayout() {
   ];
 
   // Admin navigation items (only visible to admin users)
-  const adminNavItems = isAdmin ? [
+  const adminNavItems = hasAdminAccess ? [
     { icon: <IconUsers size={16} />, label: 'Admin', to: '/admin' },
   ] : [];
 

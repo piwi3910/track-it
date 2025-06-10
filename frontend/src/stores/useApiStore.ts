@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { isApiAvailable } from '@/utils/api-utils';
+import { logger } from '@/services/logger.service';
 
 // Track API errors
 interface ApiError {
@@ -111,20 +112,20 @@ export const useApiStore = create<ApiState>((set, get) => ({
       
       // If already loading, don't start another check
       if (isApiLoading && !force) {
-        console.log('API check already in progress, skipping');
+        logger.debug('API check already in progress, skipping');
         return get().apiAvailable;
       }
       
       // Don't check if we've reached max attempts
       if (connectionAttempts >= maxConnectionAttempts && !force) {
-        console.log(`Maximum connection attempts (${maxConnectionAttempts}) reached, not checking`);
+        logger.info(`Maximum connection attempts (${maxConnectionAttempts}) reached, not checking`);
         return false;
       }
       
       // Check if we should respect the backoff interval
       if (nextScheduledCheck && now < nextScheduledCheck && !force) {
         const waitTime = Math.round((nextScheduledCheck - now) / 1000);
-        console.log(`Respecting backoff period, next check in ${waitTime}s`);
+        logger.debug(`Respecting backoff period, next check in ${waitTime}s`);
         return get().apiAvailable;
       }
       
@@ -145,7 +146,7 @@ export const useApiStore = create<ApiState>((set, get) => ({
         lastAttemptTime: now
       });
       
-      console.log(`Checking API availability (attempt ${connectionAttempts + 1}/${maxConnectionAttempts})...`);
+      logger.info(`Checking API availability (attempt ${connectionAttempts + 1}/${maxConnectionAttempts})...`);
       const available = await isApiAvailable();
       
       // Calculate next backoff interval (exponential with max of 60s)
@@ -174,7 +175,7 @@ export const useApiStore = create<ApiState>((set, get) => ({
         }
         
         set({ apiError: errorMessage });
-        console.warn(`API is not available (attempt ${connectionAttempts}/${maxConnectionAttempts}). Next check in ${newBackoffInterval/1000}s`);
+        logger.warn(`API is not available (attempt ${connectionAttempts}/${maxConnectionAttempts}). Next check in ${newBackoffInterval/1000}s`);
         
         // Add to error history
         get().addApiError({
@@ -184,7 +185,7 @@ export const useApiStore = create<ApiState>((set, get) => ({
         });
       } else {
         set({ apiError: null });
-        console.log('API is available!');
+        logger.info('API is available!');
       }
       
       return available;
@@ -204,7 +205,7 @@ export const useApiStore = create<ApiState>((set, get) => ({
         nextScheduledCheck: now + newBackoffInterval
       });
       
-      console.error('Failed to check API availability:', error);
+      logger.error('Failed to check API availability:', error);
       
       // Add to error history
       get().addApiError({

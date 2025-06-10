@@ -17,7 +17,7 @@ export function handleError(error: unknown): never {
 
   // Handle AppError from shared types
   if (error instanceof AppError) {
-    const trpcCode = mapErrorCodeToTRPC(error.code);
+    const trpcCode = mapErrorCodeToTRPC(error.details.code);
     throw new TRPCError({
       code: trpcCode,
       message: error.message,
@@ -121,33 +121,37 @@ export function createNotFoundError(resource: string, id?: string): AppError {
   const message = id 
     ? `${resource} with ID ${id} not found`
     : `${resource} not found`;
-  return new AppError(message, ErrorCode.NOT_FOUND);
+  return AppError.notFound(message);
 }
 
 export function createUnauthorizedError(message: string = 'Unauthorized'): AppError {
-  return new AppError(message, ErrorCode.UNAUTHORIZED);
+  return AppError.unauthorized(message);
 }
 
 export function createForbiddenError(message: string = 'You do not have permission to perform this action'): AppError {
-  return new AppError(message, ErrorCode.FORBIDDEN);
+  return AppError.forbidden(message);
 }
 
 export function createValidationError(message: string, field?: string): AppError {
-  return new AppError(message, ErrorCode.VALIDATION_ERROR, { field });
+  return AppError.validationError(message, field);
 }
 
 export function createConflictError(message: string): AppError {
-  return new AppError(message, ErrorCode.CONFLICT);
+  return AppError.create(ErrorCode.CONFLICT, message);
 }
 
 export function createDatabaseError(message: string, details?: unknown): AppError {
   logger.error({ details }, message);
-  return new AppError(message, ErrorCode.DATABASE_ERROR, details);
+  return AppError.create(ErrorCode.DATABASE_ERROR, message, { 
+    details: details as Record<string, any> 
+  });
 }
 
 export function createExternalServiceError(service: string, message: string, details?: unknown): AppError {
   logger.error({ service, details }, message);
-  return new AppError(message, ErrorCode.EXTERNAL_SERVICE_ERROR, { service, ...details });
+  return AppError.create(ErrorCode.EXTERNAL_SERVICE_ERROR, message, { 
+    details: { service, ...(typeof details === 'object' ? details : { data: details }) }
+  });
 }
 
 /**

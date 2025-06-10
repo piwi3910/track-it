@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
 import repositories from '../repositories/container';
+import { normalizeDates } from '@track-it/shared';
 import { TaskPriority, Prisma } from '@prisma/client';
 
 // Define helper function to normalize template data for API response
@@ -21,12 +22,7 @@ export interface TemplateData {
 }
 
 const normalizeTemplateData = (template: TemplateData): TemplateData => {
-  return {
-    ...template,
-    // Format dates as ISO strings if they exist as Date objects
-    createdAt: template.createdAt instanceof Date ? template.createdAt.toISOString() : template.createdAt,
-    updatedAt: template.updatedAt instanceof Date ? template.updatedAt.toISOString() : template.updatedAt
-  };
+  return normalizeDates(template, ['createdAt', 'updatedAt']);
 };
 
 // Task priority enum schema

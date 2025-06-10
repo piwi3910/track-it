@@ -34,6 +34,7 @@ import { InitialsAvatar } from '@/components/InitialsAvatar';
 import { useApp } from '@/hooks/useApp';
 import { User, UserRole } from '@track-it/shared';
 import { api } from '@/api';
+import { isAdmin } from '@track-it/shared';
 
 interface UserFormData {
   name: string;
@@ -115,7 +116,7 @@ export function AdminPage() {
   });
 
   // Check if current user is admin
-  const isAdmin = currentUser?.role === 'admin';
+  const hasAdminAccess = currentUser ? isAdmin(currentUser) : false;
 
   // Load users data from API
   const loadUsers = async () => {
@@ -137,10 +138,10 @@ export function AdminPage() {
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (hasAdminAccess) {
       loadUsers();
     }
-  }, [isAdmin]);
+  }, [hasAdminAccess]);
 
   // Handle create user
   const handleCreateUser = async () => {
@@ -352,7 +353,7 @@ export function AdminPage() {
   };
 
   // Redirect if not admin
-  if (!isAdmin) {
+  if (!hasAdminAccess) {
     return (
       <div className="container max-w-7xl mx-auto p-8">
         <Alert variant="destructive">

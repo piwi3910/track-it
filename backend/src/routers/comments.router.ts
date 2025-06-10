@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
 import repositories from '../repositories/container';
+import { normalizeDates } from '@track-it/shared';
 import { extractMentions, resolveUserIds } from '../utils/comment.utils';
 
 // Define the Comment type from the service response
@@ -44,15 +45,17 @@ export type NormalizedComment = {
 
 // Helper function to normalize comment data for API response
 const normalizeCommentData = (comment: CommentWithAuthor | (Omit<CommentWithAuthor, 'author'> & { author?: Omit<CommentAuthor, 'email'> })): NormalizedComment => {
+  // Normalize dates using shared utility
+  const baseNormalized = normalizeDates(comment, ['createdAt', 'updatedAt']);
+  
   const normalized: NormalizedComment = {
-    id: comment.id,
-    text: comment.text,
-    taskId: comment.taskId,
-    authorId: comment.authorId,
-    parentId: comment.parentId,
-    // Format dates as ISO strings if they exist as Date objects
-    createdAt: comment.createdAt instanceof Date ? comment.createdAt.toISOString() : String(comment.createdAt),
-    updatedAt: comment.updatedAt instanceof Date ? comment.updatedAt.toISOString() : String(comment.updatedAt)
+    id: baseNormalized.id,
+    text: baseNormalized.text,
+    taskId: baseNormalized.taskId,
+    authorId: baseNormalized.authorId,
+    parentId: baseNormalized.parentId,
+    createdAt: baseNormalized.createdAt as unknown as string,
+    updatedAt: baseNormalized.updatedAt as unknown as string
   };
 
   // Add author if it exists

@@ -33,6 +33,7 @@ import TaskModal from '@/components/TaskModal';
 import QuickAddTask from '@/components/QuickAddTask';
 import type { Task } from '@/types/task';
 import { useApp } from '@/hooks/useApp';
+import { PRIORITY_ORDER } from '@track-it/shared';
 
 
 export function BacklogPage() {
@@ -67,9 +68,8 @@ export function BacklogPage() {
       }
       
       if (sortBy === 'priority') {
-        const priorityOrder = { urgent: 3, high: 2, medium: 1, low: 0 };
         return sortDirection === 'asc'
-          ? (priorityOrder[a.priority] || 0) - (priorityOrder[b.priority] || 0)
+          ? (PRIORITY_ORDER[a.priority] || 0) - (PRIORITY_ORDER[b.priority] || 0)
           : (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
       }
       

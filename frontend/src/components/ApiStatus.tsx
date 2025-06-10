@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
 import { useState, useMemo } from 'react';
+import { TIME_CONSTANTS } from '@track-it/shared';
 
 /**
  * ApiStatus component displays the current status of the API connection
@@ -44,9 +45,9 @@ function ApiStatusContent() {
     if (!timestamp) return 'never';
     
     const diff = Date.now() - new Date(timestamp).getTime();
-    if (diff < 60000) return 'just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    return `${Math.floor(diff / 3600000)}h ago`;
+    if (diff < TIME_CONSTANTS.ONE_MINUTE) return 'just now';
+    if (diff < TIME_CONSTANTS.ONE_HOUR) return `${Math.floor(diff / TIME_CONSTANTS.ONE_MINUTE)}m ago`;
+    return `${Math.floor(diff / TIME_CONSTANTS.ONE_HOUR)}h ago`;
   };
   
   // Don't show anything in prod mode if API is available and not using mock

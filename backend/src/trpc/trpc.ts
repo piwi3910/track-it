@@ -4,9 +4,9 @@ import { Context } from './context';
 import { 
   handleError, 
   createUnauthorizedError, 
-  createForbiddenError,
-  formatErrorResponse
+  createForbiddenError
 } from '../utils/unified-error-handler';
+import { AppError, ErrorCode } from '@track-it/shared';
 
 // Initialize tRPC with context type
 const t = initTRPC.context<Context>().create({
@@ -59,9 +59,15 @@ const t = initTRPC.context<Context>().create({
       };
     }
     
-    // Use our formatErrorResponse utility for all other errors
+    // Format the error response
     // This ensures consistent error format that complies with API spec
-    const formattedError = formatErrorResponse(error.cause || error);
+    const formattedError = error.cause instanceof AppError 
+      ? error.cause.toJSON()
+      : { 
+          code: ErrorCode.UNKNOWN_ERROR,
+          message: error.message,
+          timestamp: new Date().toISOString()
+        };
     
     // Return the error in API specification format
     return {

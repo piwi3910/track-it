@@ -4,22 +4,7 @@ import { createNotFoundError, createForbiddenError, handleError } from '../utils
 import { logger } from '../server';
 import repositories from '../repositories/container';
 import { Task, TaskStatus, TaskPriority, Prisma } from '@prisma/client';
-
-// Define helper function to normalize task data for API response
-const normalizeTaskData = (task: {
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  dueDate?: Date | string | null;
-  [key: string]: unknown;
-}): Record<string, unknown> => {
-  // Format dates as ISO strings if they exist as Date objects
-  return {
-    ...task,
-    createdAt: task.createdAt instanceof Date ? task.createdAt.toISOString() : task.createdAt,
-    updatedAt: task.updatedAt instanceof Date ? task.updatedAt.toISOString() : task.updatedAt,
-    dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString() : task.dueDate
-  };
-};
+import { normalizeDates } from '@track-it/shared';
 
 // Task enum schemas using lowercase values (matching Prisma schema)
 const taskStatusSchema = z.enum(['backlog', 'todo', 'in_progress', 'review', 'done', 'archived']);
@@ -137,7 +122,7 @@ export const tasksRouter = router({
     .query(() => safeProcedure(async () => {
       try {
         const tasks = await repositories.tasks.findAllWithRelations();
-        return tasks.map(normalizeTaskData);
+        return tasks.map(task => normalizeDates(task, ['createdAt', 'updatedAt', 'dueDate']));
       } catch (error) {
         return handleError(error);
       }
@@ -160,7 +145,7 @@ export const tasksRouter = router({
           }
         }
         
-        return normalizeTaskData(task);
+        return normalizeDates(task, ['createdAt', 'updatedAt', 'dueDate']);
       } catch (error) {
         return handleError(error);
       }
@@ -171,7 +156,7 @@ export const tasksRouter = router({
     .query(({ input, ctx }) => safeProcedure(async () => {
       try {
         const tasks = await repositories.tasks.findByStatus(input.status, ctx.user.id);
-        return tasks.map(normalizeTaskData);
+        return tasks.map(task => normalizeDates(task, ['createdAt', 'updatedAt', 'dueDate']));
       } catch (error) {
         return handleError(error);
       }
@@ -203,7 +188,7 @@ export const tasksRouter = router({
         };
 
         const newTask = await repositories.tasks.create(taskData);
-        return normalizeTaskData(newTask);
+        return normalizeDates(newTask, ['createdAt', 'updatedAt', 'dueDate']);
       } catch (error) {
         return handleError(error);
       }
@@ -300,7 +285,7 @@ export const tasksRouter = router({
         // Update the task
         const updatedTask = await repositories.tasks.update(input.id, updateData);
         logger.info('Task updated successfully:', { taskId: input.id });
-        return normalizeTaskData(updatedTask);
+        return normalizeDates(updatedTask, ['createdAt', 'updatedAt', 'dueDate']);
       } catch (error) {
         logger.error('Task update failed:', {
           taskId: input.id,
@@ -341,7 +326,7 @@ export const tasksRouter = router({
     .query(({ input }) => safeProcedure(async () => {
       try {
         const tasks = await repositories.tasks.search(input.query);
-        return tasks.map(normalizeTaskData);
+        return tasks.map(task => normalizeDates(task, ['createdAt', 'updatedAt', 'dueDate']));
       } catch (error) {
         return handleError(error);
       }
@@ -446,7 +431,7 @@ export const tasksRouter = router({
         // Increment template usage count
         await repositories.templates.incrementUsageCount(input.templateId);
         
-        return normalizeTaskData(newTask);
+        return normalizeDates(newTask, ['createdAt', 'updatedAt', 'dueDate']);
       } catch (error) {
         return handleError(error);
       }

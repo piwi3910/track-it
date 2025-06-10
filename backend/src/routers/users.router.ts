@@ -14,6 +14,7 @@ import bcrypt from 'bcrypt';
 import { config } from '../config';
 import { logger } from '../server';
 import { rateLimitAuth, resetRateLimit } from '../middleware/rate-limit';
+import { normalizeDates } from '@track-it/shared';
 
 // Type for normalized user data
 export interface NormalizedUser {
@@ -49,13 +50,8 @@ const normalizeUserData = (user: {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { passwordHash, ...safeUser } = user;
   
-  return {
-    ...safeUser,
-    // Format dates as ISO strings if they exist as Date objects
-    createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
-    updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
-    lastLogin: user.lastLogin instanceof Date ? user.lastLogin.toISOString() : user.lastLogin
-  } as NormalizedUser;
+  // Use shared date normalization
+  return normalizeDates(safeUser, ['createdAt', 'updatedAt', 'lastLogin']) as NormalizedUser;
 };
 
 // Input validation schemas

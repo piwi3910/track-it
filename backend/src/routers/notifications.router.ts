@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure, safeProcedure } from '../trpc/trpc';
 import { createNotFoundError, createForbiddenError, handleError } from '../utils/unified-error-handler';
 import repositories from '../repositories/container';
+import { normalizeDates } from '@track-it/shared';
 
 // Define the Notification type from the service response
 type NotificationFromService = {
@@ -28,15 +29,18 @@ const normalizeNotificationData = (notification: NotificationFromService): {
   relatedEntityId: string | null;
   relatedEntityType: string | null;
 } => {
+  const normalized = normalizeDates(notification, ['createdAt']);
   return {
-    ...notification,
+    id: normalized.id,
+    type: normalized.type,
+    title: normalized.title,
+    message: normalized.message,
+    read: normalized.read,
+    createdAt: normalized.createdAt as unknown as string,
+    userId: normalized.userId,
     // Map database field names to API spec names
-    type: notification.type,
-    relatedEntityId: notification.resourceId,
-    relatedEntityType: notification.resourceType,
-    // Format dates as ISO strings if they exist as Date objects
-    createdAt: notification.createdAt instanceof Date ? 
-      notification.createdAt.toISOString() : notification.createdAt
+    relatedEntityId: normalized.resourceId,
+    relatedEntityType: normalized.resourceType
   };
 };
 

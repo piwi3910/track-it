@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api } from '@/api';
 import type { RouterOutputs } from '@track-it/shared';
+import { logger } from '@/services/logger.service';
 
 type Notification = RouterOutputs['notifications']['getAll'][0];
 
@@ -71,7 +72,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       
       return count;
     } catch (err) {
-      console.error('Failed to fetch unread count:', err);
+      logger.error('Failed to fetch unread count:', err);
       return get().unreadCount;
     }
   },
